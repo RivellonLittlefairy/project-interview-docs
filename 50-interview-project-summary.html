@@ -1,0 +1,489 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="五条主讲项目线：基于当前工作区源码证据整理的项目面试资料">
+  <title>三年 Android 候选人：项目主线与面试总述｜项目面试资料</title>
+  <link rel="stylesheet" href="assets/docs.css">
+  <script>
+    try {
+      const savedTheme = localStorage.getItem("interview-docs-theme");
+      const preferredDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      document.documentElement.dataset.theme = savedTheme || (preferredDark ? "dark" : "light");
+    } catch {}
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <header class="topbar">
+    <button class="icon-button menu-button" type="button" data-menu-toggle aria-label="打开文档导航" aria-expanded="false">☰</button>
+    <a class="brand" href="index.html"><span class="brand-mark">⌁</span><span>项目面试资料库</span></a>
+    <div class="search-shell">
+      <label class="sr-only" for="global-search">搜索所有文档</label>
+      <input id="global-search" type="search" data-search-input placeholder="搜索仓库、技术或面试题…" autocomplete="off">
+      <span class="search-shortcut">Ctrl K</span>
+      <div class="search-results" data-search-results hidden></div>
+    </div>
+    <button class="icon-button" type="button" data-theme-toggle aria-label="切换深浅主题">◐</button>
+  </header>
+  <div class="drawer-backdrop" data-drawer-backdrop hidden></div>
+  <div class="docs-layout">
+    <nav class="sidebar" data-sidebar aria-label="全站文档导航">
+      <div class="sidebar-heading">文档导航</div>
+      
+        <section class="nav-group">
+          <h2 class="nav-group-title">逐仓文档</h2>
+          <a class="nav-link" href="repositories.html">66 个仓库独立分析</a>
+        </section>
+        <section class="nav-group">
+          <h2 class="nav-group-title">开始使用</h2>
+          <a class="nav-link" href="index.html">总览与导航</a>
+<a class="nav-link active" href="50-interview-project-summary.html" aria-current="page">五条主讲项目线</a>
+<a class="nav-link" href="70-resume-and-star-stories.html">简历与 STAR</a>
+<a class="nav-link" href="60-interview-question-bank.html">70 道面试题</a>
+        </section>
+
+        <section class="nav-group">
+          <h2 class="nav-group-title">仓库分析</h2>
+          <a class="nav-link" href="00-repository-inventory.html">全量仓库盘点</a>
+<a class="nav-link" href="10-android-business-repositories.html">Android 业务仓库</a>
+<a class="nav-link" href="20-android-infrastructure-media.html">基础设施与媒体</a>
+<a class="nav-link" href="30-cross-platform-rn-web.html">RN 与 Web</a>
+<a class="nav-link" href="31-tools-samples-and-assets.html">工具、样例与资产</a>
+        </section>
+
+        <section class="nav-group">
+          <h2 class="nav-group-title">质量复核</h2>
+          <a class="nav-link" href="40-android-docs-evidence-review.html">Android 证据复核</a>
+<a class="nav-link" href="41-full-workspace-coverage-review.html">全工作区覆盖复核</a>
+        </section>
+
+        <section class="nav-group">
+          <h2 class="nav-group-title">辅助材料</h2>
+          <a class="nav-link" href="ANALYSIS-TEMPLATE.html">仓库分析模板</a>
+<a class="nav-link" href="2026-07-24-all-repositories-analysis-plan.html">原始执行计划</a>
+        </section>
+
+        <section class="nav-group">
+          <h2 class="nav-group-title">Android 专题</h2>
+          <a class="nav-link" href="android-storage-guide.html">Android 存储方案</a>
+        </section>
+      <p class="sidebar-note">离线资料 · 证据快照 2026-07-24</p>
+    </nav>
+    <main class="article-shell" id="main-content">
+      <div class="breadcrumbs"><a href="index.html">首页</a><span>/</span><span>开始使用</span><span>/</span><span>五条主讲项目线</span></div>
+      
+      <article class="markdown-body">
+        <h1 id="三年-android-候选人-项目主线与面试总述">三年 Android 候选人：项目主线与面试总述</h1>
+<blockquote class="callout"><p>本文是源码证据化的表达骨架，不是候选人履历。所有带 <strong>“需本人确认”</strong> 的句子，必须在本人确实做过并能说明需求、动作和验证时才可使用。真实结果和指标不得由源码推测或杜撰。</p>
+</blockquote>
+<h2 id="1-推荐主讲策略">1. 推荐主讲策略</h2>
+<p>三年经验不需要把 60 多个仓库都讲成“我的项目”。更可信的结构是：</p>
+<ul>
+<li>选 <strong>1 条核心业务线</strong> 深讲状态、接口、生命周期和排障；</li>
+<li>选 <strong>1 条工程或跨端线</strong> 证明协作和交付能力；</li>
+<li>其余作为追问储备，回答“我在业务侧如何使用公共能力”；</li>
+<li>框架源码用来解释为什么这样接入，不用来认领框架作者身份。</li>
+</ul>
+<p>推荐的五条项目主线如下，实际面试只保留本人参与的 2—3 条：</p>
+<ol>
+<li>知识首页与内容发现：<code>KnowledgeMarket + km_home_base + DevKit</code></li>
+<li>阅读消费：<code>VipManuscript + VipReader</code></li>
+<li>知识音频：<code>Kmaudio + Media/Audio/Zhplayer/mediax</code></li>
+<li>App 宿主交付：<code>VipAndroid + VipHome</code></li>
+<li>Native/RN 协作：<code>pikachu</code></li>
+</ol>
+<h2 id="2-模块关系总图">2. 模块关系总图</h2>
+<div class="code-block">
+      <div class="code-toolbar"><span>text</span><button type="button" data-copy-code>复制</button></div>
+      <pre><code class="language-text">VipAndroid（构建装配）
+  └─ VipHome（Application / Launcher / 主导航）
+       ├─ KnowledgeMarket（知识市场聚合）
+       │    └─ km_home_base（首页/书架容器）
+       │         └─ DevKit（Mavericks 轻量 MVI + Paging3 封装）
+       ├─ VipManuscript（手稿、双向目录、互动）
+       ├─ VipReader（EPUB 解析、预解析、进度）
+       ├─ Kmaudio（知识音频业务、播放列表、权益）
+       │    └─ Media / Audio / Zhplayer / mediax（协议、Service、门面、引擎适配）
+       ├─ Feed（分发）→ Comment/VipComment（互动）
+       └─ VipPassport（登录注册/Token）→ Account（登录后账号态与安全）
+
+Native 宿主
+  └─ pikachu RN Bundle（pageName / initProps / Deep Link / Bridge / Jotai）</code></pre>
+    </div>
+<p>这是一张职责图，不代表所有模块都有直接源码依赖，也不代表候选人负责整张图。</p>
+<h2 id="3-可直接口述的三个时长版本">3. 可直接口述的三个时长版本</h2>
+<h3 id="30-秒版本">30 秒版本</h3>
+<blockquote class="callout"><p>如果相关调用点确实属于我的工作范围（需本人确认），我会把它概括为组件化内容 App 的 Android 业务接入：主要工作不是发明底层框架，而是在既有组件、路由和状态体系中把业务链路接完整。最适合展开的是知识首页：业务由 <code>KnowledgeMarket</code> 和 <code>km_home_base</code> 承接，页面使用 DevKit 的 Mavericks 轻量 MVI 与 Paging3；刷新创建新的分页代际，点赞和删除用 mediator 做局部更新。阅读/音频、主工程交付或 RN 页面协作也只保留本人实际负责并能核验的调用点。</p>
+</blockquote>
+<h3 id="2-分钟版本">2 分钟版本</h3>
+<blockquote class="callout"><p>这个工作区体现的是一个组件化内容 App。<code>VipAndroid</code> 负责版本、组件替换、多渠道和构建检查，<code>VipHome</code> 负责 Application、Launcher 和主导航；业务能力拆成知识首页、手稿、EPUB 阅读、音频、评论、账号等独立 API/实现模块。</p>
+<p>如果首页调用点确实属于我的职责（需本人确认），我会重点讲 <code>HomePinTab</code>：Fragment 触发 <code>HomePinTabViewModel.refresh()</code>，ViewModel 让 DevKit <code>Pager</code> 失效并创建新的 <code>PagingSource</code> generation，接口结果进入 <code>PagingData</code> 和 <code>PinTabState</code>，Fragment 再交给异构卡片 adapter。刷新、追加和前插的加载态仍由 adapter 的 <code>CombinedLoadStates</code> 管理；点赞、删除用 <code>PagerMediator</code> 对当前 <code>PagingData</code> 做 map/filter。它有不可变 State 和单向渲染，但没有统一 Intent/Reducer，所以我会称它为 Mavericks-based 轻量 MVI。</p>
+<p>内容消费侧要区分两条线：<code>VipManuscript</code> 解决从任意章节进入后的双向目录分页和互动，<code>VipReader</code> 解决 EPUB 准备、相邻预解析和端云进度合并。音频侧也要区分 <code>Kmaudio</code> 的业务数据源、播放列表和权益，与 <code>Media/Audio/mediax</code> 的播放基础能力。如果我讲跨端，会用 <code>pikachu</code> 的 AI 生图说明 taskId、轮询、Deep Link、Bridge 和 Jotai 的合同边界。</p>
+<p>我不会把 DevKit、路由或播放内核说成自己设计的。个人动作、故障和结果都需要本人确认；没有真实指标时，我只讲代码机制、验证方法和风险。</p>
+</blockquote>
+<h3 id="5-分钟版本">5 分钟版本</h3>
+<blockquote class="callout"><p>我对这个项目的理解可以分成宿主、业务和基础能力三层。宿主层里，<code>VipAndroid</code> 是构建装配仓，它通过组件列表、VIP 替换表、版本锁和源码替换把业务组装成 App，并检查三方依赖和 so 完整性；<code>VipHome</code> 才是运行时启动与导航模块，负责 Application delegate、Launcher、MainActivity、启动阶段监控和异常恢复。这两个仓库能放在一条交付链里讲，但职责不能混。</p>
+<p>业务上我最推荐讲知识首页与内容消费。如果 <code>HomePinTab</code> 确实是我参与的调用点（需本人确认），页面使用 <code>km_home_base</code> 接入 DevKit。用户下拉刷新后，Fragment 调 <code>refresh()</code>，ViewModel 调 <code>pager.invalidate()</code>，Paging3 创建新的 <code>ResponsePagingSource</code>；分页值通过 Flow 写入 <code>PinTabState.data</code>，Fragment 订阅后交给 adapter。加载态不重复塞进 State，而由 adapter 的 <code>CombinedLoadStates</code> 表达 refresh/append/prepend。点赞和删除则通过 <code>PagerMediator</code> 对当前 <code>PagingData</code> 做局部 map/filter，减少整页重拉。这里的取舍是迁移成本低、Paging3 接入自然，但事件入口和副作用没有严格统一；另外 <code>ResponsePagingSource</code> 捕获 <code>Throwable</code>、默认 refresh key 为 null 都是需要继续验证的风险。</p>
+<p>进入消费页后，阅读不能笼统说成一个模块。<code>VipManuscript</code> 的核心是以目标章节为 initial key，同时计算 prepend 和 append，处理去重、首尾 null 和目标定位；互动、书架与一次性事件又有各自状态边界。<code>VipReader</code> 则面向 EPUB：后台准备和解析章节、预解析相邻窗口，并用章节 id、页索引或偏移处理本地与服务端进度。前者难在双向分页代际，后者难在 IO、内存窗口和进度不能倒退。</p>
+<p>音频链也分层：<code>Kmaudio</code> 把不同 SKU 差异收敛到业务 DataSource，管理资源、目录、播放列表、试听和 ownership；<code>Audio</code> 用 Service 承担跨页面后台播放会话，<code>Media</code> 提供事件化 UI/插件能力，<code>mediax</code> 隔离 TTVideoEngine 一类厂商实现，<code>Zhplayer</code> 提供统一 facade 和预播放器。业务接入者应该讲自己如何映射数据、处理新 Intent、切集、权益刷新、错误和生命周期，而不是声称实现了解码或整个播放器框架。</p>
+<p>工程交付方面，如果我确实参与过相应接入（需本人确认），我会说明怎样用 <code>sourcecode.properties</code> 把 Maven 制品替换成本地源码，怎样排版本冲突、重复类、多 flavor 和 so 对齐问题；启动需求则放在 <code>VipHome</code> 的既有任务/Delegate 边界里，不把所有 SDK 堆进 <code>Application.onCreate()</code>。</p>
+<p>如果岗位关心跨端，我会补充 <code>pikachu</code>。它不是独立 RN App，而是嵌入 Native 的多页面 Bundle。AI 生图先创建 taskId，再跳结果页每两秒轮询、最多等待六十秒；成功后按来源写 Jotai、调用 Native Bridge 或继续走 Deep Link。这个链路适合说明跨端合同和生命周期：当前 cleanup 只停止后续轮询，没有取消在途 HTTP；图库分页缺并发门禁；app 生命周期 atom 的清理也有缺口。当前 checkout 还缺 <code>prn/*</code> 与 <code>.yarn/</code>，所以不能把不能 Bundle 直接归因于业务代码。</p>
+<p>最后，我会主动划边界：以上是源码能证明的项目结构。哪些需求是我负责的、哪次故障由我定位、结果是多少，都必须由本人确认并给出提交、需求记录、日志或指标口径。对三年经验候选人来说，能把一个真实业务调用点讲透，比认领整套框架更可信。</p>
+</blockquote>
+<h2 id="4-五条主讲线">4. 五条主讲线</h2>
+<h3 id="4-1-知识首页与内容发现">4.1 知识首页与内容发现</h3>
+<p><strong>模块关系</strong></p>
+<ul>
+<li><code>KnowledgeMarket</code>：知识市场聚合业务，覆盖首页、书架、草稿、已购等场景。</li>
+<li><code>km_home_base</code>：知识首页/书架容器，是 <code>HomePinTab</code> 的真实业务调用点。</li>
+<li><code>DevKit</code>：提供 Mavericks 状态封装、Paging3 <code>Pager</code>、<code>ResponsePagingSource</code>、<code>PagerMediator</code> 和 adapter 辅助能力。</li>
+</ul>
+<p><strong>关键链路</strong></p>
+<div class="code-block">
+      <div class="code-toolbar"><span>text</span><button type="button" data-copy-code>复制</button></div>
+      <pre><code class="language-text">HomePinTabFragment
+  → HomePinTabViewModel.refresh()
+  → Pager.invalidate()
+  → 新 ResponsePagingSource generation
+  → onRefresh/onLoadMore
+  → PagingData Flow
+  → PinTabState.data
+  → Fragment collectFrom
+  → SuperAdapter / RecyclerView</code></pre>
+    </div>
+<p>点赞或删除走 <code>PagerMediator.update/remove</code>，对当前 <code>PagingData</code> 做 map/filter；refresh/append/prepend 的加载态由 adapter <code>CombinedLoadStates</code> 管理。</p>
+<p><strong>技术亮点</strong></p>
+<ul>
+<li>不可变 State 与单向渲染；</li>
+<li>Paging3 代际、异构卡片和局部互动更新结合；</li>
+<li>业务状态与 adapter 加载态分源，避免重复状态源。</li>
+</ul>
+<p><strong>取舍与风险</strong></p>
+<ul>
+<li>它是轻量 MVI，不是严格 Intent/Reducer MVI；优点是迁移成本低，代价是事件和副作用不完全统一。</li>
+<li><code>ResponsePagingSource.load()</code> 捕获 <code>Throwable</code> 可能影响协程取消语义。</li>
+<li>默认 <code>getRefreshKey() == null</code> 不保留锚点。</li>
+<li>业务测试不足，分页 key、刷新竞态和 mediator 变换需补测。</li>
+</ul>
+<p><strong>个人贡献条件</strong></p>
+<blockquote class="callout"><p>【需本人确认】只有本人确实接入过页面状态、PagingSource、卡片、刷新/点赞/删除或排查过分页问题，才能使用“我负责”。安全说法是“我在业务侧使用 DevKit，负责某个调用点；DevKit 框架由团队提供”。</p>
+</blockquote>
+<p><strong>可被追问的源码证据</strong></p>
+<ul>
+<li><code>yyyyy-cdoe/km_home_base/km_home_base/src/main/java/com/zhihu/android/feature/km_home_base/discovery/HomePinTabFragment.kt</code></li>
+<li><code>yyyyy-cdoe/km_home_base/km_home_base/src/main/java/com/zhihu/android/feature/km_home_base/discovery/HomePinTabViewModel.kt</code></li>
+<li><code>yyyyy-cdoe/DevKit/devkit/src/main/java/com/zhihu/android/devkit/paging/ResponsePagingSource.kt</code></li>
+<li><code>yyyyy-cdoe/DevKit/devkit/src/main/java/com/zhihu/android/devkit/paging/PagerMediator.kt</code></li>
+<li><code>yyyyy-cdoe/KnowledgeMarket/kmarket-home/src/main/java/com/zhihu/android/app/market/newhome/ui/fragment/ContentMarketHomeFragment.kt</code></li>
+</ul>
+<h3 id="4-2-阅读消费-手稿与-epub">4.2 阅读消费：手稿与 EPUB</h3>
+<p><strong>模块关系</strong></p>
+<ul>
+<li><code>VipManuscript</code>：盐言手稿阅读、双向目录、点赞/书架、评论和礼物。</li>
+<li><code>VipReader</code>：EPUB 文件准备/解析、分页、预解析、阅读设置和进度同步。</li>
+<li>两者都服务阅读场景，但一个突出服务端章节与双向 Paging，一个突出本地文档解析与进度恢复。</li>
+</ul>
+<p><strong>关键链路</strong></p>
+<ul>
+<li>手稿：<code>NativeManuscriptAuthorFragment → ManuscriptBillboardViewModel → Pager/ResponsePagingSource → prepend/append → BillboardState.data</code>。</li>
+<li>EPUB：<code>VipReaderFragment → EpubViewModel/BaseEpubViewModel → prepare/parseChapter → preParseAround → save/syncProgress</code>。</li>
+</ul>
+<p><strong>技术亮点</strong></p>
+<ul>
+<li>从任意目标章节进入并向前、向后加载；</li>
+<li>章节稳定 id 去重和目标位置展示；</li>
+<li>EPUB 按需解析与相邻窗口预解析；</li>
+<li>进度用章节、页索引或偏移表达，而不是只存易漂移的百分比。</li>
+</ul>
+<p><strong>取舍与风险</strong></p>
+<ul>
+<li>双向分页需要同时处理 initial key、首尾 null、重复数据和两个方向的排序。</li>
+<li>预解析能降低翻页等待，但必须限制窗口、取消离屏任务和控制内存。</li>
+<li>端云进度合并要避免网络旧值让本地进度倒退。</li>
+<li>两仓可见业务测试不足，不能声称已自动化覆盖所有阅读边界。</li>
+</ul>
+<p><strong>个人贡献条件</strong></p>
+<blockquote class="callout"><p>【需本人确认】应明确本人做的是目录分页、阅读页状态、进度同步、互动接入还是解析能力调用；公共 EPUB/分页内核不是本人所写时，不认领内核实现。</p>
+</blockquote>
+<p><strong>可被追问的源码证据</strong></p>
+<ul>
+<li><code>yyyyy-cdoe/VipManuscript/vip_manuscript/src/main/java/com/zhihu/android/vip/manuscript/manuscript/catalog/ManuscriptBillboardViewModel.kt</code></li>
+<li><code>yyyyy-cdoe/VipManuscript/vip_manuscript/src/main/java/com/zhihu/android/vip/manuscript/manuscript/catalog/native_catalog/recommend/actor/NativeManuscriptAuthorFragment.kt</code></li>
+<li><code>yyyyy-cdoe/VipReader/vip_reader/src/main/java/com/zhihu/android/vip/reader/business/EpubViewModel.kt</code></li>
+<li><code>yyyyy-cdoe/VipReader/vip_reader/src/main/java/com/zhihu/android/vip/reader/business/VipReaderFragment.kt</code></li>
+</ul>
+<h3 id="4-3-知识音频播放">4.3 知识音频播放</h3>
+<p><strong>模块关系</strong></p>
+<ul>
+<li><code>Kmaudio</code>：知识音频业务入口、DataSource、资源、目录、播放列表、权益和下载。</li>
+<li><code>VipKmAudio</code>：VIP 产品变体，在音频能力上叠加购买、广告、弹幕等业务。</li>
+<li><code>Audio</code>：播放器会话、后台 Service、通知和音频焦点相关能力。</li>
+<li><code>Media</code>：Tornado 事件协议、插件化播放 UI、播放器池、预加载和会话监控。</li>
+<li><code>Zhplayer</code>：统一播放 facade、工厂和预播放器；<code>mediax</code>：厂商引擎薄适配。</li>
+</ul>
+<p><strong>关键链路</strong></p>
+<div class="code-block">
+      <div class="code-toolbar"><span>text</span><button type="button" data-copy-code>复制</button></div>
+      <pre><code class="language-text">KMPlayerInterface.play()
+  → KMPlayer.play(type, id, trackId)
+  → 对应业务 DataSource / PlayRequest
+  → 资源与目录接口
+  → ZhPlayEngine / Audio
+  → mediax 等底层 engine
+  → Service 持有会话，页面订阅状态</code></pre>
+    </div>
+<p><strong>技术亮点</strong></p>
+<ul>
+<li>多 SKU 差异收敛在 DataSource，播放内核保持稳定；</li>
+<li>Resource Service 与 Business Service 分离；</li>
+<li>Service 成为后台播放会话 owner，UI 不拥有播放器生命周期；</li>
+<li>facade/adapter 隔离厂商 option、错误码和实现替换。</li>
+</ul>
+<p><strong>取舍与风险</strong></p>
+<ul>
+<li>全局播放器方便跨页面，但 DataSource、列表、engine 三份状态容易不一致。</li>
+<li>新 Intent 切歌要取消或隔离旧请求，回调前校验当前业务 id/generation。</li>
+<li>试听转付费后应以服务端 ownership 为真值，不能只凭客户端回调放权。</li>
+<li>音频焦点、耳机拔出、Service 重建和进度恢复测试证据不足。</li>
+</ul>
+<p><strong>个人贡献条件</strong></p>
+<blockquote class="callout"><p>【需本人确认】适合认领的是新 SKU 数据映射、播放 UI/状态绑定、权益刷新、错误处理、联调和监控；不把解码器、厂商 SDK 或整个播放框架说成个人实现。</p>
+</blockquote>
+<p><strong>可被追问的源码证据</strong></p>
+<ul>
+<li><code>yyyyy-cdoe/Kmaudio/kmaudio/src/main/java/com/zhihu/android/kmaudio/player/KMPlayer.kt</code></li>
+<li><code>yyyyy-cdoe/Kmaudio/kmaudio-api/src/main/java/com/zhihu/android/kmarket/KMPlayerInterface.java</code></li>
+<li><code>yyyyy-cdoe/Audio/audio/src/main/java/com/zhihu/android/xplayer/XPlayer.kt</code></li>
+<li><code>yyyyy-cdoe/Media/player/src/main/java/com/zhihu/android/video/player2/widget/ZHPluginVideoView.java</code></li>
+<li><code>yyyyy-cdoe/mediax/mediax/src/main/java/com/zhihu/android/player/ttVideoEngine/TTVideoPlayerEngine.kt</code></li>
+</ul>
+<h3 id="4-4-app-宿主交付">4.4 App 宿主交付</h3>
+<p><strong>模块关系</strong></p>
+<ul>
+<li><code>VipAndroid</code>：VIP App 构建装配，负责组件版本、产品裁剪、VIP 变体替换、源码联调和构建检查。</li>
+<li><code>VipHome</code>：运行时启动和主导航，负责 Application delegate、Launcher、MainActivity、Tab、启动监控和异常恢复。</li>
+</ul>
+<p><strong>关键链路</strong></p>
+<ul>
+<li>构建：<code>allComponents/VIP_APP_REMOVED_COMPONENTS/dependencyReplace → 组件依赖 → sourcecode.properties 本地替换 → 依赖/so 检查</code>。</li>
+<li>启动：<code>ZhihuApplication → ZhihuApplicationDelegate → LauncherActivity.handleLauncherDisplay() → startMain() → MainActivity/setupTab()</code>。</li>
+</ul>
+<p><strong>技术亮点</strong></p>
+<ul>
+<li>Maven 制品与本地源码可切换；</li>
+<li>产品差异通过组件裁剪和实现替换表达；</li>
+<li>启动链区分隐私前、授权后和首屏后的任务；</li>
+<li>依赖白名单、组件图和 so 对齐形成交付防线。</li>
+</ul>
+<p><strong>取舍与风险</strong></p>
+<ul>
+<li>复杂 Gradle 约束提高交付一致性，也增加升级、重复类、版本倒退和多 flavor 回归成本。</li>
+<li><code>VipAndroid</code> README 有过时内容，真实规则以 Gradle 和源码替换脚本为准。</li>
+<li>启动测试主要依赖阶段监控和集成回归，自动化证据弱。</li>
+</ul>
+<p><strong>个人贡献条件</strong></p>
+<blockquote class="callout"><p>【需本人确认】只能讲本人做过的组件接入、版本升级、源码联调、构建故障、启动任务或监控；不能说“我设计了整个组件化/启动框架”。</p>
+</blockquote>
+<p><strong>可被追问的源码证据</strong></p>
+<ul>
+<li><code>yyyyy-cdoe/VipAndroid/app/build.gradle</code></li>
+<li><code>yyyyy-cdoe/VipAndroid/gradle/sourcecode.gradle</code></li>
+<li><code>yyyyy-cdoe/VipHome/app/src/main/java/com/zhihu/android/app/ZhihuApplication.java</code></li>
+<li><code>yyyyy-cdoe/VipHome/home/src/main/java/com/zhihu/android/app/ZhihuApplicationDelegate.java</code></li>
+<li><code>yyyyy-cdoe/VipHome/home/src/main/java/com/zhihu/android/app/ui/activity/LauncherActivity.java</code></li>
+</ul>
+<h3 id="4-5-native-rn-协作">4.5 Native/RN 协作</h3>
+<p><strong>模块关系</strong></p>
+<ul>
+<li><code>pikachu</code> 是多页面 RN Bundle 工作区，不是独立 RN App。</li>
+<li>PRN runtime 提供注册和宿主能力，但当前 checkout 缺 <code>prn/*</code>。</li>
+<li>页面通过 <code>pageName/initProps</code>、Deep Link、Bridge 和 Jotai 与 Native 宿主协作。</li>
+</ul>
+<p><strong>关键链路</strong></p>
+<div class="code-block">
+      <div class="code-toolbar"><span>text</span><button type="button" data-copy-code>复制</button></div>
+      <pre><code class="language-text">GenerateAIImage
+  → 创建 taskId
+  → Deep Link 打开 GenerateAIImageResult
+  → 每 2 秒轮询，最多 60 秒
+  → FINISHED / FAILED / ILLEGAL / TIMEOUT
+  → 评论写 Jotai，发布器走 Bridge，默认编辑器走 Deep Link</code></pre>
+    </div>
+<p><strong>技术亮点</strong></p>
+<ul>
+<li>输入页与长任务等待页解耦；</li>
+<li>不同消费方使用不同跨端合同；</li>
+<li>页面表动态注册，Native 只依赖稳定页面名；</li>
+<li>能把 RN 的状态和生命周期问题映射回 Android 的 Intent、ViewModel、长任务和 Bridge。</li>
+</ul>
+<p><strong>取舍与风险</strong></p>
+<ul>
+<li>cleanup 只停止后续轮询，不取消在途 HTTP。</li>
+<li>图库 <code>paging.next</code> 缺少分页并发门禁和完整错误状态。</li>
+<li>app 生命周期 atom 的清理调用被注释，可能留下场景数据。</li>
+<li>当前副本缺 <code>prn/*</code>、<code>.yarn/</code>，且 CI 跳过单测，不能声称 Bundle/测试已通过。</li>
+<li><code>.sentryclirc</code> 有疑似明文凭据风险；应轮换并迁移 Secret，面试中不复述任何值。</li>
+</ul>
+<p><strong>个人贡献条件</strong></p>
+<blockquote class="callout"><p>【需本人确认】只在本人做过 Native 入口、Bridge、页面接入、联调或故障排查时作为项目经验；否则只能作为源码阅读和跨端理解。不能认领 PRN 框架或整个 RN 工作区。</p>
+</blockquote>
+<p><strong>可被追问的源码证据</strong></p>
+<ul>
+<li><code>pikachu/pages/entry/src/pages.mjs</code></li>
+<li><code>pikachu/pages/entry/src/getRNPageLoaders.ts</code></li>
+<li><code>pikachu/pages/GenerateAIImage/src/Entry.tsx</code></li>
+<li><code>pikachu/pages/GenerateAIImageResult/src/Entry.tsx</code></li>
+<li><code>pikachu/pages/AIImageSelection/src/components/AIImageList/index.tsx</code></li>
+</ul>
+<h2 id="5-七个辅助技术点">5. 七个辅助技术点</h2>
+<ol>
+<li><strong>Feed 数据编排</strong>：<code>FeedFragment → FeedViewModel → FeedRepository → remote/local/preload/downgrade DataSource</code>。适合补充 generation、缓存与网络替换、异构 delegate 和首卡监控；【需本人确认】具体接入或优化。</li>
+<li><strong>Comment/VipComment 变体治理</strong>：两者都有根/子/锚点列表和互动，标准版另有 RN、segment、AI 预制评论和草稿。它们是同类组件的产品变体，不是两个独立个人项目；【需本人确认】本人维护的协议或迁移点。</li>
+<li><strong>VipPassport/Account 身份边界</strong>：<code>VipPassport</code> 负责登录注册、验证码、社交绑定和 Token，<code>Account</code> 负责登录后的账号真值、认证、安全和退出清理。可讲“注册成功但绑定失败”“多请求同时 401”等一致性问题；【需本人确认】本人职责。</li>
+<li><strong>Net/Netdns/ZRouter 调用侧排障</strong>：业务 Service 经过 Net/OkHttp 与 DNS，页面跳转经过 ZRouter mapper/interceptor/fallback。适合证明能从业务追到底层，但不要认领网络或路由框架作者身份。</li>
+<li><strong>Mercury Hybrid 安全</strong>：业务 Web 容器依赖 <code>mercury-core</code> 的 <code>H5Page</code>、<code>JsBridge</code>、资源策略和 WebView LRU。可讲 origin 白名单、callback 生命周期和复用 reset；风险不能说成已发生事故。</li>
+<li><strong>Picasa/Picture/Share 内容链</strong>：<code>Picasa</code> 是媒体选择、拍摄、处理和上传门面，<code>Picture</code> 更接近图片浏览/大图，<code>Share/ShareCore</code> 负责渠道分发。不要沿用“Picasa 是图片加载库”的旧分类。</li>
+<li><strong>个人样例补充</strong>：<code>meter</code> 可讲 widget、通知、缓存和隐私复盘；<code>Purrfolio</code> 可讲可测试领域算法；<code>mcp-financial-calculator</code> 可讲 schema 和数值稳定性。即使本地形态像个人项目，作者身份和个人贡献仍需提交、演示或历史记录确认。</li>
+</ol>
+<p><code>Feed → Comment → Passport</code> 可以作为“内容分发—互动—身份”的用户旅程理解，但三个仓库职责独立，当前源码不能证明它们是候选人一人负责的完整项目。</p>
+<h2 id="6-不建议当作个人项目讲的仓库或材料">6. 不建议当作个人项目讲的仓库或材料</h2>
+<table>
+<thead>
+<tr>
+<th>仓库/材料</th>
+<th>原因</th>
+<th>可以怎样使用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>moonlight-android</code></td>
+<td>Moonlight 官方上游开源客户端。</td>
+<td>讲源码学习、JNI/实时串流理解；只有真实 fork、patch 或上游 PR 才讲个人贡献。</td>
+</tr>
+<tr>
+<td><code>cuda-samples</code></td>
+<td>NVIDIA 官方 CUDA 样例。</td>
+<td>讲学习和实验，不写进个人项目经历。</td>
+</tr>
+<tr>
+<td><code>obsidian-skills</code></td>
+<td>Obsidian 社区上游 Skills 样例。</td>
+<td>作为 Agent 工作流设计参考。</td>
+</tr>
+<tr>
+<td><code>html-anything</code></td>
+<td>当前源码能证明工具机制，不能证明候选人作者身份。</td>
+<td>仅在真实参与并有提交证据时讲项目；否则作为源码阅读/安全分析案例。</td>
+</tr>
+<tr>
+<td><code>xxxxx-html</code></td>
+<td>非 Git 的离线文档资产，不是源码仓库。</td>
+<td>用于复习，结论仍回当前源码验证。</td>
+</tr>
+<tr>
+<td><code>photos</code></td>
+<td>当前只有 LICENSE，没有可讲的实现。</td>
+<td>只做库存记录。</td>
+</tr>
+<tr>
+<td><code>Dependencies</code></td>
+<td>构建期配置仓，不是 Android Runtime 业务模块。</td>
+<td>讲依赖治理背景，不包装成独立 App。</td>
+</tr>
+<tr>
+<td><code>KmReporter</code></td>
+<td>TypeScript 报表/运维服务，不是 Android SDK。</td>
+<td>若本人维护过具体脚本，可作为工程效率补充。</td>
+</tr>
+<tr>
+<td><code>km-android-tools</code>、<code>VIP-Skills</code></td>
+<td>公司团队自动化与知识资产。</td>
+<td>只讲本人有提交证据的脚本/Skill，不认领全仓。</td>
+</tr>
+<tr>
+<td><code>VipAndroid</code>、<code>VipHome</code> 等公司仓</td>
+<td>公司项目不等于个人从零项目。</td>
+<td>作为公司工程经历，严格限定本人负责的业务接入、排障和治理。</td>
+</tr>
+<tr>
+<td><code>pikachu</code></td>
+<td>当前是不完整、非 Git checkout，且底层 PRN 缺失。</td>
+<td>有真实 Native/RN 协作经历时讲调用点；不把整个 Bundle 工作区说成个人作品。</td>
+</tr>
+</tbody></table>
+<h2 id="7-本人确认表">7. 本人确认表</h2>
+<p>正式用于简历或面试前，每条保留的主线都填写：</p>
+<table>
+<thead>
+<tr>
+<th>项目主线</th>
+<th>需本人填写</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>真实需求与时间</td>
+<td>需求名称、版本、起止时间</td>
+</tr>
+<tr>
+<td>本人职责</td>
+<td>负责的页面、类、接口、联调或治理动作</td>
+</tr>
+<tr>
+<td>团队已有能力</td>
+<td>使用了哪些框架、基础库、服务或他人模块</td>
+</tr>
+<tr>
+<td>难点与取舍</td>
+<td>真实遇到的问题、备选方案、选择理由</td>
+</tr>
+<tr>
+<td>验证</td>
+<td>测试、日志、监控、灰度、回归或同事确认</td>
+</tr>
+<tr>
+<td>结果</td>
+<td>指标、统计口径、时间范围、数据来源；无数据则写验证范围</td>
+</tr>
+<tr>
+<td>证据</td>
+<td>commit、MR、需求单、设计稿、故障记录或可演示版本</td>
+</tr>
+</tbody></table>
+<p>未填写完整时，保留“如果该调用点确实由我负责（需本人确认）”的条件句，不把模板背成既成事实。</p>
+
+      </article>
+      
+    <nav class="page-pager" aria-label="文档翻页">
+      <a href="index.html"><small>← 上一篇</small><span>总览与导航</span></a>
+      <a class="next" href="70-resume-and-star-stories.html"><small>下一篇 →</small><span>简历与 STAR</span></a>
+    </nav>
+      <footer class="article-footer">
+        本站由 Markdown 源文档离线生成。涉及个人职责、动作和结果的内容，请只使用本人可核验的部分。
+      </footer>
+    </main>
+    <aside class="page-toc" aria-label="本页目录">
+      <div class="toc-heading">本页目录</div>
+      <a class="toc-link level-2" href="#1-推荐主讲策略">1. 推荐主讲策略</a>
+<a class="toc-link level-2" href="#2-模块关系总图">2. 模块关系总图</a>
+<a class="toc-link level-2" href="#3-可直接口述的三个时长版本">3. 可直接口述的三个时长版本</a>
+<a class="toc-link level-3" href="#30-秒版本">30 秒版本</a>
+<a class="toc-link level-3" href="#2-分钟版本">2 分钟版本</a>
+<a class="toc-link level-3" href="#5-分钟版本">5 分钟版本</a>
+<a class="toc-link level-2" href="#4-五条主讲线">4. 五条主讲线</a>
+<a class="toc-link level-3" href="#4-1-知识首页与内容发现">4.1 知识首页与内容发现</a>
+<a class="toc-link level-3" href="#4-2-阅读消费-手稿与-epub">4.2 阅读消费：手稿与 EPUB</a>
+<a class="toc-link level-3" href="#4-3-知识音频播放">4.3 知识音频播放</a>
+<a class="toc-link level-3" href="#4-4-app-宿主交付">4.4 App 宿主交付</a>
+<a class="toc-link level-3" href="#4-5-native-rn-协作">4.5 Native/RN 协作</a>
+<a class="toc-link level-2" href="#5-七个辅助技术点">5. 七个辅助技术点</a>
+<a class="toc-link level-2" href="#6-不建议当作个人项目讲的仓库或材料">6. 不建议当作个人项目讲的仓库或材料</a>
+<a class="toc-link level-2" href="#7-本人确认表">7. 本人确认表</a>
+      <a class="back-to-top" href="#">↑ 返回顶部</a>
+    </aside>
+  </div>
+  <script src="assets/search-data.js"></script>
+  <script src="assets/docs.js"></script>
+</body>
+</html>

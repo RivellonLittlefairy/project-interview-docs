@@ -1,0 +1,696 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="70 道面试题：基于当前工作区源码证据整理的项目面试资料">
+  <title>Android 项目源码面试题库｜项目面试资料</title>
+  <link rel="stylesheet" href="assets/docs.css">
+  <script>
+    try {
+      const savedTheme = localStorage.getItem("interview-docs-theme");
+      const preferredDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      document.documentElement.dataset.theme = savedTheme || (preferredDark ? "dark" : "light");
+    } catch {}
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <header class="topbar">
+    <button class="icon-button menu-button" type="button" data-menu-toggle aria-label="打开文档导航" aria-expanded="false">☰</button>
+    <a class="brand" href="index.html"><span class="brand-mark">⌁</span><span>项目面试资料库</span></a>
+    <div class="search-shell">
+      <label class="sr-only" for="global-search">搜索所有文档</label>
+      <input id="global-search" type="search" data-search-input placeholder="搜索仓库、技术或面试题…" autocomplete="off">
+      <span class="search-shortcut">Ctrl K</span>
+      <div class="search-results" data-search-results hidden></div>
+    </div>
+    <button class="icon-button" type="button" data-theme-toggle aria-label="切换深浅主题">◐</button>
+  </header>
+  <div class="drawer-backdrop" data-drawer-backdrop hidden></div>
+  <div class="docs-layout">
+    <nav class="sidebar" data-sidebar aria-label="全站文档导航">
+      <div class="sidebar-heading">文档导航</div>
+      
+        <section class="nav-group">
+          <h2 class="nav-group-title">逐仓文档</h2>
+          <a class="nav-link" href="repositories.html">66 个仓库独立分析</a>
+        </section>
+        <section class="nav-group">
+          <h2 class="nav-group-title">开始使用</h2>
+          <a class="nav-link" href="index.html">总览与导航</a>
+<a class="nav-link" href="50-interview-project-summary.html">五条主讲项目线</a>
+<a class="nav-link" href="70-resume-and-star-stories.html">简历与 STAR</a>
+<a class="nav-link active" href="60-interview-question-bank.html" aria-current="page">70 道面试题</a>
+        </section>
+
+        <section class="nav-group">
+          <h2 class="nav-group-title">仓库分析</h2>
+          <a class="nav-link" href="00-repository-inventory.html">全量仓库盘点</a>
+<a class="nav-link" href="10-android-business-repositories.html">Android 业务仓库</a>
+<a class="nav-link" href="20-android-infrastructure-media.html">基础设施与媒体</a>
+<a class="nav-link" href="30-cross-platform-rn-web.html">RN 与 Web</a>
+<a class="nav-link" href="31-tools-samples-and-assets.html">工具、样例与资产</a>
+        </section>
+
+        <section class="nav-group">
+          <h2 class="nav-group-title">质量复核</h2>
+          <a class="nav-link" href="40-android-docs-evidence-review.html">Android 证据复核</a>
+<a class="nav-link" href="41-full-workspace-coverage-review.html">全工作区覆盖复核</a>
+        </section>
+
+        <section class="nav-group">
+          <h2 class="nav-group-title">辅助材料</h2>
+          <a class="nav-link" href="ANALYSIS-TEMPLATE.html">仓库分析模板</a>
+<a class="nav-link" href="2026-07-24-all-repositories-analysis-plan.html">原始执行计划</a>
+        </section>
+
+        <section class="nav-group">
+          <h2 class="nav-group-title">Android 专题</h2>
+          <a class="nav-link" href="android-storage-guide.html">Android 存储方案</a>
+        </section>
+      <p class="sidebar-note">离线资料 · 证据快照 2026-07-24</p>
+    </nav>
+    <main class="article-shell" id="main-content">
+      <div class="breadcrumbs"><a href="index.html">首页</a><span>/</span><span>开始使用</span><span>/</span><span>70 道面试题</span></div>
+      
+      <article class="markdown-body">
+        <h1 id="android-项目源码面试题库">Android 项目源码面试题库</h1>
+<blockquote class="callout"><p>检查日期：2026-07-24。路径均相对 <code>C:\Users\msf\Desktop\code</code>。本题库根据 <code>00</code>、<code>10</code>、<code>20</code>、<code>30</code>、<code>31</code>、<code>40</code> 的已复核结论整理；当前没有 <code>41</code> 文档。</p>
+<p>**使用边界：**源码能证明模块、调用链和风险，不能证明候选人亲自负责过。标有“主讲”的题，只有在本人确实参与过相应调用点时才使用“我负责”；否则说“这是项目已有能力，我在业务侧使用、接入或排查过”。任何成功率、耗时、崩溃率、业务收益都必须由本人补充“指标、统计口径、时间范围、数据来源”，本题库不代填、不杜撰。</p>
+</blockquote>
+<h2 id="练习方法">练习方法</h2>
+<ul>
+<li>一道题先用 40—90 秒回答“场景—职责边界—链路—取舍—验证”，面试官再进入源码或压力追问。</li>
+<li><code>【主讲】</code> 表示最接近三年 Android 业务开发者可主讲的调用点，不表示本人已经做过。</li>
+<li>证据路径用于面试前回看源码，不建议在口头回答中机械背完整路径；能说出模块、类和关键函数即可。</li>
+<li>个人经历统一使用：<code>如果这个调用点确实由我负责，我的动作是【本人补充】，验证是【本人补充】；结果是【指标 + 口径 + 时间范围 + 数据来源】。</code></li>
+</ul>
+<hr>
+<h2 id="一-组件化与构建">一、组件化与构建</h2>
+<h3 id="q01-基础-主讲-这个项目的组件化是怎样落地的">Q01【基础｜主讲】这个项目的组件化是怎样落地的？</h3>
+<p><strong>标准可说答案：</strong>“它不是单仓巨石，而是主壳加业务组件。业务仓通常拆成实现模块、<code>-api</code> 契约和 demo，发布为 Maven 制品；<code>VipAndroid</code> 再通过 <code>allComponents</code>、版本表和组件元信息完成装配。业务侧只依赖稳定 API，本地联调时可把制品替换为相邻源码。我若讲个人贡献，只会讲自己真实接入、升级或排障过的组件。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/VipAndroid/app/build.gradle</code>；<code>yyyyy-cdoe/VipAndroid/settings.gradle</code>；<code>yyyyy-cdoe/VipAndroid/gradle/sourcecode.gradle</code></p>
+<p>**常见踩坑：**把“使用组件体系”说成“设计了整套组件框架”；只讲模块拆分，不讲发布、装配和运行时服务契约。</p>
+<h3 id="q02-源码追问-主讲-vip-版本如何复用主-app-又保持产品差异">Q02【源码追问｜主讲】VIP 版本如何复用主 App，又保持产品差异？</h3>
+<p><strong>标准可说答案：</strong>“构建脚本用 <code>VIP_APP_REMOVED_COMPONENTS</code> 裁掉不需要的组件，再通过 <code>dependencyReplace</code> 把评论、账号等标准实现替换为 VIP 变体。它解决的是产品裁剪和实现替换，而不只是 Gradle 版本冲突。变更后要验证依赖图、关键路由、多 flavor 和 so 完整性。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/VipAndroid/app/build.gradle</code>；<code>yyyyy-cdoe/VipAndroid/app/gradle/check_deps.gradle</code></p>
+<p>**常见踩坑：**只验证能编译，不检查替换后是否同时打入两份实现；把产品变体复制成永久分叉而没有契约测试。</p>
+<h3 id="q03-源码追问-主讲-sourcecode-properties-源码替换解决什么问题">Q03【源码追问｜主讲】<code>sourcecode.properties</code> 源码替换解决什么问题？</h3>
+<p><strong>标准可说答案：</strong>“主工程默认消费 Maven 制品，联调时 <code>sourcecode.gradle</code> 读取 <code>sourcecode.properties</code>，把指定坐标替换为相邻源码工程，并处理 API/实现模块关系。这样业务仓可以独立发布，也能在主壳里断点调试。它要求源码版本与主工程版本表一致，否则容易出现接口和实现错配。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/VipAndroid/gradle/sourcecode.gradle</code>；<code>yyyyy-cdoe/VipAndroid/sourcecode.properties</code></p>
+<p>**常见踩坑：**同时保留 Maven 实现和源码实现导致重复类；只替换实现模块却漏掉 <code>-api</code>；联调完成后把本机路径提交进仓库。</p>
+<h3 id="q04-基础-为什么实现模块与-api-模块要分开">Q04【基础】为什么实现模块与 <code>-api</code> 模块要分开？</h3>
+<p><strong>标准可说答案：</strong>“API 模块放稳定契约，调用方无需感知具体实现和大量传递依赖，能降低编译耦合并允许产品变体替换。代价是接口演进要更谨慎，需要兼容策略、默认实现或版本化，不能为了分层制造大量没有边界价值的接口。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/Kmaudio/kmaudio-api/src/main/java/com/zhihu/android/kmarket/KMPlayerInterface.java</code>；<code>yyyyy-cdoe/Kmaudio/kmaudio/src/main/java/com/zhihu/android/kmaudio/player/KMPlayerInterfaceImpl.kt</code></p>
+<p>**常见踩坑：**API 模块反向依赖实现；把业务模型全部暴露出去；只说“解耦”却说不出替换和编译隔离的实际收益。</p>
+<h3 id="q05-压力追问-升级-agp-或核心组件时-你如何控制风险">Q05【压力追问】升级 AGP 或核心组件时，你如何控制风险？</h3>
+<p><strong>标准可说答案：</strong>“我会先固定可构建基线，盘点自定义插件、Transform、R8、Jetifier、Kotlin 和 JDK 约束；再拆成 Gradle/JDK、AGP、Kotlin和业务插件几个阶段。每阶段跑关键 flavor、依赖白名单、重复类、资源压缩、so/ABI 和核心路由 smoke test，不把所有变量一次升级。真实收益需由本人补充。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/ZhihuLite/build.gradle</code>；<code>yyyyy-cdoe/ZhihuLite/app/build.gradle</code>；<code>yyyyy-cdoe/ZhihuLite/features.json</code></p>
+<p>**常见踩坑：**一次跨多个大版本后无法归因；只验证 debug；关闭 lint/R8 问题来“通过升级”。</p>
+<hr>
+<h2 id="二-启动">二、启动</h2>
+<h3 id="q06-基础-主讲-请讲一下冷启动主链路">Q06【基础｜主讲】请讲一下冷启动主链路。</h3>
+<p><strong>标准可说答案：</strong>“<code>ZhihuApplication</code> 先在 <code>attachBaseContext</code> 建最小底座和安全恢复能力，再由 delegate 在 <code>onCreate</code> 分层初始化。入口 Activity 处理隐私、新用户和开屏策略，随后 <code>startMain()</code> 进入主页面。启动任务按首屏必要性、进程、线程和隐私时序拆分，并用阶段监控定位，而不是把所有 SDK 堆到 Application。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/VipHome/app/src/main/java/com/zhihu/android/app/ZhihuApplication.java</code>；<code>yyyyy-cdoe/VipHome/home/src/main/java/com/zhihu/android/app/ZhihuApplicationDelegate.java</code>；<code>yyyyy-cdoe/VipHome/home/src/main/java/com/zhihu/android/app/ui/activity/LauncherActivity.java</code></p>
+<p>**常见踩坑：**把“全部异步”当优化；忽略隐私授权前后边界；不区分冷启动、热启动和深链启动。</p>
+<h3 id="q07-源码追问-主讲-启动-dag-比在-application-里并行初始化好在哪里">Q07【源码追问｜主讲】启动 DAG 比在 Application 里并行初始化好在哪里？</h3>
+<p><strong>标准可说答案：</strong>“DAG 能显式表达 <code>dependsOn</code>、<code>finalizedBy</code>、线程、延迟和调度器，既保留并行度，又避免依赖乱序。它还能把首屏关键任务与首屏后任务分开，并对节点做阶段耗时。异步本身不能解决错误顺序，只有明确依赖和完成条件才行。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/ZhihuLite/app/launch_config/TaskManager.json</code>；<code>yyyyy-cdoe/VipAndroid/app/launch_config/TaskManager.json</code></p>
+<p>**常见踩坑：**任务声明异步但主线程等待 Future；依赖环；任务结束信号早于真实初始化完成；子进程重复执行主进程任务。</p>
+<h3 id="q08-源码追问-主讲-launcher-到-mainactivity-为什么容易出现竞态">Q08【源码追问｜主讲】Launcher 到 MainActivity 为什么容易出现竞态？</h3>
+<p><strong>标准可说答案：</strong>“Launcher 同时处理广告、动画、新用户、隐私和外部深链，不同回调都可能触发导航。如果没有一次性门禁和明确状态机，可能重复进入 Main，或 Main 覆盖本应打开的目标页。我会统一导航出口，让启动状态和目标 Intent 都带任务身份，并覆盖旋转、回后台和重复回调。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/VipHome/home/src/main/java/com/zhihu/android/app/ui/activity/LauncherActivity.java</code></p>
+<p>**常见踩坑：**在多个动画/网络回调直接 <code>startActivity</code>；用固定延迟掩盖竞态；没有保存消费过的深链。</p>
+<h3 id="q09-基础-为什么不能把所有-sdk-都放在-application-oncreate">Q09【基础】为什么不能把所有 SDK 都放在 <code>Application.onCreate()</code>？</h3>
+<p><strong>标准可说答案：</strong>“它们会争抢主线程、IO、锁和线程池，拖慢首帧；部分 SDK 还必须等隐私同意。应按首屏必需、授权后、空闲期和业务触发分层，并按进程去重。延后初始化也要评估首次使用抖动，不能只是把成本搬到用户点击时。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/VipHome/app/src/main/java/com/zhihu/android/app/ZhihuApplication.java</code>；<code>yyyyy-cdoe/FutureveGlobal/global/src/main/java/com/zhihu/android/app/util/netplugable/GlobalRequestDecorator.java</code></p>
+<p><strong>常见踩坑：</strong>“都放子线程”但仍发生锁竞争；隐私前读取设备标识；延迟任务没有取消和幂等。</p>
+<h3 id="q10-压力追问-线上启动变慢-20-你第一小时怎么排查">Q10【压力追问】线上启动变慢 20%，你第一小时怎么排查？</h3>
+<p><strong>标准可说答案：</strong>“先确认指标口径、版本、机型和冷/热启动分布，再按阶段监控定位 Launcher、Application、任务 DAG 或首屏渲染。之后用 trace 区分主线程 CPU、IO、锁等待、Binder 和 GC，结合版本 diff 与开关做单变量验证。这里的‘20%’若来自本人案例，必须补数据源；没有数据就只讲流程。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/VipHome/home/src/main/java/com/zhihu/android/app/ui/activity/LauncherActivity.java</code>；<code>yyyyy-cdoe/ZhihuLite/app/launch_config/TaskManager.json</code></p>
+<p>**常见踩坑：**一上来删除初始化；只看平均值；拿开发机热启动结论替代线上冷启动分位数。</p>
+<hr>
+<h2 id="三-mvi-与-mvvm">三、MVI 与 MVVM</h2>
+<h3 id="q11-基础-主讲-这个项目的-mvi-和你以前使用的-mvvm-有什么差别">Q11【基础｜主讲】这个项目的 MVI 和你以前使用的 MVVM 有什么差别？</h3>
+<p><strong>标准可说答案：</strong>“这里用 Mavericks 的不可变 State 和 <code>setState</code> 做单向渲染，页面状态比传统多个 LiveData 更集中；但 Fragment 仍直接调用 <code>refresh()</code>、<code>deleteItem()</code>，没有统一 Intent/Reducer，Paging 的 LoadState 也留在 View 层，所以我会准确称为轻量 MVI。MVVM 同样能做单向数据流，关键差别是状态组织和写入口是否统一，而不是类名。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/km_home_base/km_home_base/src/main/java/com/zhihu/android/feature/km_home_base/discovery/HomePinTabViewModel.kt</code>；<code>yyyyy-cdoe/km_home_base/km_home_base/src/main/java/com/zhihu/android/feature/km_home_base/discovery/HomePinTabFragment.kt</code></p>
+<p>**常见踩坑：**说 MVI 天然无副作用；说 MVVM 一定是多个 LiveData；把框架作者能力归到业务调用者。</p>
+<h3 id="q12-源码追问-主讲-homepintab-的状态如何从网络流到-ui">Q12【源码追问｜主讲】<code>HomePinTab</code> 的状态如何从网络流到 UI？</h3>
+<p><strong>标准可说答案：</strong>“ViewModel 用 <code>Pager</code> 创建 <code>ResponsePagingSource</code>，收集 <code>pager.flow</code>，经 mediator 后用 <code>setOnEach { copy(data = it) }</code> 写入 <code>PinTabState</code>；Fragment 通过 <code>collectFrom</code> 把 <code>PagingData</code> 提交给 <code>SuperAdapter</code>。刷新由 Fragment 调 ViewModel，真正通过 <code>pager.invalidate()</code> 切换分页代际。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/km_home_base/km_home_base/src/main/java/com/zhihu/android/feature/km_home_base/discovery/HomePinTabViewModel.kt</code>；<code>yyyyy-cdoe/DevKit/devkit/src/main/java/com/zhihu/android/devkit/paging/ResponsePagingSource.kt</code></p>
+<p>**常见踩坑：**把 <code>PagingData</code> 当普通 List 拷贝；反复 new Pager；在 Fragment 同时维护另一份业务列表。</p>
+<h3 id="q13-源码追问-主讲-一次性事件为什么不建议放进持久-state">Q13【源码追问｜主讲】一次性事件为什么不建议放进持久 State？</h3>
+<p><strong>标准可说答案：</strong>“State 适合可重放的页面真值；Toast、导航、礼物动画这类事件被重放可能在旋转或重建后重复执行。它们应使用带消费语义的 event/channel，并让真正的业务结果仍回到 State。需要注意 Channel 也可能丢事件，所以要按‘状态还是通知’选择，而不是一律套模板。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/VipManuscript/vip_manuscript/src/main/java/com/zhihu/android/vip/manuscript/manuscript/catalog/ManuscriptBillboardViewModel.kt</code></p>
+<p>**常见踩坑：**Event 包装器既不支持多订阅又难测试；把支付成功这种业务真值只做成 Toast 事件。</p>
+<h3 id="q14-基础-主讲-fragment-和-viewmodel-的职责边界怎么划">Q14【基础｜主讲】Fragment 和 ViewModel 的职责边界怎么划？</h3>
+<p><strong>标准可说答案：</strong>“Fragment 负责 View、adapter、生命周期绑定和把用户操作转成命令；ViewModel 负责业务状态、请求编排和跨重建保存。Paging 的 adapter LoadState 属于控件加载语义，可以留在 View；业务是否有下一页、权限或空态应在业务状态中表达。边界看状态所有权，不是简单规定‘Fragment 不能写逻辑’。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/km_home_base/km_home_base/src/main/java/com/zhihu/android/feature/km_home_base/discovery/HomePinTabFragment.kt</code>；<code>yyyyy-cdoe/km_home_base/km_home_base/src/main/java/com/zhihu/android/feature/km_home_base/discovery/HomePinTabViewModel.kt</code></p>
+<p>**常见踩坑：**ViewModel 持有 Activity/View；Fragment 自己发请求并维护状态；把所有 UI 控件状态强行塞进业务 State。</p>
+<h3 id="q15-压力追问-页面同时有-stateflow-livedata-rx-和-adapter-loadstate-怎么治理">Q15【压力追问】页面同时有 StateFlow、LiveData、Rx 和 adapter LoadState，怎么治理？</h3>
+<p><strong>标准可说答案：</strong>“先为每类状态指定唯一 owner 和写入口，再在边界做一次转换，不让同一事实跨四套容器双向同步。新链路优先协程/State，旧 Rx 用生命周期明确的 adapter 收口；LoadState 只表达 Paging 加载。迁移要按页面或用例渐进进行，并用状态图和测试保护，不能一次重写全仓。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/DevKit/devkit/src/main/java/com/zhihu/android/devkit/mvx/MvxViewModel.kt</code>；<code>yyyyy-cdoe/km_home_base/km_home_base/src/main/java/com/zhihu/android/feature/km_home_base/discovery/HomePinTabFragment.kt</code></p>
+<p>**常见踩坑：**双向桥接形成循环；重复订阅；把取消当错误；为“统一”而大范围重构无关业务。</p>
+<hr>
+<h2 id="四-paging3">四、Paging3</h2>
+<h3 id="q16-基础-主讲-paging3-的刷新链路是什么">Q16【基础｜主讲】Paging3 的刷新链路是什么？</h3>
+<p><strong>标准可说答案：</strong>“页面调用 <code>viewModel.refresh()</code>，ViewModel 执行 <code>pager.invalidate()</code>，当前 <code>PagingSource</code> 失效，factory 创建新 source，原有 Flow 继续产出新 generation。它不是清空 adapter 后手动再请求第一页。UI 还要区分 refresh、append、prepend 的 LoadState，才能正确展示全屏错误和尾部重试。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/km_home_base/km_home_base/src/main/java/com/zhihu/android/feature/km_home_base/discovery/HomePinTabViewModel.kt</code>；<code>yyyyy-cdoe/DevKit/devkit/src/main/java/com/zhihu/android/devkit/paging/Pager.kt</code></p>
+<p>**常见踩坑：**刷新时创建多个并行 Pager；旧请求结果回写新页面；把 append 失败展示成全屏空态。</p>
+<h3 id="q17-源码追问-主讲-responsepagingsource-是怎样适配业务接口的">Q17【源码追问｜主讲】<code>ResponsePagingSource</code> 是怎样适配业务接口的？</h3>
+<p><strong>标准可说答案：</strong>“它根据 Refresh、Append、Prepend 分发到 <code>onRefresh</code>、<code>onLoadMore</code>、<code>onLoadBefore</code>，业务实现再用 <code>resolveValue</code>、<code>resolveNextKey</code>、<code>resolvePreKey</code> 组装 Page。业务接入者重点负责接口字段到 key/items 的映射、空页和首尾判断，不需要声称自己实现了 Paging3。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/DevKit/devkit/src/main/java/com/zhihu/android/devkit/paging/ResponsePagingSource.kt</code>；<code>yyyyy-cdoe/km_home_base/km_home_base/src/main/java/com/zhihu/android/feature/km_home_base/discovery/HomePinTabViewModel.kt</code></p>
+<p>**常见踩坑：**空列表仍返回同一个 nextKey 导致死循环；吞掉 <code>CancellationException</code>；next/pre key 与方向写反。</p>
+<h3 id="q18-源码追问-主讲-点赞和删除为什么用-pagermediator-不直接刷新整页">Q18【源码追问｜主讲】点赞和删除为什么用 <code>PagerMediator</code>，不直接刷新整页？</h3>
+<p><strong>标准可说答案：</strong>“mediator 在当前 <code>PagingData</code> 上用 <code>filter/map</code> 做删除或替换，能立即反馈并保留滚动位置；服务端请求失败时再按业务语义回滚或刷新。它适合局部、可定位的变更，不适合结构大改或跨页排序重算。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/DevKit/devkit/src/main/java/com/zhihu/android/devkit/paging/PagerMediator.kt</code>；<code>yyyyy-cdoe/km_home_base/km_home_base/src/main/java/com/zhihu/android/feature/km_home_base/discovery/HomePinTabViewModel.kt</code></p>
+<p>**常见踩坑：**用 adapter position 代替稳定业务 id；新 generation 仍应用旧回调；只乐观更新不做失败策略。</p>
+<h3 id="q19-源码追问-主讲-从任意章节进入的双向分页最难在哪里">Q19【源码追问｜主讲】从任意章节进入的双向分页最难在哪里？</h3>
+<p><strong>标准可说答案：</strong>“需要围绕 initial key 同时计算 prepend 和 append，正确处理首尾 null、两个方向返回重复章节以及结果排序；目标章节还要稳定定位到可见位置。去重应基于稳定 section id，刷新要生成新代际，不能沿用旧方向的 key。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/VipManuscript/vip_manuscript/src/main/java/com/zhihu/android/vip/manuscript/manuscript/catalog/ManuscriptBillboardViewModel.kt</code>；<code>yyyyy-cdoe/VipManuscript/vip_manuscript/src/main/java/com/zhihu/android/vip/manuscript/manuscript/catalog/native_catalog/recommend/actor/NativeManuscriptAuthorFragment.kt</code></p>
+<p>**常见踩坑：**只测从第一页进入；prepend 后顺序反转；目标章节重复；并发两向返回导致列表抖动。</p>
+<h3 id="q20-压力追问-刷新后偶现旧数据覆盖新数据-你怎么定位">Q20【压力追问】刷新后偶现旧数据覆盖新数据，你怎么定位？</h3>
+<p><strong>标准可说答案：</strong>“先给 generation、query、PagingSource 实例和 requestId 打关联日志，确认旧 source 是否真正失效；再检查业务请求是否可取消、回调是否校验 generation，以及 mediator 是否缓存旧数据。测试用可控延迟让旧请求后返回，验证结果被丢弃。不能只在 UI 层加时间戳排序掩盖问题。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/DevKit/devkit/src/main/java/com/zhihu/android/devkit/paging/ResponsePagingSource.kt</code>；<code>yyyyy-cdoe/DevKit/devkit/src/main/java/com/zhihu/android/devkit/paging/PagerMediator.kt</code></p>
+<p>**常见踩坑：**捕获所有 <code>Throwable</code> 后把取消上报成失败；日志不带 generation；用全局变量标记页面存活。</p>
+<hr>
+<h2 id="五-网络与-dns">五、网络与 DNS</h2>
+<h3 id="q21-基础-主讲-项目网络层为什么不让业务直接-new-retrofit">Q21【基础｜主讲】项目网络层为什么不让业务直接 new Retrofit？</h3>
+<p><strong>标准可说答案：</strong>“业务通过 <code>Net.createService()</code> 依赖稳定门面，<code>NetProviderImpl</code> 统一创建并缓存 service；<code>OkHttpFamily</code> 再按 ClientType 组合 cookie、签名、DNS、拦截器、metrics 和 dispatcher。这样安全、监控和协议能力可集中治理，业务只维护 Service 契约。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/Net/net-api/src/main/java/com/zhihu/android/api/net/Net.java</code>；<code>yyyyy-cdoe/Net/net/src/main/java/com/zhihu/android/net/common/NetProviderImpl.java</code>；<code>yyyyy-cdoe/Net/net/src/main/java/com/zhihu/android/net/common/OkHttpFamilyProviderImpl.java</code></p>
+<p>**常见踩坑：**只回答“封装 Retrofit”；在业务模块私加不同超时和证书策略；service cache 隐含持有不该是进程级的对象。</p>
+<h3 id="q22-源码追问-一个请求慢-你如何拆分定位">Q22【源码追问】一个请求慢，你如何拆分定位？</h3>
+<p><strong>标准可说答案：</strong>“先用 OkHttp EventListener 拆 DNS、connect、TLS、request body、TTFB 和 response body；再看 dispatcher 排队、线程池饱和和重试；最后对照 interceptor 耗时与服务端 requestId。只有先分段，才知道该查 DNS、客户端排队、网络传输还是服务端。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/Net/net/src/main/java/com/zhihu/android/net/common/OkHttpFamilyProviderImpl.java</code>；<code>yyyyy-cdoe/Net/net/src/main/java/com/zhihu/android/net/monitor/DispatcherMonitor.java</code></p>
+<p>**常见踩坑：**把总耗时都归因于接口；在日志中打印 Token/完整请求体；忽略连接复用与代理/VPN。</p>
+<h3 id="q23-基础-httpdns-为什么仍需要系统-dns">Q23【基础】HTTPDNS 为什么仍需要系统 DNS？</h3>
+<p><strong>标准可说答案：</strong>“HTTPDNS/DoH 能改善劫持和解析质量，但系统 DNS 仍是兜底和网络本地性来源。实际策略要融合 TTL、缓存、网络切换、IPv4/IPv6、备用 IP 和失败回退，不能把一个解析源当永久真值。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/Netdns/netdns/src/main/java/com/zhihu/android/net/dns/DnsFactory.java</code>；<code>yyyyy-cdoe/Netdns/netdns/src/main/java/com/zhihu/android/net/dns/zhihu/ZhihuDns.java</code></p>
+<p>**常见踩坑：**缓存不随网络切换失效；绕过证书域名校验；主动探速放大弱网流量。</p>
+<h3 id="q24-源码追问-主讲-如何避免同一-host-同时触发大量-dns-请求">Q24【源码追问｜主讲】如何避免同一 host 同时触发大量 DNS 请求？</h3>
+<p><strong>标准可说答案：</strong>“解析层使用 resolving map 做 single-flight，让并发调用共享同一任务和结果；缓存层按 TTL 返回候选地址，网络变化时失效。任务还要有超时、取消和失败回退，不能因为合并请求就让所有调用无限等待。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/Netdns/netdns/src/main/java/com/zhihu/android/net/dns/zhihu/ZhihuDns.java</code>；<code>yyyyy-cdoe/Netdns/netdns/src/main/java/com/zhihu/android/net/dns/cache/DnsCacheHelper.java</code></p>
+<p>**常见踩坑：**single-flight key 不包含网络身份；失败结果永久缓存；线程池拒绝策略静默丢任务。</p>
+<h3 id="q25-压力追问-线上部分地区首个请求失败-重试成功-你怎么排">Q25【压力追问】线上部分地区首个请求失败、重试成功，你怎么排？</h3>
+<p><strong>标准可说答案：</strong>“按地区、运营商、网络类型和 IP 协议聚合，关联 DNS 候选、选中 IP、connect/TLS 和重试结果；检查 TTL、备用 IP、IPv6 回退、网络切换与证书 SNI。用受控开关比较系统 DNS/HTTPDNS 路径，不能直接扩大重试次数，因为它会放大延迟和流量。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/Netdns/netdns/src/main/java/com/zhihu/android/net/preferred/IPPreferred.kt</code>；<code>yyyyy-cdoe/Netdns/netdns/src/main/java/com/zhihu/android/net/dns/zhihu/ZhihuDns.java</code></p>
+<p>**常见踩坑：**只看 HTTP 状态码；没有记录解析来源；用固定 IP 绕过域名安全。</p>
+<hr>
+<h2 id="六-路由">六、路由</h2>
+<h3 id="q26-基础-主讲-zrouter-的核心链路是什么">Q26【基础｜主讲】ZRouter 的核心链路是什么？</h3>
+<p><strong>标准可说答案：</strong>“目标页面通过注解生成 mapper，运行时注册到 <code>RoutesAccessor</code>；解析 URL 时匹配 scheme、host、path、query、priority 和 module，再经过登录、灰度等 interceptor，最后由 Activity/Fragment launcher 启动，失败进入 fallback。编译期映射负责静态关系，interceptor 负责动态策略。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/ZRouter/zrouter/src/main/java/com/zhihu/android/app/router/ZRouter.java</code>；<code>yyyyy-cdoe/ZRouter/zrouter/src/main/java/com/zhihu/android/app/router/destination/MapperCreator.java</code>；<code>yyyyy-cdoe/ZRouter/zrouter/src/main/java/com/zhihu/android/app/router/FragmentLauncher.java</code></p>
+<p>**常见踩坑：**把注解和拦截器说成同一职责；运行时全量扫描；fallback 无限重定向。</p>
+<h3 id="q27-源码追问-为什么路由拦截器顺序重要">Q27【源码追问】为什么路由拦截器顺序重要？</h3>
+<p><strong>标准可说答案：</strong>“登录、隐私、实验、兼容重定向可能同时命中，顺序决定最终目标和副作用。应给拦截器明确优先级、终止条件和最大重定向深度，并记录原始 URL、命中规则和最终目标，但要脱敏 query。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/ZRouter/zrouter/src/main/java/com/zhihu/android/app/router/RoutesResolver.java</code>；<code>yyyyy-cdoe/ZRouter/zrouter/src/main/java/com/zhihu/android/app/router/RouterDispatcher.java</code></p>
+<p>**常见踩坑：**多个拦截器重复拉登录；重定向环；拦截器做耗时网络请求阻塞启动。</p>
+<h3 id="q28-基础-主讲-跨组件路由参数如何保证兼容">Q28【基础｜主讲】跨组件路由参数如何保证兼容？</h3>
+<p><strong>标准可说答案：</strong>“把 scheme、path、必选/可选参数、默认值和版本当正式契约；接收端做来源、类型、长度和枚举校验，新增字段保持向后兼容。复杂对象不要无限塞 URL，可传稳定业务 id 再取数据。发布前做旧宿主/新组件和新宿主/旧组件双向测试。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/ZRouter/zrouter/src/test/java/com/zhihu/android/app/router/RouterUrlTest.java</code>；<code>yyyyy-cdoe/Account/app/src/test/java/com/zhihu/android/app/router/RouterUrlTest.java</code></p>
+<p>**常见踩坑：**依赖 Kotlin 非空强转；把 Token 放 URL；参数改名不保留旧键；URL 超长。</p>
+<h3 id="q29-源码追问-外部-http-链接为什么不能直接映射任意内部页面">Q29【源码追问】外部 HTTP 链接为什么不能直接映射任意内部页面？</h3>
+<p><strong>标准可说答案：</strong>“外部 URL 是不可信输入，要限制 host、scheme、目标页面和参数；产品适配层只能在受控 host 集合间兼容，不能把任意网页链接变成内部能力调用。敏感页面还应二次鉴权，不能只靠路由已匹配。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/ZhihuLite/app/src/main/java/com/zhihu/android/app/LiteRouterConfig.java</code>；<code>yyyyy-cdoe/FutureveGlobal/global/src/main/java/com/zhihu/android/app/ui/activity/RouterPortalActivity.java</code></p>
+<p>**常见踩坑：**只校验 path 不校验 host；开放 <code>javascript:</code>/<code>file:</code>；路由成功即视为有业务权限。</p>
+<h3 id="q30-压力追问-新版上线后-1-深链打不开-你怎么定位">Q30【压力追问】新版上线后 1% 深链打不开，你怎么定位？</h3>
+<p><strong>标准可说答案：</strong>“先按原始入口、宿主版本、路由规则版本和最终错误分类；依次核对 mapper 是否生成/注册、组件是否装配、interceptor 命中、参数解析和目标启动。准备最小 URL 做新旧版本矩阵，用 fallback 保障核心入口，并通过开关回滚规则。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/ZRouter/zrouter/src/main/java/com/zhihu/router/RoutesAccessor.java</code>；<code>yyyyy-cdoe/ZRouter/zrouter/src/main/java/com/zhihu/android/app/router/RoutesResolver.java</code></p>
+<p>**常见踩坑：**只看目标 Fragment；日志没有原始入口和规则版本；fallback 吞错导致表面成功。</p>
+<hr>
+<h2 id="七-hybrid-webview">七、Hybrid / WebView</h2>
+<h3 id="q31-基础-主讲-项目-hybrid-分层是怎样的">Q31【基础｜主讲】项目 Hybrid 分层是怎样的？</h3>
+<p><strong>标准可说答案：</strong>“<code>Mercury</code> 是业务 Web 容器和插件层，<code>mercury-core</code> 提供 <code>H5Page</code>、WebView 抽象、JSBridge、资源策略和缓存。典型链路是 <code>WebViewFragment2</code> 创建 <code>H5Page</code>，core 安装 WebViewClient 和 Bridge，业务插件按事件暴露能力。业务接入者负责页面、插件合同和异常处理，不等于编写了整个内核。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/Mercury/mercury/src/main/java/com/zhihu/android/app/ui/fragment/webview/WebViewFragment2.java</code>；<code>yyyyy-cdoe/mercury-core/mercury-core/src/main/java/com/zhihu/android/app/mercury/web/H5PageImpl.java</code></p>
+<p>**常见踩坑：**业务插件直接持有整个 Activity；把所有能力塞进一个 Bridge；页面销毁后仍回调。</p>
+<h3 id="q32-源码追问-主讲-jsbridge-如何避免成为安全漏洞">Q32【源码追问｜主讲】JSBridge 如何避免成为安全漏洞？</h3>
+<p><strong>标准可说答案：</strong>“除了事件白名单，还要校验可信 origin、页面身份、参数 schema、调用权限、超时和一次性 callback；敏感能力需要二次鉴权。Bridge 回调表随页面销毁清理，日志只记录事件和错误分类，不记录 Token 或隐私参数。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/mercury-core/mercury-core/src/main/java/com/zhihu/android/app/mercury/bridge/JsBridge.java</code>；<code>yyyyy-cdoe/mercury-core/mercury-core/src/main/java/com/zhihu/android/app/mercury/web/H5PageImpl.java</code></p>
+<p>**常见踩坑：**只做方法名白名单；信任重定向后的页面；callback map 泄漏；把鉴权信息拼在 URL。</p>
+<h3 id="q33-源码追问-主讲-webview-预热和复用为什么容易出问题">Q33【源码追问｜主讲】WebView 预热和复用为什么容易出问题？</h3>
+<p><strong>标准可说答案：</strong>“复用的不只是 View，还包括 WebSettings、client、Bridge、history、cookie、listener 和页面 callback。必须定义可测试的 reset contract，按用户/页面身份隔离，限制 LRU 上限，并在内存压力时回收。预热效果要看消费命中率和首屏收益，不只看创建成功。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/mercury-core/mercury-core/src/main/java/com/zhihu/android/app/mercury/web/WebViewLruCache.java</code>；<code>yyyyy-cdoe/mercury-core/mercury-core/src/main/java/com/zhihu/android/app/mercury/web/H5PageLruCache.java</code></p>
+<p>**常见踩坑：**只 <code>loadUrl(&quot;about:blank&quot;)</code> 就认为已清理；跨账号复用；缓存过多导致 native/graphics 内存上涨。</p>
+<h3 id="q34-基础-离线资源拦截的收益和风险是什么">Q34【基础】离线资源拦截的收益和风险是什么？</h3>
+<p><strong>标准可说答案：</strong>“<code>shouldInterceptRequest</code> 可把命中资源交给 <code>ResourceProvider</code>，降低网络等待和流量；但必须校验资源版本、完整性、MIME、缓存过期和回退，且同步拦截不能做长时间 IO。HTML 与 JS 版本不匹配时，首屏更快也可能功能错误。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/Mercury/mercury/src/main/java/com/zhihu/android/app/mercury/DnsWebViewClient.java</code>；<code>yyyyy-cdoe/mercury-core/mercury-core/src/main/java/com/zhihu/android/app/mercury/hydro/ResourceProvider.java</code></p>
+<p>**常见踩坑：**缓存成功就永不过期；忽略资源签名；WebView IO 线程被阻塞；离线失败没有网络回退。</p>
+<h3 id="q35-压力追问-hybrid-页面偶现白屏-你会怎样分层排查">Q35【压力追问】Hybrid 页面偶现白屏，你会怎样分层排查？</h3>
+<p><strong>标准可说答案：</strong>“先区分容器未创建、主文档失败、资源失败、JS 运行失败、Bridge ready 超时和渲染不可见；串起 pageId、URL 可信域、WebView 内核、资源策略、console、onPage 回调和首屏上报。再检查缓存复用污染与页面销毁竞态，用禁用预热/离线包/自定义内核的开关做单变量验证。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/Mercury/mercury/src/main/java/com/zhihu/android/app/ui/fragment/webview/WebViewFragment2.java</code>；<code>yyyyy-cdoe/mercury-core/mercury-core/src/main/java/com/zhihu/android/app/mercury/web/H5PageImpl.java</code></p>
+<p>**常见踩坑：**白屏统一算网络失败；只抓系统 WebView 日志；通过无限重载掩盖资源或 Bridge 问题。</p>
+<hr>
+<h2 id="八-音视频">八、音视频</h2>
+<h3 id="q36-基础-主讲-媒体项目为什么分业务层-协议-ui-层和引擎适配层">Q36【基础｜主讲】媒体项目为什么分业务层、协议/UI 层和引擎适配层？</h3>
+<p><strong>标准可说答案：</strong>“<code>VideoEntity</code>/<code>Kmaudio</code> 处理详情、权益、列表和互动；<code>Media</code>/<code>Audio</code>/<code>Zhplayer</code> 提供播放协议、UI、Service 和预播放；<code>mediax</code> 把统一命令映射到 TTVideoEngine。这样业务不依赖厂商 option 和错误码，换内核时主要修改 adapter，并用同一套行为测试验证。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/Media/player-api/src/main/java/com/zhihu/android/api/interfaces/tornado/event/TornadoGroup_player.java</code>；<code>yyyyy-cdoe/mediax/mediax/src/main/java/com/zhihu/android/player/ttVideoEngine/TTVideoPlayerEngine.kt</code></p>
+<p>**常见踩坑：**业务直接调用厂商 SDK；上层分支判断 magic error code；adapter 泄露 Surface 和 Activity。</p>
+<h3 id="q37-源码追问-主讲-全局音频播放器如何保持状态一致">Q37【源码追问｜主讲】全局音频播放器如何保持状态一致？</h3>
+<p><strong>标准可说答案：</strong>“播放会话必须有单一 owner。<code>KMPlayer</code> 负责命令和会话，DataSource 只提供单集/列表数据，engine 只执行播放，UI 订阅状态；后台播放由 Service 承担。切集、切源、试听转付费都应串行化成 command，并让 sessionId 防止旧回调污染新会话。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/Kmaudio/kmaudio/src/main/java/com/zhihu/android/kmaudio/player/KMPlayer.kt</code>；<code>yyyyy-cdoe/Audio/audio/src/main/java/com/zhihu/android/xplayer/XPlayer.kt</code>；<code>yyyyy-cdoe/Audio/audio/src/main/java/com/zhihu/android/xplayer/service/AudioService.kt</code></p>
+<p>**常见踩坑：**Fragment、Repository、engine 各维护一份 current item；release 后回调；通知状态与真实 engine 不一致。</p>
+<h3 id="q38-基础-主讲-音频焦点丢失该怎么处理">Q38【基础｜主讲】音频焦点丢失该怎么处理？</h3>
+<p><strong>标准可说答案：</strong>“区分暂时丢失、可 duck 和永久丢失，分别暂停/降音量/停止；恢复时还要判断用户是否主动暂停，不能一律自动播放。耳机拔出、来电、蓝牙切换和前台服务限制都要进入同一会话状态机，并同步通知栏和页面。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/Audio/audio/src/main/java/com/zhihu/android/xplayer/Player.kt</code>；<code>yyyyy-cdoe/Audio/audio/src/main/java/com/zhihu/android/xplayer/notification/XPlayerNotificationManager.kt</code></p>
+<p>**常见踩坑：**所有 loss 都 release；恢复焦点后无条件播放；仅更新 UI 没有控制 engine。</p>
+<h3 id="q39-源码追问-预加载和预播放有什么区别">Q39【源码追问】预加载和预播放有什么区别？</h3>
+<p><strong>标准可说答案：</strong>“预加载主要准备网络/磁盘数据；预播放可能已创建 engine 并 prepare 到可播状态，首帧更快但 CPU、内存、解码器和生命周期成本更高。策略要结合曝光概率、网络类型、缓存预算和当前播放 QoS，且取用前核对数据源和会话。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/Zhplayer/zhplayer/src/main/java/com/zhihu/android/zhplayer/ZhPreplayerManager.kt</code>；<code>yyyyy-cdoe/Media/player/src/main/java/com/zhihu/android/video/player2/ZHVideoPreloadManager.java</code></p>
+<p>**常见踩坑：**预加载整视频；预播放器携带旧 Surface/position；只统计任务成功率不统计消费命中率。</p>
+<h3 id="q40-压力追问-播放卡顿率上升-你如何定位">Q40【压力追问】播放卡顿率上升，你如何定位？</h3>
+<p><strong>标准可说答案：</strong>“以播放 session 关联 prepare、首帧、buffer start/end、码率、CDN/IP、网络类型、缓存命中和机型；区分首开慢与播放中 rebuffer。再对照预加载策略、清晰度、自适应码率、线程/GC 和引擎版本，用开关逐项验证。真实卡顿率变化必须由本人补统计口径。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/Kmaudio/kmaudio/src/main/java/com/zhihu/android/kmaudio/player/apm/PlayerApm.kt</code>；<code>yyyyy-cdoe/Media/player/src/main/java/com/zhihu/android/video/player2/widget/ZHPluginVideoView.java</code></p>
+<p>**常见踩坑：**只统计播放失败；把用户暂停算卡顿；降低清晰度后不评估体验和流量。</p>
+<hr>
+<h2 id="九-阅读器与-jni">九、阅读器与 JNI</h2>
+<h3 id="q41-基础-主讲-epub-阅读器的主要业务链路是什么">Q41【基础｜主讲】EPUB 阅读器的主要业务链路是什么？</h3>
+<p><strong>标准可说答案：</strong>“页面创建 <code>EpubViewModel</code>，后台准备/解析 EPUB，转换书和页信息后由 <code>uiState</code> 渲染；滚动时预解析相邻章节；进度保存章节、页和偏移，并与服务端合并后恢复。若内核来自公共库，我会明确自己负责的是业务状态、调度和异常恢复。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/VipReader/vip_reader/src/main/java/com/zhihu/android/vip/reader/business/VipReaderFragment.kt</code>；<code>yyyyy-cdoe/VipReader/vip_reader/src/main/java/com/zhihu/android/vip/reader/business/EpubViewModel.kt</code></p>
+<p>**常见踩坑：**主线程解压/解析；解析完成顺序错乱；把公共 EPUB 内核说成自己从零实现。</p>
+<h3 id="q42-源码追问-主讲-为什么阅读进度不能只存百分比">Q42【源码追问｜主讲】为什么阅读进度不能只存百分比？</h3>
+<p><strong>标准可说答案：</strong>“字体、屏幕、排版参数和内容版本变化都会改变总页数。更稳定的是章节 id 加文本偏移，当前会话可再保存页索引以快速恢复；端云合并要带内容版本和更新时间，避免旧设备进度把新进度覆盖。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/VipReader/vip_reader/src/main/java/com/zhihu/android/vip/reader/business/EpubViewModel.kt</code></p>
+<p>**常见踩坑：**只取数值更大者；忽略内容版本；每次滚动都同步网络；恢复后位置跳动。</p>
+<h3 id="q43-源码追问-主讲-相邻预解析怎样控制内存与并发">Q43【源码追问｜主讲】相邻预解析怎样控制内存与并发？</h3>
+<p><strong>标准可说答案：</strong>“只保留前后有限窗口，滚动方向变化时取消离屏任务；缓存可复用中间结果并设置字节/页数上限，内存压力时回收。解析结果写入前校验 bookId、排版参数和 generation，避免旧字号任务覆盖新布局。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/VipReader/vip_reader/src/main/java/com/zhihu/android/vip/reader/business/EpubViewModel.kt</code></p>
+<p>**常见踩坑：**每个章节无限预解析；缓存只按 chapterId；取消任务仍回写；忽略大图章节。</p>
+<h3 id="q44-基础-jni-阅读内核最常见的崩溃边界有哪些">Q44【基础】JNI 阅读内核最常见的崩溃边界有哪些？</h3>
+<p><strong>标准可说答案：</strong>“重点是引用、线程和所有权：local ref 爆表、global ref 未释放、跨线程复用 <code>JNIEnv</code>、Java 对象已释放而 native 仍持有、Bitmap buffer 越界、字符串编码和异常未清理。JNI 边界应小而稳定，明确谁创建、谁释放、在哪个线程调用。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/ReaderSDK-CMake/Android/src/APPJni.cpp</code>；<code>yyyyy-cdoe/ReaderSDK-CMake/Android/src/DRWrap.cpp</code>；<code>yyyyy-cdoe/ReaderSDK-CMake/Android/src/StructureConvert.cpp</code></p>
+<p>**常见踩坑：**缓存 <code>JNIEnv*</code>；native 崩溃只查 Java 栈；把 Bitmap 指针跨生命周期保存。</p>
+<h3 id="q45-压力追问-全局-native-锁保护安全-但排版变慢-怎么改">Q45【压力追问】全局 native 锁保护安全，但排版变慢，怎么改？</h3>
+<p><strong>标准可说答案：</strong>“先用 trace 证明锁等待和临界区范围，再按 book/session 拆锁或把只读缓存与可变状态分离；耗时解析放锁外，只在提交共享结果时加锁。调整后用并发、确定性、ASan 和同书 golden page 验证，不能为并行度破坏内核单例约束。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/ReaderSDK-CMake/Android/src/APPJni.cpp</code>；<code>yyyyy-cdoe/ReaderSDK-CMake/Android/CMakeLists.txt</code></p>
+<p>**常见踩坑：**直接删锁；只跑单线程功能测试；用 Java synchronized 包住更大范围。</p>
+<hr>
+<h2 id="十-评论-feed-账号">十、评论 / Feed / 账号</h2>
+<h3 id="q46-基础-主讲-评论列表的数据链路怎么讲">Q46【基础｜主讲】评论列表的数据链路怎么讲？</h3>
+<p><strong>标准可说答案：</strong>“<code>CommentListFragment</code> 调 <code>CommentViewModel</code>，再由根评论、子评论、锚点等 Repository 调 <code>CommentService</code>，结果映射为列表状态；点赞、删除、置顶按 commentId 做局部更新并准备失败回滚。首屏、翻页和互动错误要分别观测。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/VipComment/comment/src/main/java/com/zhihu/android/comment_for_v7/repository/RootCommentListRepository.kt</code>；<code>yyyyy-cdoe/VipComment/comment/src/main/java/com/zhihu/android/comment_for_v7/view/CommentListFragment.kt</code></p>
+<p>**常见踩坑：**按 adapter position 更新；锚点请求返回后覆盖普通列表；乐观更新失败不恢复。</p>
+<h3 id="q47-源码追问-主讲-标准评论和-vip-评论长期分叉怎么治理">Q47【源码追问｜主讲】标准评论和 VIP 评论长期分叉怎么治理？</h3>
+<p><strong>标准可说答案：</strong>“先共享 <code>comment-api</code>、核心模型和 contract tests，产品差异通过策略/Provider 注入；定期 diff Service 端点、模型和 RN/草稿/AI 能力。不能因为类名相同就认为协议相同，也不应直接复制整仓新功能。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/Comment/comment/src/main/java/com/zhihu/android/comment_for_v7/repository/RootCommentListRepository.kt</code>；<code>yyyyy-cdoe/VipComment/comment/src/main/java/com/zhihu/android/comment_for_v7/repository/RootCommentListRepository.kt</code>；<code>yyyyy-cdoe/Comment/comment/src/main/java/com/zhihu/android/rncomment/OneRNCommentContainerFragment.kt</code></p>
+<p>**常见踩坑：**只做代码 diff 不做行为测试；VIP 直接依赖标准实现内部类；端点变化没有版本兼容。</p>
+<h3 id="q48-源码追问-主讲-推荐-feed-如何兼顾首屏和实时性">Q48【源码追问｜主讲】推荐 Feed 如何兼顾首屏和实时性？</h3>
+<p><strong>标准可说答案：</strong>“Repository 编排本地、预加载和远端数据，必要时走降级；同一 generation 内用稳定 id 做 Diff，网络结果与缓存相同则不替换，用户已滚动时避免强制回顶。异构卡片由 delegate 注册，Fragment 主要负责宿主、加载状态和生命周期。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/Feed/feed/src/main/java/com/zhihu/android/app/feed/ui2/feed/repo/FeedRepository.kt</code>；<code>yyyyy-cdoe/Feed/feed/src/main/java/com/zhihu/android/FeedMonitor.kt</code></p>
+<p>**常见踩坑：**缓存一到就上屏、网络一到全量闪烁；预加载结果跨用户；delegate 全量初始化拖慢首屏。</p>
+<h3 id="q49-基础-主讲-注册和-token-链路有哪些关键状态">Q49【基础｜主讲】注册和 Token 链路有哪些关键状态？</h3>
+<p><strong>标准可说答案：</strong>“注册页先校验并预处理表单，根据风控进入验证码或继续注册；成功拿 Token 后，头像上传和社交绑定是可恢复的后置步骤。Token 存项目安全存储，不进日志；多请求同时 401 时刷新要 single-flight，失败后统一退出或重新认证。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/VipPassport/vip_passport_ui/src/main/java/com/zhihu/android/app/modules/passport/register/view/RegisterFragment.kt</code>；<code>yyyyy-cdoe/VipPassport/vip_passport/src/main/java/com/zhihu/android/app/token/TokenManager.kt</code>；<code>yyyyy-cdoe/VipPassport/vip_passport/src/main/java/com/zhihu/android/app/token/TokenRepository.kt</code></p>
+<p>**常见踩坑：**注册成功但绑定失败时重复注册；Token 放普通明文 SP；每个 401 都独立刷新。</p>
+<h3 id="q50-压力追问-主讲-退出登录为什么顺序重要">Q50【压力追问｜主讲】退出登录为什么顺序重要？</h3>
+<p><strong>标准可说答案：</strong>“先阻止新业务请求和 Token 刷新，再清理凭据、账号真值、用户缓存、播放/下载任务和跨端状态，最后通知各组件回到匿名态；否则后台任务可能拿旧身份继续写数据。多进程还要带版本或受控 Provider 同步，不能只清当前进程单例。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/Account/account/src/main/java/com/zhihu/android/app/accounts/AccountManager.java</code>；<code>yyyyy-cdoe/Account/account/src/main/java/com/zhihu/android/app/accounts/DataStoreManager.java</code>；<code>yyyyy-cdoe/Account/account/src/main/java/com/zhihu/android/api/service2/LogoutService.java</code></p>
+<p>**常见踩坑：**先发全局退出事件、后清 Token；漏清预加载/播放器用户态；子进程仍保留旧账号。</p>
+<hr>
+<h2 id="十一-rn-native-bridge">十一、RN / Native Bridge</h2>
+<h3 id="q51-基础-主讲-pikachu-是什么形态-为什么不是独立-rn-app">Q51【基础｜主讲】<code>pikachu</code> 是什么形态，为什么不是独立 RN App？</h3>
+<p><strong>标准可说答案：</strong>“它是嵌入原生宿主的多页面 RN Bundle 工作区，通过页面表和 PRN runtime 注册页面，Native 用 moduleName、pageName、initProps、Deep Link 和 Bridge 承载。当前 checkout 缺 <code>prn/*</code>、<code>.yarn/</code> 和原生壳，所以不能把本地不能 Bundle 直接归因于业务代码。”</p>
+<p><strong>证据路径：</strong><code>pikachu/package.json</code>；<code>pikachu/pages/entry/src/pages.mjs</code>；<code>pikachu/pages/entry/src/index.tsx</code></p>
+<p>**常见踩坑：**按普通 <code>AppRegistry</code> 单入口解释；忽略宿主版本；不完整 checkout 上盲修依赖。</p>
+<h3 id="q52-源码追问-主讲-ai-生图长任务为什么拆成创建页和结果页">Q52【源码追问｜主讲】AI 生图长任务为什么拆成创建页和结果页？</h3>
+<p><strong>标准可说答案：</strong>“输入页只等待任务创建并拿到 taskId，再通过 Deep Link 打开结果页；结果页独立轮询、超时、重试和回传。这样长任务不绑死输入页面，也便于按评论、Native 发布器和默认编辑器选择 Atom、Bridge 或 Deep Link。”</p>
+<p><strong>证据路径：</strong><code>pikachu/pages/GenerateAIImage/src/Entry.tsx</code>；<code>pikachu/pages/GenerateAIImageResult/src/Entry.tsx</code></p>
+<p>**常见踩坑：**taskId 不做任务身份校验；把完整大对象塞入 URL；返回上页后旧轮询继续运行。</p>
+<h3 id="q53-源码追问-主讲-轮询-cleanup-等于取消网络请求吗">Q53【源码追问｜主讲】轮询 cleanup 等于取消网络请求吗？</h3>
+<p><strong>标准可说答案：</strong>“不等于。当前 cleanup 把 ref 置为停止状态，只能阻止下一轮调度；已经发出的 HTTP 没有 AbortSignal，仍可能完成。更完整的方案是为 taskId 维护 AbortController、请求序号和页面存活检查，并把取消与失败区分。”</p>
+<p><strong>证据路径：</strong><code>pikachu/pages/GenerateAIImageResult/src/Entry.tsx</code></p>
+<p>**常见踩坑：**把停止定时器说成取消请求；旧响应覆盖新 taskId；取消被上报为接口失败。</p>
+<h3 id="q54-基础-jotai-atom-bridge-和-deep-link-怎么选">Q54【基础】Jotai Atom、Bridge 和 Deep Link 怎么选？</h3>
+<p><strong>标准可说答案：</strong>“RN 内跨页面且消费完整对象可用 atom；交给 Native 编辑器要用明确 Bridge 合同；打开独立功能用 Deep Link。选择依据是状态 owner、运行时边界和生命周期。app 生命周期 atom 用完必须清理，Bridge/Deep Link 参数需要 schema、版本和错误码。”</p>
+<p><strong>证据路径：</strong><code>pikachu/packages/shared/src/jotai/AIImageSelectionAtom/aiImageSelectionAtom.ts</code>；<code>pikachu/pages/AIImageSelection/src/components/AIImageList/index.tsx</code></p>
+<p>**常见踩坑：**全局 atom 永不清理；Bridge 返回 shape 靠口头约定；导航参数携带敏感信息。</p>
+<h3 id="q55-压力追问-rn-页面打不开-你按什么顺序排查">Q55【压力追问】RN 页面打不开，你按什么顺序排查？</h3>
+<p><strong>标准可说答案：</strong>“依次看页面是否在 <code>pages.mjs</code>、workspace package 是否存在、loader 是否生成、入口是否执行 <code>registerAll</code>、Bundle 是否包含页面、Native moduleName/pageName 是否匹配、initProps 是否可解析，最后才查页面首屏和 Bridge。这样先区分构建注册、路由合同和业务渲染。”</p>
+<p><strong>证据路径：</strong><code>pikachu/pages/entry/src/pages.mjs</code>；<code>pikachu/pages/entry/src/getRNPageLoaders.ts</code>；<code>pikachu/pages/entry/src/index.tsx</code></p>
+<p>**常见踩坑：**直接在页面加日志；Native 与 Bundle 版本不对齐；页面名大小写或别名不一致。</p>
+<hr>
+<h2 id="十二-性能与稳定性">十二、性能与稳定性</h2>
+<h3 id="q56-基础-主讲-你会怎样建立页面性能指标">Q56【基础｜主讲】你会怎样建立页面性能指标？</h3>
+<p><strong>标准可说答案：</strong>“按用户可感知阶段拆：请求开始、数据返回、状态处理、首卡/首章/首帧、可交互；列表再看渲染、掉帧、内存和预加载命中。每个指标要带页面、版本、设备、网络、冷热状态和 request/session id。个人结果只有真实数据齐全时才说。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/Feed/feed/src/main/java/com/zhihu/android/FeedMonitor.kt</code>；<code>yyyyy-cdoe/Kmaudio/kmaudio/src/main/java/com/zhihu/android/kmaudio/player/apm/PlayerApm.kt</code></p>
+<p>**常见踩坑：**只报平均值；首屏定义随业务变化；埋点本身阻塞主线程；日志含隐私字段。</p>
+<h3 id="q57-源码追问-预加载是否有效-应该看哪些指标">Q57【源码追问】预加载是否有效，应该看哪些指标？</h3>
+<p><strong>标准可说答案：</strong>“至少看消费命中率、命中后的首屏/首帧收益、额外流量、内存、错误率和数据过期率。任务成功但未被消费仍是浪费；还要按用户身份、内容版本和网络类型隔离。策略应有预算和降级开关。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/VipPrerender/vip_prerender/src/main/java/com/zhihu/android/zhvip/prerender/cache/DataCache.kt</code>；<code>yyyyy-cdoe/VipPrerender/vip_prerender/src/main/java/com/zhihu/android/zhvip/prerender/report/Reporter.kt</code></p>
+<p>**常见踩坑：**只统计 preload success；跨账号缓存；为了命中率预载过多；页面已销毁仍继续。</p>
+<h3 id="q58-基础-如何判断内存泄漏是页面-webview-还是播放器造成的">Q58【基础】如何判断内存泄漏是页面、WebView 还是播放器造成的？</h3>
+<p><strong>标准可说答案：</strong>“先以页面退出后的 retained object 和 native/graphics/Java heap 分区判断，再沿引用链看 Fragment/View、WebView client/Bridge/callback、Surface/player listener。分别关闭 WebView 复用、播放器预加载和页面功能做对照，结合生命周期日志确认 release 幂等。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/mercury-core/mercury-core/src/main/java/com/zhihu/android/app/mercury/web/WebViewLruCache.java</code>；<code>yyyyy-cdoe/Media/player/src/main/java/com/zhihu/android/video/player2/widget/ZHPluginVideoView.java</code></p>
+<p>**常见踩坑：**只看 Java heap；GC 一次没释放就判泄漏；为消除泄漏完全禁用有价值缓存。</p>
+<h3 id="q59-源码追问-safeboot-的价值是什么">Q59【源码追问】SafeBoot 的价值是什么？</h3>
+<p><strong>标准可说答案：</strong>“当补丁、插件或启动任务导致连续启动崩溃时，SafeBoot 提供最小能力恢复和问题隔离，避免用户永久打不开 App。它不是吞异常，而是记录触发原因、禁用高风险能力、让主流程可用，并为后续修复保留观测。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/VipHome/app/src/main/java/com/zhihu/android/app/ZhihuApplication.java</code>；<code>yyyyy-cdoe/ZhihuLite/app/src/main/java/com/zhihu/android/app/ZhihuApplication.java</code></p>
+<p>**常见踩坑：**恢复模式没有过期/退出条件；静默关闭功能不监控；把所有 crash 都归到同一开关。</p>
+<h3 id="q60-压力追问-只有低端机掉帧-你怎样避免-全局降级">Q60【压力追问】只有低端机掉帧，你怎样避免“全局降级”？</h3>
+<p><strong>标准可说答案：</strong>“先按设备能力、页面阶段和卡片类型定位 CPU/GPU、布局、图片、GC 或主线程 IO；用渲染耗时找到慢 delegate/ViewHolder。降级应按设备/场景减少动画、模糊、预加载或同屏密度，同时保留核心交互，并通过实验比较体验和稳定性。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/Feed/feed/src/main/java/com/zhihu/android/FeedMonitor.kt</code>；<code>yyyyy-cdoe/BlurView/library/src/main/java/eightbitlab/com/blurview/PreDrawBlurController.java</code></p>
+<p>**常见踩坑：**所有用户统一关闭能力；只优化 RecyclerView 参数；忽略图片解码和 GPU overdraw。</p>
+<hr>
+<h2 id="十三-测试与可观测性">十三、测试与可观测性</h2>
+<h3 id="q61-基础-这个工作区的测试现状怎么评价">Q61【基础】这个工作区的测试现状怎么评价？</h3>
+<p><strong>标准可说答案：</strong>“复杂度与自动化测试不匹配：有少量真实状态机、工具类和基础库测试，但大量业务仓只有 <code>ExampleUnitTest</code>，播放器、Feed、双向分页、阅读进度等关键链路覆盖偏弱。我会先按事故风险补状态机和 contract tests，而不是追求单纯覆盖率数字。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/KnowledgeMarket/sku-manuscript/src/test/java/com/zhihu/android/app/sku/manuscript/trace/ManuscriptTraceStateMachineTest.kt</code>；<code>yyyyy-cdoe/DevKit/devkit/src/test/java/com/zhihu/android/devkit/SafeCoroutineTest.kt</code></p>
+<p>**常见踩坑：**把测试文件数当质量；把 demo 样板算业务覆盖；只补 UI happy path。</p>
+<h3 id="q62-源码追问-paging3-最值得补哪些测试">Q62【源码追问】Paging3 最值得补哪些测试？</h3>
+<p><strong>标准可说答案：</strong>“用 fake PagingSource/Service 覆盖 refresh、append、prepend、首尾 null、空页、重复 key、旧请求后返回、取消、重试和 mediator 删除/替换；双向目录还要覆盖目标章节、去重和排序。重点断言 generation 与状态转换，不依赖真实网络。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/DevKit/devkit/src/main/java/com/zhihu/android/devkit/paging/ResponsePagingSource.kt</code>；<code>yyyyy-cdoe/DevKit/devkit/src/main/java/com/zhihu/android/devkit/paging/PagerMediator.kt</code></p>
+<p>**常见踩坑：**只测一页成功；用 sleep 制造时序；不验证取消；测试直接依赖服务器。</p>
+<h3 id="q63-基础-跨组件-contract-test-应该验证什么">Q63【基础】跨组件 contract test 应该验证什么？</h3>
+<p><strong>标准可说答案：</strong>“验证 API 模型、路由参数、Bridge 事件、错误码和兼容默认值；同一套行为测试对标准/VIP 实现或不同播放器引擎运行。它不要求暴露实现细节，关注同样输入是否得到约定输出和副作用。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/Comment/comment-api</code>；<code>yyyyy-cdoe/VipComment/comment-api</code>；<code>yyyyy-cdoe/mediax/mediax/src/main/java/com/zhihu/android/player/ttVideoEngine/TTVideoPlayerEngine.kt</code></p>
+<p>**常见踩坑：**contract test 只比较类名；把实现内部调用顺序写死；未覆盖旧版本字段缺失。</p>
+<h3 id="q64-源码追问-日志和指标如何帮助而不是制造噪声">Q64【源码追问】日志和指标如何帮助而不是制造噪声？</h3>
+<p><strong>标准可说答案：</strong>“以 requestId/pageId/sessionId 串联阶段，字段使用有限枚举描述结果、错误和状态转换；采样率、去重、上报线程和离线缓存要受控。请求、渲染、播放器和评论分别有专业指标，但最终要能关联到一次用户会话，同时禁止记录 Token 和隐私正文。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/Feed/feed/src/main/java/com/zhihu/android/FeedMonitor.kt</code>；<code>yyyyy-cdoe/VipComment/comment/src/main/java/com/zhihu/android/comment/utils/CommentApmUtils.kt</code></p>
+<p>**常见踩坑：**每次滚动都上报；错误信息无限高基数；只报失败不报阶段；日志泄露敏感参数。</p>
+<h3 id="q65-压力追问-没有自动化测试-又必须当天上线-你怎么做">Q65【压力追问】没有自动化测试、又必须当天上线，你怎么做？</h3>
+<p><strong>标准可说答案：</strong>“先缩小变更和暴露面，为核心逻辑补最低成本的纯单测/contract test；准备 feature flag、灰度、关键日志、回滚版本和人工用例矩阵。上线后看约定指标和错误预算。若风险不能被隔离或回滚，我会明确建议延期，而不是以‘人工测过’替代保障。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/VipAndroid/app/gradle/check_deps.gradle</code>；<code>yyyyy-cdoe/Feed/feed/src/main/java/com/zhihu/android/FeedMonitor.kt</code></p>
+<p>**常见踩坑：**临时关闭门禁；无开关全量；人工只测单设备 happy path；没有回滚判定阈值。</p>
+<hr>
+<h2 id="十四-安全与工程化">十四、安全与工程化</h2>
+<h3 id="q66-基础-客户端敏感信息治理的底线是什么">Q66【基础】客户端敏感信息治理的底线是什么？</h3>
+<p><strong>标准可说答案：</strong>“源码、配置、日志和构建产物都不能出现长期凭据；使用 CI Secret/密钥管理服务按环境注入，权限最小化、可轮换、可审计。发现泄露先轮换，再清历史和日志，最后加 secret scanning 与提交门禁；只删当前文件不够。”</p>
+<p><strong>证据路径：</strong><code>pikachu/.sentryclirc</code>；<code>yyyyy-cdoe/8J52SRPW6X_Matchfile/Matchfile</code></p>
+<p>**常见踩坑：**在回答中复述真实值；认为私有仓安全；先清 Git 历史却不先吊销；把 secret 放 BuildConfig 后称为加密。</p>
+<h3 id="q67-源码追问-readonly-为什么不等于签名链安全">Q67【源码追问】<code>--readonly</code> 为什么不等于签名链安全？</h3>
+<p><strong>标准可说答案：</strong>“它只限制 Match 不修改签名仓，不能防止本地凭据泄露、runner 被滥用或 API 权限过宽。发布证书应只注入 protected tag/branch 的受信 runner，使用临时 keychain、最小权限和审计，普通 MR 不应获得发布 secret。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/8J52SRPW6X_Matchfile/Matchfile</code>；<code>yyyyy-cdoe/8J52SRPW6X_Matchfile/.gitlab-ci.yml</code></p>
+<p>**常见踩坑：**把非交互凭据当便利功能；开发分支拿到 appstore 证书；runner 结束后不清 keychain。</p>
+<h3 id="q68-基础-构建可重复性为什么是安全问题">Q68【基础】构建可重复性为什么是安全问题？</h3>
+<p><strong>标准可说答案：</strong>“如果同一 commit 每次拉最新远端规则、插件或未锁定依赖，产物不可复现，也难审计供应链变化。应锁版本和校验和，缓存并签名治理规则，记录构建环境和物料清单；远端规则不可用时采用受控的上次成功版本，而不是静默跳过。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/Dependencies/dependencies.json</code>；<code>yyyyy-cdoe/Dependencies/substitute.json</code>；<code>yyyyy-cdoe/VipAndroid/app/gradle/check_deps.gradle</code></p>
+<p>**常见踩坑：**只锁直接依赖；构建失败时关闭白名单；远端配置没有版本和审计。</p>
+<h3 id="q69-源码追问-webview-与路由共同的输入安全原则是什么">Q69【源码追问】WebView 与路由共同的输入安全原则是什么？</h3>
+<p><strong>标准可说答案：</strong>“都把外部 URL 当不可信输入：限制 scheme/host/目标，校验参数类型、长度和版本，阻止危险协议和任意文件访问；敏感能力在目标处再次鉴权。路由匹配或页面已加载，不代表调用方拥有业务权限。”</p>
+<p><strong>证据路径：</strong><code>yyyyy-cdoe/ZRouter/zrouter/src/main/java/com/zhihu/android/app/router/destination/MapperCreator.java</code>；<code>yyyyy-cdoe/mercury-core/mercury-core/src/main/java/com/zhihu/android/app/mercury/bridge/JsBridge.java</code></p>
+<p>**常见踩坑：**只做字符串前缀判断；信任 URL query 中的用户身份；WebView 开放 file/content access。</p>
+<h3 id="q70-压力追问-发现仓库里有疑似-token-你会怎么处置">Q70【压力追问】发现仓库里有疑似 Token，你会怎么处置？</h3>
+<p><strong>标准可说答案：</strong>“不复制、不验证真实值，先通知对应 owner 并按已泄露处理：立即轮换/吊销，查 CI、服务端和访问日志，确认影响范围；随后从历史、缓存和构建日志中清理，迁移到受保护 Secret，并增加扫描和阻断。个人叙述只说处置流程和本人真实动作，不披露凭据。”</p>
+<p><strong>证据路径：</strong><code>pikachu/.sentryclirc</code>；<code>yyyyy-cdoe/8J52SRPW6X_Matchfile</code></p>
+<p>**常见踩坑：**把 Token 打到终端或面试材料；仅提交删除；在未轮换前公开讨论具体值；擅自测试凭据权限。</p>
+<hr>
+<h2 id="三轮模拟面试脚本">三轮模拟面试脚本</h2>
+<h2 id="第一轮-业务基础与主讲项目-约-25-分钟">第一轮：业务基础与主讲项目（约 25 分钟）</h2>
+<p>**目标：**判断候选人能否以三年 Android 经验把一个真实业务调用点讲完整，并主动划清框架作者边界。</p>
+<ol>
+<li><strong>面试官：</strong>“用一分钟介绍这个 Android 项目，你最熟哪条链路？”<ul>
+<li>**候选人建议答法：**先讲 <code>VipAndroid</code> 组件装配、<code>VipHome</code> 启动，再选一条本人真实参与的业务链，如 HomePinTab、评论、音频或阅读器。明确说：“底层框架由项目提供，我主讲业务侧的【本人补充】。”</li>
+</ul>
+</li>
+<li><strong>面试官：</strong>“那你讲 HomePinTab，它和传统 MVVM 有什么区别？”  <ul>
+<li>**候选人：**按 Q11 回答轻量 MVI，随后用 Q12 讲 <code>Fragment → ViewModel → Pager → State → adapter</code>。</li>
+</ul>
+</li>
+<li><strong>面试官：</strong>“刷新、点赞、删除分别怎么走？”  <ul>
+<li>**候选人：**刷新按 Q16，局部互动按 Q18；若本人没做过，应改为“从当前源码看”。</li>
+</ul>
+</li>
+<li><strong>面试官：</strong>“为什么 loading 不全放 State？”  <ul>
+<li>**候选人：**说明 <code>CombinedLoadStates</code> 已表达 refresh/append/prepend，业务状态与控件加载语义分开，避免双状态源。</li>
+</ul>
+</li>
+<li><strong>面试官：</strong>“说一个你真实解决的问题和结果。”  <ul>
+<li>**候选人：**只填真实内容：<code>问题【本人补充】—动作【本人补充】—验证【本人补充】—结果【指标 + 口径 + 时间范围 + 数据来源】</code>。若没有指标，诚实说验证范围，不报百分比。</li>
+</ul>
+</li>
+<li>**面试官收尾追问：**Q01、Q06、Q49 中任选一题，检查候选人能否把业务放回整个 App 链路。</li>
+</ol>
+<p>**本轮合格信号：**链路完整；能说出状态 owner 和关键类；至少一次主动说明个人边界；没有虚构指标。</p>
+<h2 id="第二轮-源码深挖与故障定位-约-35-分钟">第二轮：源码深挖与故障定位（约 35 分钟）</h2>
+<p>**目标：**判断候选人能否从业务调用点下钻基础设施，并用证据定位而非背概念。</p>
+<ol>
+<li><strong>面试官：</strong>“<code>ResponsePagingSource</code> 遇到刷新后旧数据覆盖，怎么查？”  <ul>
+<li>**候选人：**按 Q17、Q20，重点说 generation、取消和受控延迟测试。</li>
+</ul>
+</li>
+<li><strong>面试官：</strong>“请求慢就是服务端慢吗？”  <ul>
+<li>**候选人：**按 Q22 拆 DNS/connect/TLS/排队/TTFB，并关联 requestId。</li>
+</ul>
+</li>
+<li><strong>面试官：</strong>“HTTPDNS 有缓存，为什么首请求还失败？”  <ul>
+<li>**候选人：**按 Q23—Q25，讨论网络切换、TTL、IPv6、备用 IP 和证书。</li>
+</ul>
+</li>
+<li><strong>面试官：</strong>“Hybrid 白屏且只在复用 WebView 时出现。”  <ul>
+<li>**候选人：**按 Q33、Q35，提出 reset contract、身份隔离和开关对照。</li>
+</ul>
+</li>
+<li><strong>面试官：</strong>“音频退后台后通知栏和页面状态不一致。”  <ul>
+<li>**候选人：**按 Q37—Q38，说明 Service/session owner、焦点和 listener 生命周期。</li>
+</ul>
+</li>
+<li><strong>面试官：</strong>“JNI 偶现 native crash，没有 Java 栈。”  <ul>
+<li>**候选人：**按 Q44—Q45，优先符号化、线程/引用/Bitmap 所有权、ASan 和并发复现。</li>
+</ul>
+</li>
+</ol>
+<p>**本轮合格信号：**每题先分层、再给观测证据、最后给验证方式；不会用“加 try/catch、加重试、加判空”代替根因分析。</p>
+<h2 id="第三轮-压力面与工程决策-约-40-分钟">第三轮：压力面与工程决策（约 40 分钟）</h2>
+<p>**目标：**检查取舍、风险意识、跨团队合同和上线责任。</p>
+<ol>
+<li><strong>面试官：</strong>“今晚必须上线评论新能力，但几乎没测试。”  <ul>
+<li>**候选人：**按 Q65 给出最小变更、contract test、灰度、开关、指标和回滚阈值；必要时说明延期条件。</li>
+</ul>
+</li>
+<li><strong>面试官：</strong>“产品要求 WebView 复用数量翻倍来优化首屏。”  <ul>
+<li>**候选人：**按 Q33、Q57，要求先看消费命中、内存和污染风险，用预算和实验决策。</li>
+</ul>
+</li>
+<li><strong>面试官：</strong>“VIP 分支和标准分支已经长期漂移，你会不会直接合仓？”  <ul>
+<li>**候选人：**按 Q47，先共享契约/core/contract tests，再把差异配置化；不承诺一次性合并。</li>
+</ul>
+</li>
+<li><strong>面试官：</strong>“RN 页面拿不到结果，Native、RN、服务端都说自己没问题。”  <ul>
+<li>**候选人：**以 taskId/requestId 串联“Native 入参—页面注册—创建任务—轮询—Bridge/Atom/Deep Link 回传”，按合同、联调、观测、回滚四层推进。</li>
+</ul>
+</li>
+<li><strong>面试官：</strong>“仓库里发现疑似生产 Token，你会先本地调用确认吗？”  <ul>
+<li>**候选人：**明确拒绝验证和扩散，按 Q70 轮换、审计、清历史、迁移 Secret。</li>
+</ul>
+</li>
+<li><strong>面试官：</strong>“你说这些优化提升了多少？”  <ul>
+<li>**候选人：**只回答本人可核验的数据；模板为：<code>【指标】按【口径】，在【时间范围】来自【数据源】；我的改动是【本人真实动作】。</code>信息不全时删除收益句。</li>
+</ul>
+</li>
+</ol>
+<p>**本轮合格信号：**能拒绝不安全或不可验证的捷径；知道何时灰度、回滚或延期；不把团队/框架成果据为己有。</p>
+<hr>
+<h2 id="评分标准-100-分">评分标准（100 分）</h2>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th align="right">分值</th>
+<th>优秀</th>
+<th>合格</th>
+<th>明显失分</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>项目与个人边界</td>
+<td align="right">15</td>
+<td>主动区分源码事实、团队能力和本人动作；指标口径完整</td>
+<td>经提醒后能条件化表达</td>
+<td>把框架/团队仓说成个人从零设计；虚构指标</td>
+</tr>
+<tr>
+<td>业务链路完整性</td>
+<td align="right">20</td>
+<td>能讲入口、状态、数据、UI、异常、验证和下游</td>
+<td>能讲主链，异常或验证略弱</td>
+<td>只背类名或只讲 UI</td>
+</tr>
+<tr>
+<td>架构与状态建模</td>
+<td align="right">15</td>
+<td>准确区分轻量 MVI/MVVM、owner、事件和副作用</td>
+<td>概念基本正确</td>
+<td>认为 MVI 天然无副作用；多状态源不自知</td>
+</tr>
+<tr>
+<td>源码证据</td>
+<td align="right">15</td>
+<td>能指出模块、核心类/函数并解释调用关系</td>
+<td>能说出核心模块和一两个入口</td>
+<td>路径/函数明显编造；只复述 README</td>
+</tr>
+<tr>
+<td>故障定位</td>
+<td align="right">15</td>
+<td>分层、有关联 id、有复现和单变量验证</td>
+<td>有基本排查顺序</td>
+<td>只会重试、判空、清缓存或“看日志”</td>
+</tr>
+<tr>
+<td>性能、稳定性与安全</td>
+<td align="right">10</td>
+<td>指标口径、预算、灰度、回滚和脱敏完整</td>
+<td>能识别主要风险</td>
+<td>追求性能时忽略污染/内存；泄露敏感信息</td>
+</tr>
+<tr>
+<td>测试与工程化</td>
+<td align="right">5</td>
+<td>按风险选状态机/contract/smoke test</td>
+<td>能提出合理补测</td>
+<td>只讲覆盖率或人工测试</td>
+</tr>
+<tr>
+<td>表达与取舍</td>
+<td align="right">5</td>
+<td>先结论后证据，回答 40—90 秒，可承认未知</td>
+<td>基本清楚</td>
+<td>绕圈、绝对化、被追问后自相矛盾</td>
+</tr>
+</tbody></table>
+<h3 id="单题四档判定">单题四档判定</h3>
+<ul>
+<li>**4 分：**直接可说，链路和边界准确，有证据、取舍、异常与验证。</li>
+<li>**3 分：**主干正确，有证据，但风险或验证不够具体。</li>
+<li>**2 分：**概念正确但脱离项目，或只能说类名。</li>
+<li>**1 分：**答案含明显事实错误、虚构个人贡献或危险安全建议。</li>
+</ul>
+<h3 id="建议录用区间">建议录用区间</h3>
+<ul>
+<li>**85—100：**能独立承担业务模块，并具备跨层排障和工程判断。</li>
+<li>**70—84：**符合约三年 Android 经验，业务实现可靠，部分底层/工程能力需培养。</li>
+<li>**55—69：**能完成页面开发，但状态、生命周期或排障深度不足。</li>
+<li>**低于 55：**项目表述可信度、基础能力或安全意识存在明显风险。</li>
+</ul>
+<h3 id="一票否决项">一票否决项</h3>
+<ul>
+<li>杜撰个人职责、线上事故、性能收益或业务指标。</li>
+<li>在面试材料中展示 Token、密钥、内网地址、用户隐私或真实签名材料。</li>
+<li>把“关闭校验、无限重试、吞异常、全量上线”当作常规解决方案。</li>
+<li>明知当前 checkout 不完整，仍声称已经完成可信构建或测试验证。</li>
+</ul>
+<hr>
+<h2 id="面试前本人补充清单">面试前本人补充清单</h2>
+<ul>
+<li>我实际主讲的 2—3 个业务调用点：<code>【本人补充】</code></li>
+<li>我亲自修改或排查过的核心类/函数：<code>【本人补充】</code></li>
+<li>一个真实故障：现象 <code>【】</code>，根因 <code>【】</code>，动作 <code>【】</code>，验证 <code>【】</code></li>
+<li>一个真实取舍：备选方案 <code>【】</code>，选择 <code>【】</code>，原因 <code>【】</code></li>
+<li>真实结果：指标 <code>【】</code>，统计口径 <code>【】</code>，时间范围 <code>【】</code>，数据来源 <code>【】</code></li>
+<li>未参与的底层能力应使用的表述：“该能力由项目基础库提供；我负责的是 <code>【业务调用/状态建模/接入/排障】</code>。”</li>
+</ul>
+
+      </article>
+      
+    <nav class="page-pager" aria-label="文档翻页">
+      <a href="70-resume-and-star-stories.html"><small>← 上一篇</small><span>简历与 STAR</span></a>
+      <a class="next" href="00-repository-inventory.html"><small>下一篇 →</small><span>全量仓库盘点</span></a>
+    </nav>
+      <footer class="article-footer">
+        本站由 Markdown 源文档离线生成。涉及个人职责、动作和结果的内容，请只使用本人可核验的部分。
+      </footer>
+    </main>
+    <aside class="page-toc" aria-label="本页目录">
+      <div class="toc-heading">本页目录</div>
+      <a class="toc-link level-2" href="#练习方法">练习方法</a>
+<a class="toc-link level-2" href="#一-组件化与构建">一、组件化与构建</a>
+<a class="toc-link level-3" href="#q01-基础-主讲-这个项目的组件化是怎样落地的">Q01【基础｜主讲】这个项目的组件化是怎样落地的？</a>
+<a class="toc-link level-3" href="#q02-源码追问-主讲-vip-版本如何复用主-app-又保持产品差异">Q02【源码追问｜主讲】VIP 版本如何复用主 App，又保持产品差异？</a>
+<a class="toc-link level-3" href="#q03-源码追问-主讲-sourcecode-properties-源码替换解决什么问题">Q03【源码追问｜主讲】 sourcecode.properties 源码替换解决什么问题？</a>
+<a class="toc-link level-3" href="#q04-基础-为什么实现模块与-api-模块要分开">Q04【基础】为什么实现模块与 -api 模块要分开？</a>
+<a class="toc-link level-3" href="#q05-压力追问-升级-agp-或核心组件时-你如何控制风险">Q05【压力追问】升级 AGP 或核心组件时，你如何控制风险？</a>
+<a class="toc-link level-2" href="#二-启动">二、启动</a>
+<a class="toc-link level-3" href="#q06-基础-主讲-请讲一下冷启动主链路">Q06【基础｜主讲】请讲一下冷启动主链路。</a>
+<a class="toc-link level-3" href="#q07-源码追问-主讲-启动-dag-比在-application-里并行初始化好在哪里">Q07【源码追问｜主讲】启动 DAG 比在 Application 里并行初始化好在哪里？</a>
+<a class="toc-link level-3" href="#q08-源码追问-主讲-launcher-到-mainactivity-为什么容易出现竞态">Q08【源码追问｜主讲】Launcher 到 MainActivity 为什么容易出现竞态？</a>
+<a class="toc-link level-3" href="#q09-基础-为什么不能把所有-sdk-都放在-application-oncreate">Q09【基础】为什么不能把所有 SDK 都放在 Application.onCreate() ？</a>
+<a class="toc-link level-3" href="#q10-压力追问-线上启动变慢-20-你第一小时怎么排查">Q10【压力追问】线上启动变慢 20%，你第一小时怎么排查？</a>
+<a class="toc-link level-2" href="#三-mvi-与-mvvm">三、MVI 与 MVVM</a>
+<a class="toc-link level-3" href="#q11-基础-主讲-这个项目的-mvi-和你以前使用的-mvvm-有什么差别">Q11【基础｜主讲】这个项目的 MVI 和你以前使用的 MVVM 有什么差别？</a>
+<a class="toc-link level-3" href="#q12-源码追问-主讲-homepintab-的状态如何从网络流到-ui">Q12【源码追问｜主讲】 HomePinTab 的状态如何从网络流到 UI？</a>
+<a class="toc-link level-3" href="#q13-源码追问-主讲-一次性事件为什么不建议放进持久-state">Q13【源码追问｜主讲】一次性事件为什么不建议放进持久 State？</a>
+<a class="toc-link level-3" href="#q14-基础-主讲-fragment-和-viewmodel-的职责边界怎么划">Q14【基础｜主讲】Fragment 和 ViewModel 的职责边界怎么划？</a>
+<a class="toc-link level-3" href="#q15-压力追问-页面同时有-stateflow-livedata-rx-和-adapter-loadstate-怎么治理">Q15【压力追问】页面同时有 StateFlow、LiveData、Rx 和 adapter LoadState，怎么治理？</a>
+<a class="toc-link level-2" href="#四-paging3">四、Paging3</a>
+<a class="toc-link level-3" href="#q16-基础-主讲-paging3-的刷新链路是什么">Q16【基础｜主讲】Paging3 的刷新链路是什么？</a>
+<a class="toc-link level-3" href="#q17-源码追问-主讲-responsepagingsource-是怎样适配业务接口的">Q17【源码追问｜主讲】 ResponsePagingSource 是怎样适配业务接口的？</a>
+<a class="toc-link level-3" href="#q18-源码追问-主讲-点赞和删除为什么用-pagermediator-不直接刷新整页">Q18【源码追问｜主讲】点赞和删除为什么用 PagerMediator ，不直接刷新整页？</a>
+<a class="toc-link level-3" href="#q19-源码追问-主讲-从任意章节进入的双向分页最难在哪里">Q19【源码追问｜主讲】从任意章节进入的双向分页最难在哪里？</a>
+<a class="toc-link level-3" href="#q20-压力追问-刷新后偶现旧数据覆盖新数据-你怎么定位">Q20【压力追问】刷新后偶现旧数据覆盖新数据，你怎么定位？</a>
+<a class="toc-link level-2" href="#五-网络与-dns">五、网络与 DNS</a>
+<a class="toc-link level-3" href="#q21-基础-主讲-项目网络层为什么不让业务直接-new-retrofit">Q21【基础｜主讲】项目网络层为什么不让业务直接 new Retrofit？</a>
+<a class="toc-link level-3" href="#q22-源码追问-一个请求慢-你如何拆分定位">Q22【源码追问】一个请求慢，你如何拆分定位？</a>
+<a class="toc-link level-3" href="#q23-基础-httpdns-为什么仍需要系统-dns">Q23【基础】HTTPDNS 为什么仍需要系统 DNS？</a>
+<a class="toc-link level-3" href="#q24-源码追问-主讲-如何避免同一-host-同时触发大量-dns-请求">Q24【源码追问｜主讲】如何避免同一 host 同时触发大量 DNS 请求？</a>
+<a class="toc-link level-3" href="#q25-压力追问-线上部分地区首个请求失败-重试成功-你怎么排">Q25【压力追问】线上部分地区首个请求失败、重试成功，你怎么排？</a>
+<a class="toc-link level-2" href="#六-路由">六、路由</a>
+<a class="toc-link level-3" href="#q26-基础-主讲-zrouter-的核心链路是什么">Q26【基础｜主讲】ZRouter 的核心链路是什么？</a>
+<a class="toc-link level-3" href="#q27-源码追问-为什么路由拦截器顺序重要">Q27【源码追问】为什么路由拦截器顺序重要？</a>
+<a class="toc-link level-3" href="#q28-基础-主讲-跨组件路由参数如何保证兼容">Q28【基础｜主讲】跨组件路由参数如何保证兼容？</a>
+<a class="toc-link level-3" href="#q29-源码追问-外部-http-链接为什么不能直接映射任意内部页面">Q29【源码追问】外部 HTTP 链接为什么不能直接映射任意内部页面？</a>
+<a class="toc-link level-3" href="#q30-压力追问-新版上线后-1-深链打不开-你怎么定位">Q30【压力追问】新版上线后 1% 深链打不开，你怎么定位？</a>
+<a class="toc-link level-2" href="#七-hybrid-webview">七、Hybrid / WebView</a>
+<a class="toc-link level-3" href="#q31-基础-主讲-项目-hybrid-分层是怎样的">Q31【基础｜主讲】项目 Hybrid 分层是怎样的？</a>
+<a class="toc-link level-3" href="#q32-源码追问-主讲-jsbridge-如何避免成为安全漏洞">Q32【源码追问｜主讲】JSBridge 如何避免成为安全漏洞？</a>
+<a class="toc-link level-3" href="#q33-源码追问-主讲-webview-预热和复用为什么容易出问题">Q33【源码追问｜主讲】WebView 预热和复用为什么容易出问题？</a>
+<a class="toc-link level-3" href="#q34-基础-离线资源拦截的收益和风险是什么">Q34【基础】离线资源拦截的收益和风险是什么？</a>
+<a class="toc-link level-3" href="#q35-压力追问-hybrid-页面偶现白屏-你会怎样分层排查">Q35【压力追问】Hybrid 页面偶现白屏，你会怎样分层排查？</a>
+<a class="toc-link level-2" href="#八-音视频">八、音视频</a>
+<a class="toc-link level-3" href="#q36-基础-主讲-媒体项目为什么分业务层-协议-ui-层和引擎适配层">Q36【基础｜主讲】媒体项目为什么分业务层、协议/UI 层和引擎适配层？</a>
+<a class="toc-link level-3" href="#q37-源码追问-主讲-全局音频播放器如何保持状态一致">Q37【源码追问｜主讲】全局音频播放器如何保持状态一致？</a>
+<a class="toc-link level-3" href="#q38-基础-主讲-音频焦点丢失该怎么处理">Q38【基础｜主讲】音频焦点丢失该怎么处理？</a>
+<a class="toc-link level-3" href="#q39-源码追问-预加载和预播放有什么区别">Q39【源码追问】预加载和预播放有什么区别？</a>
+<a class="toc-link level-3" href="#q40-压力追问-播放卡顿率上升-你如何定位">Q40【压力追问】播放卡顿率上升，你如何定位？</a>
+<a class="toc-link level-2" href="#九-阅读器与-jni">九、阅读器与 JNI</a>
+<a class="toc-link level-3" href="#q41-基础-主讲-epub-阅读器的主要业务链路是什么">Q41【基础｜主讲】EPUB 阅读器的主要业务链路是什么？</a>
+<a class="toc-link level-3" href="#q42-源码追问-主讲-为什么阅读进度不能只存百分比">Q42【源码追问｜主讲】为什么阅读进度不能只存百分比？</a>
+<a class="toc-link level-3" href="#q43-源码追问-主讲-相邻预解析怎样控制内存与并发">Q43【源码追问｜主讲】相邻预解析怎样控制内存与并发？</a>
+<a class="toc-link level-3" href="#q44-基础-jni-阅读内核最常见的崩溃边界有哪些">Q44【基础】JNI 阅读内核最常见的崩溃边界有哪些？</a>
+<a class="toc-link level-3" href="#q45-压力追问-全局-native-锁保护安全-但排版变慢-怎么改">Q45【压力追问】全局 native 锁保护安全，但排版变慢，怎么改？</a>
+<a class="toc-link level-2" href="#十-评论-feed-账号">十、评论 / Feed / 账号</a>
+<a class="toc-link level-3" href="#q46-基础-主讲-评论列表的数据链路怎么讲">Q46【基础｜主讲】评论列表的数据链路怎么讲？</a>
+<a class="toc-link level-3" href="#q47-源码追问-主讲-标准评论和-vip-评论长期分叉怎么治理">Q47【源码追问｜主讲】标准评论和 VIP 评论长期分叉怎么治理？</a>
+<a class="toc-link level-3" href="#q48-源码追问-主讲-推荐-feed-如何兼顾首屏和实时性">Q48【源码追问｜主讲】推荐 Feed 如何兼顾首屏和实时性？</a>
+<a class="toc-link level-3" href="#q49-基础-主讲-注册和-token-链路有哪些关键状态">Q49【基础｜主讲】注册和 Token 链路有哪些关键状态？</a>
+<a class="toc-link level-3" href="#q50-压力追问-主讲-退出登录为什么顺序重要">Q50【压力追问｜主讲】退出登录为什么顺序重要？</a>
+<a class="toc-link level-2" href="#十一-rn-native-bridge">十一、RN / Native Bridge</a>
+<a class="toc-link level-3" href="#q51-基础-主讲-pikachu-是什么形态-为什么不是独立-rn-app">Q51【基础｜主讲】 pikachu 是什么形态，为什么不是独立 RN App？</a>
+<a class="toc-link level-3" href="#q52-源码追问-主讲-ai-生图长任务为什么拆成创建页和结果页">Q52【源码追问｜主讲】AI 生图长任务为什么拆成创建页和结果页？</a>
+<a class="toc-link level-3" href="#q53-源码追问-主讲-轮询-cleanup-等于取消网络请求吗">Q53【源码追问｜主讲】轮询 cleanup 等于取消网络请求吗？</a>
+<a class="toc-link level-3" href="#q54-基础-jotai-atom-bridge-和-deep-link-怎么选">Q54【基础】Jotai Atom、Bridge 和 Deep Link 怎么选？</a>
+<a class="toc-link level-3" href="#q55-压力追问-rn-页面打不开-你按什么顺序排查">Q55【压力追问】RN 页面打不开，你按什么顺序排查？</a>
+<a class="toc-link level-2" href="#十二-性能与稳定性">十二、性能与稳定性</a>
+<a class="toc-link level-3" href="#q56-基础-主讲-你会怎样建立页面性能指标">Q56【基础｜主讲】你会怎样建立页面性能指标？</a>
+<a class="toc-link level-3" href="#q57-源码追问-预加载是否有效-应该看哪些指标">Q57【源码追问】预加载是否有效，应该看哪些指标？</a>
+<a class="toc-link level-3" href="#q58-基础-如何判断内存泄漏是页面-webview-还是播放器造成的">Q58【基础】如何判断内存泄漏是页面、WebView 还是播放器造成的？</a>
+<a class="toc-link level-3" href="#q59-源码追问-safeboot-的价值是什么">Q59【源码追问】SafeBoot 的价值是什么？</a>
+<a class="toc-link level-3" href="#q60-压力追问-只有低端机掉帧-你怎样避免-全局降级">Q60【压力追问】只有低端机掉帧，你怎样避免“全局降级”？</a>
+<a class="toc-link level-2" href="#十三-测试与可观测性">十三、测试与可观测性</a>
+<a class="toc-link level-3" href="#q61-基础-这个工作区的测试现状怎么评价">Q61【基础】这个工作区的测试现状怎么评价？</a>
+<a class="toc-link level-3" href="#q62-源码追问-paging3-最值得补哪些测试">Q62【源码追问】Paging3 最值得补哪些测试？</a>
+<a class="toc-link level-3" href="#q63-基础-跨组件-contract-test-应该验证什么">Q63【基础】跨组件 contract test 应该验证什么？</a>
+<a class="toc-link level-3" href="#q64-源码追问-日志和指标如何帮助而不是制造噪声">Q64【源码追问】日志和指标如何帮助而不是制造噪声？</a>
+<a class="toc-link level-3" href="#q65-压力追问-没有自动化测试-又必须当天上线-你怎么做">Q65【压力追问】没有自动化测试、又必须当天上线，你怎么做？</a>
+<a class="toc-link level-2" href="#十四-安全与工程化">十四、安全与工程化</a>
+<a class="toc-link level-3" href="#q66-基础-客户端敏感信息治理的底线是什么">Q66【基础】客户端敏感信息治理的底线是什么？</a>
+<a class="toc-link level-3" href="#q67-源码追问-readonly-为什么不等于签名链安全">Q67【源码追问】 --readonly 为什么不等于签名链安全？</a>
+<a class="toc-link level-3" href="#q68-基础-构建可重复性为什么是安全问题">Q68【基础】构建可重复性为什么是安全问题？</a>
+<a class="toc-link level-3" href="#q69-源码追问-webview-与路由共同的输入安全原则是什么">Q69【源码追问】WebView 与路由共同的输入安全原则是什么？</a>
+<a class="toc-link level-3" href="#q70-压力追问-发现仓库里有疑似-token-你会怎么处置">Q70【压力追问】发现仓库里有疑似 Token，你会怎么处置？</a>
+<a class="toc-link level-2" href="#三轮模拟面试脚本">三轮模拟面试脚本</a>
+<a class="toc-link level-2" href="#第一轮-业务基础与主讲项目-约-25-分钟">第一轮：业务基础与主讲项目（约 25 分钟）</a>
+<a class="toc-link level-2" href="#第二轮-源码深挖与故障定位-约-35-分钟">第二轮：源码深挖与故障定位（约 35 分钟）</a>
+<a class="toc-link level-2" href="#第三轮-压力面与工程决策-约-40-分钟">第三轮：压力面与工程决策（约 40 分钟）</a>
+<a class="toc-link level-2" href="#评分标准-100-分">评分标准（100 分）</a>
+<a class="toc-link level-3" href="#单题四档判定">单题四档判定</a>
+<a class="toc-link level-3" href="#建议录用区间">建议录用区间</a>
+<a class="toc-link level-3" href="#一票否决项">一票否决项</a>
+<a class="toc-link level-2" href="#面试前本人补充清单">面试前本人补充清单</a>
+      <a class="back-to-top" href="#">↑ 返回顶部</a>
+    </aside>
+  </div>
+  <script src="assets/search-data.js"></script>
+  <script src="assets/docs.js"></script>
+</body>
+</html>

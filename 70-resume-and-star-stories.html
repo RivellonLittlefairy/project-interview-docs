@@ -1,0 +1,772 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="简历与 STAR：基于当前工作区源码证据整理的项目面试资料">
+  <title>三年 Android 候选人：简历项目经历与 STAR 故事模板｜项目面试资料</title>
+  <link rel="stylesheet" href="assets/docs.css">
+  <script>
+    try {
+      const savedTheme = localStorage.getItem("interview-docs-theme");
+      const preferredDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      document.documentElement.dataset.theme = savedTheme || (preferredDark ? "dark" : "light");
+    } catch {}
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <header class="topbar">
+    <button class="icon-button menu-button" type="button" data-menu-toggle aria-label="打开文档导航" aria-expanded="false">☰</button>
+    <a class="brand" href="index.html"><span class="brand-mark">⌁</span><span>项目面试资料库</span></a>
+    <div class="search-shell">
+      <label class="sr-only" for="global-search">搜索所有文档</label>
+      <input id="global-search" type="search" data-search-input placeholder="搜索仓库、技术或面试题…" autocomplete="off">
+      <span class="search-shortcut">Ctrl K</span>
+      <div class="search-results" data-search-results hidden></div>
+    </div>
+    <button class="icon-button" type="button" data-theme-toggle aria-label="切换深浅主题">◐</button>
+  </header>
+  <div class="drawer-backdrop" data-drawer-backdrop hidden></div>
+  <div class="docs-layout">
+    <nav class="sidebar" data-sidebar aria-label="全站文档导航">
+      <div class="sidebar-heading">文档导航</div>
+      
+        <section class="nav-group">
+          <h2 class="nav-group-title">逐仓文档</h2>
+          <a class="nav-link" href="repositories.html">66 个仓库独立分析</a>
+        </section>
+        <section class="nav-group">
+          <h2 class="nav-group-title">开始使用</h2>
+          <a class="nav-link" href="index.html">总览与导航</a>
+<a class="nav-link" href="50-interview-project-summary.html">五条主讲项目线</a>
+<a class="nav-link active" href="70-resume-and-star-stories.html" aria-current="page">简历与 STAR</a>
+<a class="nav-link" href="60-interview-question-bank.html">70 道面试题</a>
+        </section>
+
+        <section class="nav-group">
+          <h2 class="nav-group-title">仓库分析</h2>
+          <a class="nav-link" href="00-repository-inventory.html">全量仓库盘点</a>
+<a class="nav-link" href="10-android-business-repositories.html">Android 业务仓库</a>
+<a class="nav-link" href="20-android-infrastructure-media.html">基础设施与媒体</a>
+<a class="nav-link" href="30-cross-platform-rn-web.html">RN 与 Web</a>
+<a class="nav-link" href="31-tools-samples-and-assets.html">工具、样例与资产</a>
+        </section>
+
+        <section class="nav-group">
+          <h2 class="nav-group-title">质量复核</h2>
+          <a class="nav-link" href="40-android-docs-evidence-review.html">Android 证据复核</a>
+<a class="nav-link" href="41-full-workspace-coverage-review.html">全工作区覆盖复核</a>
+        </section>
+
+        <section class="nav-group">
+          <h2 class="nav-group-title">辅助材料</h2>
+          <a class="nav-link" href="ANALYSIS-TEMPLATE.html">仓库分析模板</a>
+<a class="nav-link" href="2026-07-24-all-repositories-analysis-plan.html">原始执行计划</a>
+        </section>
+
+        <section class="nav-group">
+          <h2 class="nav-group-title">Android 专题</h2>
+          <a class="nav-link" href="android-storage-guide.html">Android 存储方案</a>
+        </section>
+      <p class="sidebar-note">离线资料 · 证据快照 2026-07-24</p>
+    </nav>
+    <main class="article-shell" id="main-content">
+      <div class="breadcrumbs"><a href="index.html">首页</a><span>/</span><span>开始使用</span><span>/</span><span>简历与 STAR</span></div>
+      
+      <article class="markdown-body">
+        <h1 id="三年-android-候选人-简历项目经历与-star-故事模板">三年 Android 候选人：简历项目经历与 STAR 故事模板</h1>
+<blockquote class="callout"><p>适用对象：约三年 Android 经验的候选人。<br>证据快照：2026-07-24，基于 <code>C:\Users\msf\Desktop\code</code> 当前检出源码。<br>使用原则：<strong>源码事实不等于个人经历。</strong> 本文所有简历项目定位、职责、成果和 STAR 中的个人动作均为候选模板，必须经过本人确认；源码只能证明“代码里有什么”，不能证明“是谁做的”。</p>
+</blockquote>
+<h2 id="0-先约定四种标记">0. 先约定四种标记</h2>
+<ul>
+<li><strong>【源码事实】</strong>：当前源码能直接定位的模块、类、函数或调用关系，可以用于解释项目机制。</li>
+<li><strong>【最低安全口径】</strong>：即使没有该模块的提交归属，也可以说“我阅读过当前源码，能解释调用链和风险”；不能据此改写成“我负责”。</li>
+<li><strong>【需本人确认】</strong>：只有本人确实做过、能说明需求背景、本人动作和验证方法时，才可写进简历或按 STAR 口述。</li>
+<li><strong>【结果待补】</strong>：必须同时补全指标、统计口径、时间范围、数据来源。四项缺一时，不写百分比、绝对收益或“线上显著提升”。</li>
+</ul>
+<p>简历 bullet 推荐使用“业务场景 + 本人动作 + 技术方法 + 验证/结果”的结构。若只能确认源码机制，不能确认个人动作，就不要把该 bullet 放进简历。</p>
+<hr>
+<h2 id="1-可选简历项目经历">1. 可选简历项目经历</h2>
+<p>以下五组最多选择本人真实参与、能被追问的 2—3 组。每一行都是候选模板，不是已确认履历。</p>
+<h3 id="1-1-知识首页与内容发现">1.1 知识首页与内容发现</h3>
+<p><strong>项目定位【候选模板｜需本人确认】</strong>：参与组件化内容 App 的知识首页/书架业务接入，在团队既有 DevKit、Mavericks 与 Paging3 能力上完成异构内容流的状态、分页和互动闭环。</p>
+<ul>
+<li><strong>【需本人确认】</strong> 负责 <code>[具体页面/Tab/卡片]</code> 的接口接入与 UI 状态建模，将服务端分页结果映射为 <code>PagingData</code>，并处理刷新、追加、空态和错误态；验证方式为 <code>[测试/日志/联调/灰度]</code>。</li>
+<li><strong>【需本人确认】</strong> 接入 <code>[点赞/删除/负反馈]</code> 的局部列表更新，使用稳定业务 id 校验目标项，并为失败场景设计 <code>[回滚/重拉/提示]</code>。</li>
+<li><strong>【需本人确认】</strong> 完成 <code>[具体异构卡片]</code> 的 ViewHolder、Diff 或曝光生命周期接入，处理 RecyclerView 复用、异步回调和重复监听问题。</li>
+<li><strong>【需本人确认】</strong> 排查 <code>[真实分页故障]</code>，区分页面 State、adapter <code>CombinedLoadStates</code> 与 PagingSource generation，通过 <code>[真实证据]</code> 定位并验证。</li>
+<li><strong>【需本人确认｜结果待补】</strong> <code>[真实结果]</code>；指标 <code>[例如首屏成功率/刷新失败率/重复请求数]</code>，口径 <code>[分母与排除项]</code>，时间范围 <code>[版本前后或具体日期]</code>，数据来源 <code>[监控平台/埋点/日志/工单]</code>。</li>
+</ul>
+<p><strong>源码锚点</strong>：</p>
+<ul>
+<li><code>yyyyy-cdoe/km_home_base/km_home_base/src/main/java/com/zhihu/android/feature/km_home_base/discovery/HomePinTabFragment.kt</code> · <code>requestData()</code>、<code>addLoadStateListener</code></li>
+<li><code>yyyyy-cdoe/km_home_base/km_home_base/src/main/java/com/zhihu/android/feature/km_home_base/discovery/HomePinTabViewModel.kt</code> · <code>Pager(...)</code>、<code>setOnEach</code>、<code>refresh()</code>、<code>deleteItem()</code></li>
+<li><code>yyyyy-cdoe/DevKit/devkit/src/main/java/com/zhihu/android/devkit/paging/ResponsePagingSource.kt</code></li>
+<li><code>yyyyy-cdoe/DevKit/devkit/src/main/java/com/zhihu/android/devkit/paging/PagerMediator.kt</code></li>
+</ul>
+<h3 id="1-2-手稿与-epub-阅读消费">1.2 手稿与 EPUB 阅读消费</h3>
+<p><strong>项目定位【候选模板｜需本人确认】</strong>：参与内容阅读业务，围绕手稿双向目录或 EPUB 按需解析、进度恢复和阅读设置完成业务侧接入与一致性处理。</p>
+<ul>
+<li><strong>【需本人确认】</strong> 负责 <code>[手稿目录/EPUB 阅读页/目录跳转]</code>，接入目标章节定位、向前/向后加载或章节解析，并覆盖首尾、空数据、重复章节和页面重建。</li>
+<li><strong>【需本人确认】</strong> 实现或维护 <code>[本地进度保存/服务端同步/恢复定位]</code> 的业务逻辑，以章节 id、页索引、偏移或时间戳处理端云进度冲突。</li>
+<li><strong>【需本人确认】</strong> 接入相邻章节预解析或阅读缓存策略，限制 <code>[窗口/并发/内存]</code>，并在页面离开或切书时取消、隔离旧任务。</li>
+<li><strong>【需本人确认】</strong> 负责 <code>[点赞/书架/评论/礼物/主题字号]</code> 中的具体调用点，明确一次性事件与持久 UI State 的边界。</li>
+<li><strong>【需本人确认｜结果待补】</strong> <code>[真实结果]</code>；指标 <code>[首章打开耗时/目录定位成功率/进度恢复成功率/阅读崩溃率]</code>，口径 <code>[定义]</code>，时间范围 <code>[日期或版本]</code>，数据来源 <code>[APM/埋点/日志/回归记录]</code>。</li>
+</ul>
+<p><strong>源码锚点</strong>：</p>
+<ul>
+<li><code>yyyyy-cdoe/VipManuscript/vip_manuscript/src/main/java/com/zhihu/android/vip/manuscript/manuscript/catalog/ManuscriptBillboardViewModel.kt</code> · <code>initArgument()</code>、<code>resolvePreKey()</code>、<code>resolveNextKey()</code>、<code>refresh()</code></li>
+<li><code>yyyyy-cdoe/VipManuscript/vip_manuscript/src/main/java/com/zhihu/android/vip/manuscript/manuscript/catalog/native_catalog/recommend/actor/NativeManuscriptAuthorFragment.kt</code> · <code>showTargetOnSecondPosition()</code></li>
+<li><code>yyyyy-cdoe/VipReader/vip_reader/src/main/java/com/zhihu/android/vip/reader/business/EpubViewModel.kt</code> · <code>preParseAround()</code>、<code>needSyncSectionProgress()</code>、<code>syncProgress()</code></li>
+<li><code>yyyyy-cdoe/VipReader/vip_reader/src/main/java/com/zhihu/android/vip/reader/business/VipReaderFragment.kt</code></li>
+</ul>
+<h3 id="1-3-知识音频业务接入">1.3 知识音频业务接入</h3>
+<p><strong>项目定位【候选模板｜需本人确认】</strong>：参与知识音频播放业务，在既有播放器会话和媒体基础能力上完成 SKU 数据源、播放列表、权益与页面状态的业务接入。</p>
+<ul>
+<li><strong>【需本人确认】</strong> 负责 <code>[具体 SKU/音频页面]</code> 的资源、详情和目录接口映射，把业务差异收敛到 DataSource/PlayRequest，而不是修改解码内核。</li>
+<li><strong>【需本人确认】</strong> 处理新 Intent、切集、自动播放、试听和本地音频权限场景，用业务 id 或 generation 避免旧请求覆盖当前会话。</li>
+<li><strong>【需本人确认】</strong> 接入购买或 ownership 刷新，客户端支付回调只触发服务端权益再校验，不直接以本地回调放权。</li>
+<li><strong>【需本人确认】</strong> 处理页面重建、后台播放、通知、音频焦点或错误态中的 <code>[本人真实负责项]</code>，并通过 <code>[实机矩阵/日志/监控]</code> 验证。</li>
+<li><strong>【需本人确认｜结果待补】</strong> <code>[真实结果]</code>；指标 <code>[播放成功率/首播耗时/卡顿率/权益校验失败率]</code>，口径 <code>[会话起止与排除项]</code>，时间范围 <code>[日期或版本]</code>，数据来源 <code>[播放器 APM/埋点/日志]</code>。</li>
+</ul>
+<p><strong>源码锚点</strong>：</p>
+<ul>
+<li><code>yyyyy-cdoe/Kmaudio/kmaudio-api/src/main/java/com/zhihu/android/kmarket/KMPlayerInterface.java</code></li>
+<li><code>yyyyy-cdoe/Kmaudio/kmaudio/src/main/java/com/zhihu/android/kmaudio/player/KMPlayer.kt</code> · <code>play(...)</code></li>
+<li><code>yyyyy-cdoe/Audio/audio/src/main/java/com/zhihu/android/xplayer/XPlayer.kt</code></li>
+<li><code>yyyyy-cdoe/mediax/mediax/src/main/java/com/zhihu/android/player/ttVideoEngine/TTVideoPlayerEngine.kt</code></li>
+</ul>
+<h3 id="1-4-app-宿主交付与组件接入">1.4 App 宿主交付与组件接入</h3>
+<p><strong>项目定位【候选模板｜需本人确认】</strong>：参与组件化 Android App 的业务交付，在既有构建装配、源码替换与启动任务体系中完成组件接入、版本联调和问题闭环。</p>
+<ul>
+<li><strong>【需本人确认】</strong> 负责 <code>[具体组件]</code> 的 Maven 版本接入或 <code>sourcecode.properties</code> 源码联调，定位 <code>[重复类/版本冲突/资源冲突/so 不对齐]</code>。</li>
+<li><strong>【需本人确认】</strong> 维护 <code>[具体产品变体/组件替换/裁剪项]</code>，并完成 <code>[具体 flavor/渠道/ABI]</code> 的构建与关键链路回归。</li>
+<li><strong>【需本人确认】</strong> 在既有 Application Delegate/启动任务边界内接入 <code>[具体 SDK 或业务任务]</code>，按隐私前、授权后、首屏后和进程条件分层。</li>
+<li><strong>【需本人确认】</strong> 排查 Launcher 到 Main 或 Deep Link 的 <code>[真实时序问题]</code>，使用阶段监控、trace、日志或开关对照定位。</li>
+<li><strong>【需本人确认｜结果待补】</strong> <code>[真实结果]</code>；指标 <code>[构建成功率/启动耗时/故障数/回归覆盖]</code>，口径 <code>[定义]</code>，时间范围 <code>[日期或版本]</code>，数据来源 <code>[CI/APM/发布记录/故障单]</code>。</li>
+</ul>
+<p><strong>源码锚点</strong>：</p>
+<ul>
+<li><code>yyyyy-cdoe/VipAndroid/app/build.gradle</code> · <code>allComponents</code>、<code>VIP_APP_REMOVED_COMPONENTS</code>、<code>dependencyReplace</code>、<code>handleSo</code></li>
+<li><code>yyyyy-cdoe/VipAndroid/gradle/sourcecode.gradle</code></li>
+<li><code>yyyyy-cdoe/VipHome/home/src/main/java/com/zhihu/android/app/ZhihuApplicationDelegate.java</code></li>
+<li><code>yyyyy-cdoe/VipHome/home/src/main/java/com/zhihu/android/app/ui/activity/LauncherActivity.java</code> · <code>handleLauncherDisplay()</code>、<code>startMain()</code></li>
+</ul>
+<h3 id="1-5-native-rn-内容工具协作">1.5 Native/RN 内容工具协作</h3>
+<p><strong>项目定位【候选模板｜需本人确认】</strong>：参与 Native 宿主与 RN 多页面 Bundle 的业务协作，围绕页面注册、Deep Link、Bridge、长任务轮询和跨页面状态完成调用侧接入。</p>
+<ul>
+<li><strong>【需本人确认】</strong> 负责 <code>[Native 入口/RN 页面/Bridge 事件]</code> 的合同定义或接入，明确 <code>pageName</code>、<code>initProps</code>、字段默认值、版本和错误码。</li>
+<li><strong>【需本人确认】</strong> 接入 AI 生图异步任务的 <code>[创建任务/结果轮询/超时/重试]</code> 环节，并用 taskId 隔离任务、限制重复请求。</li>
+<li><strong>【需本人确认】</strong> 处理评论、Native 发布器和默认编辑器的 <code>[Jotai/Bridge/Deep Link]</code> 回传分支，验证返回栈与生命周期。</li>
+<li><strong>【需本人确认】</strong> 排查 <code>[真实跨端故障]</code>，按页面表、loader、注册、Bundle、Native 参数和页面首屏分层定位。</li>
+<li><strong>【需本人确认｜结果待补】</strong> <code>[真实结果]</code>；指标 <code>[任务成功率/重复请求量/Bridge 失败率/联调周期]</code>，口径 <code>[定义]</code>，时间范围 <code>[日期或版本]</code>，数据来源 <code>[前后端日志/埋点/联调记录]</code>。</li>
+</ul>
+<p><strong>源码锚点</strong>：</p>
+<ul>
+<li><code>pikachu/pages/entry/src/pages.mjs</code></li>
+<li><code>pikachu/pages/entry/src/getRNPageLoaders.ts</code></li>
+<li><code>pikachu/pages/GenerateAIImage/src/Entry.tsx</code> · <code>handleGenerate()</code></li>
+<li><code>pikachu/pages/GenerateAIImageResult/src/Entry.tsx</code> · <code>startPolling()</code>、<code>handlePublish()</code></li>
+<li><code>pikachu/pages/AIImageSelection/src/components/AIImageList/index.tsx</code> · <code>handleEndReached()</code></li>
+</ul>
+<hr>
+<h2 id="2-star-故事模板">2. STAR 故事模板</h2>
+<h3 id="2-1-首页-paging3-与轻量状态管理">2.1 首页 Paging3 与轻量状态管理</h3>
+<p><strong>【源码事实】</strong></p>
+<ul>
+<li><code>HomePinTabViewModel</code> 创建 DevKit <code>Pager</code>，把 <code>pager.flow</code> 通过 <code>setOnEach</code> 写入 <code>PinTabState.data</code>；<code>refresh()</code> 调用 <code>pager.invalidate()</code>。</li>
+<li><code>HomePinTabFragment</code> 订阅数据并通过 <code>adapter.addLoadStateListener</code> 读取 refresh/append/prepend 的加载状态。</li>
+<li><code>deleteItem()</code> 走 <code>PagerMediator.remove()</code>；DevKit <code>ResponsePagingSource</code> 负责把 Refresh/Append/Prepend 映射成 <code>LoadResult.Page</code>。</li>
+<li>这条链有不可变 State 和单向渲染，但没有统一 Intent/Action/Reducer，Fragment 仍直接调用 ViewModel 方法，因此只能称为 Mavericks-based 轻量 MVI。</li>
+</ul>
+<p><strong>源码锚点</strong>：<code>yyyyy-cdoe/km_home_base/km_home_base/src/main/java/com/zhihu/android/feature/km_home_base/discovery/HomePinTabViewModel.kt</code>、<code>yyyyy-cdoe/km_home_base/km_home_base/src/main/java/com/zhihu/android/feature/km_home_base/discovery/HomePinTabFragment.kt</code>；<code>yyyyy-cdoe/DevKit/devkit/src/main/java/com/zhihu/android/devkit/paging/ResponsePagingSource.kt</code>、<code>yyyyy-cdoe/DevKit/devkit/src/main/java/com/zhihu/android/devkit/paging/PagerMediator.kt</code>。</p>
+<p><strong>【最低安全口径】</strong></p>
+<blockquote class="callout"><p>我能从业务调用点解释 <code>refresh → invalidate → 新 PagingSource generation → PagingData → State → adapter</code> 的链路，也能说明为什么 Paging 加载态仍由 <code>CombinedLoadStates</code> 管理。DevKit 是团队基础库，不能据此声称由我设计或实现。</p>
+</blockquote>
+<p><strong>STAR 候选模板【需本人确认】</strong></p>
+<ul>
+<li><strong>S</strong>：<code>[真实首页/列表]</code> 出现 <code>[重复请求、旧数据回写、loading 不结束、互动后整页刷新]</code>。</li>
+<li><strong>T</strong>：本人负责 <code>[具体页面、PagingSource、卡片或互动调用点]</code>，目标是 <code>[真实目标]</code>。</li>
+<li><strong>A</strong>：按 State、LoadState、PagingSource generation 三层复现；检查 key、请求 id、刷新时序和 mediator 变换；实施 <code>[本人实际修改]</code>；用 <code>[单测/日志/弱网/快速刷新/旋转]</code> 验证。</li>
+<li><strong>R</strong>：只填写本人可证明的结果；没有指标时写“覆盖 <code>[具体用例]</code> 并完成 <code>[评审/灰度/回归]</code>”。</li>
+</ul>
+<p><strong>只有确实做过才能说</strong></p>
+<ul>
+<li>“我负责 HomePinTab”“我实现了 PagingSource 映射”“我修复了刷新竞态”。</li>
+<li>“我修改了 <code>ResponsePagingSource</code> 的取消语义或 refresh key”——当前源码风险不等于本人已经修复。</li>
+<li>“我设计了 DevKit/MVI/Pager/Adapter 框架”——除非有直接提交和设计证据。</li>
+</ul>
+<p><strong>【结果待补】</strong></p>
+<ul>
+<li>指标：<code>[首屏成功率/刷新成功率/请求重复率/互动更新耗时/P95 首卡时间]</code></li>
+<li>统计口径：<code>[一次页面会话或一次 refresh 如何定义；异常退出、缓存命中是否排除]</code></li>
+<li>时间范围：<code>[上线前后各 7/14/28 天或具体版本]</code></li>
+<li>数据来源：<code>[APM、业务埋点、网络日志、测试报告、故障工单]</code></li>
+</ul>
+<h3 id="2-2-从任意章节进入的双向目录">2.2 从任意章节进入的双向目录</h3>
+<p><strong>【源码事实】</strong></p>
+<ul>
+<li><code>ManuscriptBillboardViewModel.initArgument()</code> 接收业务 id 和初始章节 id。</li>
+<li>匿名 <code>ResponsePagingSource</code> 同时实现 <code>resolvePreKey()</code> 与 <code>resolveNextKey()</code>，围绕初始位置支持 prepend/append。</li>
+<li><code>refresh()</code> 使当前 pager 失效；<code>NativeManuscriptAuthorFragment.showTargetOnSecondPosition()</code> 在加载完成后定位目标章节。</li>
+</ul>
+<p><strong>源码锚点</strong>：<code>yyyyy-cdoe/VipManuscript/vip_manuscript/src/main/java/com/zhihu/android/vip/manuscript/manuscript/catalog/ManuscriptBillboardViewModel.kt</code> · <code>initArgument()</code>、<code>resolvePreKey()</code>、<code>resolveNextKey()</code>、<code>refresh()</code>；<code>yyyyy-cdoe/VipManuscript/vip_manuscript/src/main/java/com/zhihu/android/vip/manuscript/manuscript/catalog/native_catalog/recommend/actor/NativeManuscriptAuthorFragment.kt</code> · <code>showTargetOnSecondPosition()</code>。</p>
+<p><strong>【最低安全口径】</strong></p>
+<blockquote class="callout"><p>我能说明双向分页比普通首尾分页多了 initial key、prepend/append、两个方向排序、稳定 id 去重和目标定位问题；源码只证明该实现存在，不证明我负责过。</p>
+</blockquote>
+<p><strong>STAR 候选模板【需本人确认】</strong></p>
+<ul>
+<li><strong>S</strong>：用户从分享、历史或推荐直接进入中间章节，目录需要同时展示前后上下文；真实问题是 <code>[定位偏移/重复章节/首尾判断/双向并发]</code>。</li>
+<li><strong>T</strong>：本人负责 <code>[目录页/PagingSource/key 计算/定位逻辑]</code>，需保证 <code>[真实验收条件]</code>。</li>
+<li><strong>A</strong>：以稳定 section id 建去重和排序规则；区分初始页、prepend、append；对刷新 generation 和旧回调做隔离；补 <code>[首章/末章/中间章/空页/重复页/弱网]</code> 验证。</li>
+<li><strong>R</strong>：记录真实定位或分页结果；没有线上指标时，列出已通过的边界用例和验证版本。</li>
+</ul>
+<p><strong>只有确实做过才能说</strong></p>
+<ul>
+<li>计算或修改过 preKey/nextKey、目标定位、去重与排序。</li>
+<li>处理过两个方向并发或刷新代际问题。</li>
+<li>补过自动化测试、埋点或线上治理；当前可见测试不足不能反向当作个人成果。</li>
+</ul>
+<p><strong>【结果待补】</strong></p>
+<ul>
+<li>指标：<code>[目标章节定位成功率/重复章节率/目录请求失败率/P95 定位耗时]</code></li>
+<li>统计口径：<code>[由中间章节进入的会话；成功的定义；首尾页如何计数]</code></li>
+<li>时间范围：<code>[版本/灰度周期/上线前后窗口]</code></li>
+<li>数据来源：<code>[目录埋点、接口日志、QA 用例、线上反馈单]</code></li>
+</ul>
+<h3 id="2-3-epub-阅读进度与相邻预解析">2.3 EPUB 阅读进度与相邻预解析</h3>
+<p><strong>【源码事实】</strong></p>
+<ul>
+<li><code>EpubViewModel.preParseAround()</code> 预解析当前页附近内容。</li>
+<li><code>needSyncSectionProgress()</code> 决定是否同步章节进度；<code>syncProgress(local, net, ...)</code> 比较本地和网络进度。</li>
+<li><code>VipReaderFragment</code> 调用 <code>viewModel.syncProgress()</code>；进度恢复还涉及章节、页索引或偏移，不适合只保存易漂移的百分比。</li>
+</ul>
+<p><strong>源码锚点</strong>：<code>yyyyy-cdoe/VipReader/vip_reader/src/main/java/com/zhihu/android/vip/reader/business/EpubViewModel.kt</code> · <code>preParseAround()</code>、<code>needSyncSectionProgress()</code>、<code>syncProgress()</code>；<code>yyyyy-cdoe/VipReader/vip_reader/src/main/java/com/zhihu/android/vip/reader/business/VipReaderFragment.kt</code>。</p>
+<p><strong>【最低安全口径】</strong></p>
+<blockquote class="callout"><p>我能解释 EPUB 业务层如何在现有解析能力上做按需解析、相邻预解析和端云进度合并；若解析内核来自公共库，就只说业务接入和状态处理，不说实现了 EPUB 标准或 C++ 排版内核。</p>
+</blockquote>
+<p><strong>STAR 候选模板【需本人确认】</strong></p>
+<ul>
+<li><strong>S</strong>：阅读页出现 <code>[首章慢/翻页等待/切设备后进度倒退/排版变化导致百分比失真]</code>。</li>
+<li><strong>T</strong>：本人负责 <code>[进度保存/同步/恢复/预解析窗口]</code>，目标为 <code>[真实验收条件]</code>。</li>
+<li><strong>A</strong>：将 IO/解析放到后台；以章节 id、页索引/偏移和时间戳合并端云进度；限制预解析窗口并在切书/离屏时取消；覆盖 <code>[字体变化/离线/旧进度/坏包]</code>。</li>
+<li><strong>R</strong>：填写真实体验或稳定性结果；无线上数据时写清 EPUB 样本、设备范围和回归结论。</li>
+</ul>
+<p><strong>只有确实做过才能说</strong></p>
+<ul>
+<li>设计了端云冲突策略、修改了同步阈值或预解析窗口。</li>
+<li>处理过真实的进度倒退、解析阻塞或内存上涨。</li>
+<li>写过 EPUB/坏包/进程恢复测试；当前源码中的风险不能包装为本人已治理。</li>
+</ul>
+<p><strong>【结果待补】</strong></p>
+<ul>
+<li>指标：<code>[首章可读时间/P95 翻页耗时/进度恢复成功率/阅读 OOM 或崩溃率]</code></li>
+<li>统计口径：<code>[书籍样本、缓存状态、设备档位、冷/热打开定义]</code></li>
+<li>时间范围：<code>[版本或具体日期窗口]</code></li>
+<li>数据来源：<code>[阅读 APM、端云同步日志、测试报告、线上工单]</code></li>
+</ul>
+<h3 id="2-4-音频业务-会话与引擎分层">2.4 音频业务、会话与引擎分层</h3>
+<p><strong>【源码事实】</strong></p>
+<ul>
+<li>外部可通过 <code>KMPlayerInterface</code> 进入 <code>KMPlayer.play(...)</code>；Kmaudio 管业务类型、DataSource、播放列表和权益。</li>
+<li><code>Audio</code> 中的 <code>XPlayer</code>/Service 承担播放会话和后台能力；<code>mediax.TTVideoPlayerEngine</code> 是厂商引擎适配层。</li>
+<li>业务数据源、播放列表、播放器会话和底层 engine 是不同职责，不能把其中任一业务接入自动等同于“实现播放器内核”。</li>
+</ul>
+<p><strong>源码锚点</strong>：<code>yyyyy-cdoe/Kmaudio/kmaudio-api/src/main/java/com/zhihu/android/kmarket/KMPlayerInterface.java</code>；<code>yyyyy-cdoe/Kmaudio/kmaudio/src/main/java/com/zhihu/android/kmaudio/player/KMPlayer.kt</code> · <code>play(...)</code>；<code>yyyyy-cdoe/Audio/audio/src/main/java/com/zhihu/android/xplayer/XPlayer.kt</code>；<code>yyyyy-cdoe/mediax/mediax/src/main/java/com/zhihu/android/player/ttVideoEngine/TTVideoPlayerEngine.kt</code>。</p>
+<p><strong>【最低安全口径】</strong></p>
+<blockquote class="callout"><p>我能说明音频链的分层：业务层提供资源、目录、播放列表和 ownership，Service/会话层承接后台生命周期，engine adapter 隔离厂商实现。没有本人证据时，不把任何一层说成个人设计。</p>
+</blockquote>
+<p><strong>STAR 候选模板【需本人确认】</strong></p>
+<ul>
+<li><strong>S</strong>：新增 <code>[真实 SKU/试听/购买/后台播放]</code> 场景，或出现 <code>[切集错乱/旧回调覆盖/权益未刷新/通知状态不同步]</code>。</li>
+<li><strong>T</strong>：本人负责 <code>[DataSource/页面状态/权益/错误处理/联调]</code>。</li>
+<li><strong>A</strong>：把 SKU 差异限制在 DataSource；用 businessId/generation 校验回调；购买后以服务端 ownership 为真值；验证新 Intent、后台、重建、焦点、网络切换。</li>
+<li><strong>R</strong>：使用真实播放会话指标或写明实机/场景验证范围。</li>
+</ul>
+<p><strong>只有确实做过才能说</strong></p>
+<ul>
+<li>“我新增了某 SKU DataSource”“我处理了试听转付费”“我修复了旧请求覆盖”。</li>
+<li>“我实现了解码器、TTVideoEngine、Audio Service 或整个媒体框架”——没有对应提交不能说。</li>
+<li>“我优化了首播/卡顿”——必须有前后口径一致的数据。</li>
+</ul>
+<p><strong>【结果待补】</strong></p>
+<ul>
+<li>指标：<code>[首播成功率/P95 prepare-to-play/卡顿时长占比/切集失败率/权益误判率]</code></li>
+<li>统计口径：<code>[一次播放会话定义；试听、离线、失败重试是否纳入]</code></li>
+<li>时间范围：<code>[版本前后或灰度周期]</code></li>
+<li>数据来源：<code>[PlayerApm、播放器日志、业务埋点、QA 记录]</code></li>
+</ul>
+<h3 id="2-5-启动任务与组件化交付">2.5 启动任务与组件化交付</h3>
+<p><strong>【源码事实】</strong></p>
+<ul>
+<li><code>yyyyy-cdoe/VipAndroid/app/build.gradle</code> 包含组件集合、VIP 裁剪、依赖替换和 so 检查；<code>yyyyy-cdoe/VipAndroid/gradle/sourcecode.gradle</code> 读取 <code>sourcecode.properties</code> 做 Maven 制品到本地源码的替换。</li>
+<li><code>VipHome</code> 的 <code>ZhihuApplicationDelegate</code> 承接 Application 委托；<code>LauncherActivity.handleLauncherDisplay()</code> 决定启动展示，<code>startMain()</code> 进入主页面。</li>
+<li>构建装配与运行时启动是两个仓库、两类职责，不能混为“一个启动框架”。</li>
+</ul>
+<p><strong>源码锚点</strong>：<code>yyyyy-cdoe/VipAndroid/app/build.gradle</code>；<code>yyyyy-cdoe/VipAndroid/gradle/sourcecode.gradle</code>；<code>yyyyy-cdoe/VipHome/home/src/main/java/com/zhihu/android/app/ZhihuApplicationDelegate.java</code>；<code>yyyyy-cdoe/VipHome/home/src/main/java/com/zhihu/android/app/ui/activity/LauncherActivity.java</code> · <code>handleLauncherDisplay()</code>、<code>startMain()</code>。</p>
+<p><strong>【最低安全口径】</strong></p>
+<blockquote class="callout"><p>我能区分主工程构建装配与运行时启动链，也能给出组件接入、版本冲突、源码联调和启动时序的排查顺序。除非确实参与设计，否则只说在既有体系中接入。</p>
+</blockquote>
+<p><strong>STAR 候选模板【需本人确认】</strong></p>
+<ul>
+<li><strong>S</strong>：<code>[具体组件升级/新组件接入/启动任务]</code> 导致 <code>[构建失败/重复类/so 不齐/首屏阻塞/路由覆盖]</code>。</li>
+<li><strong>T</strong>：本人负责把 <code>[组件或 SDK]</code> 安全接入 <code>[产品/flavor/版本]</code>。</li>
+<li><strong>A</strong>：核对依赖图、版本锁和替换表；用源码替换复现；按隐私、进程和首屏关键性安排启动阶段；验证多 flavor、ABI、冷/热启动和关键 Deep Link。</li>
+<li><strong>R</strong>：填写真实构建、启动或发布结果；无监控数据时写明完成的渠道和用例矩阵。</li>
+</ul>
+<p><strong>只有确实做过才能说</strong></p>
+<ul>
+<li>维护过具体组件版本、替换表、源码联调或启动任务。</li>
+<li>定位过真实 Gradle、so、路由或启动竞态。</li>
+<li>“设计了整套组件化/启动框架”“负责 80 个组件”不能由当前仓库结构推出。</li>
+</ul>
+<p><strong>【结果待补】</strong></p>
+<ul>
+<li>指标：<code>[CI 构建成功率/构建时长/冷启动 P50-P95/启动崩溃率/渠道回归通过率]</code></li>
+<li>统计口径：<code>[机型、进程、冷/热定义、flavor、是否含网络]</code></li>
+<li>时间范围：<code>[版本或日期窗口]</code></li>
+<li>数据来源：<code>[CI、LaunchTaskMonitor/APM、发布单、回归报告]</code></li>
+</ul>
+<h3 id="2-6-feed-的缓存-预加载与降级编排">2.6 Feed 的缓存、预加载与降级编排</h3>
+<p><strong>【源码事实】</strong></p>
+<ul>
+<li><code>FeedRepository</code> 同时持有 <code>FeedLocalDataSource</code>、<code>FeedRemoteDataSource</code> 和 <code>FeedPreloadDataSource</code>。</li>
+<li><code>FeedFragment.updateUI()</code> 区分刷新、加载更多和异常，并调用 <code>FeedMonitor.reportDuration/reportDataStream</code>。</li>
+<li><code>DowngradeManager</code>/<code>DowngradeFeedService</code> 提供降级链路；异构卡片由 delegate 体系承接。</li>
+</ul>
+<p><strong>源码锚点</strong>：<code>yyyyy-cdoe/Feed/feed/src/main/java/com/zhihu/android/app/feed/ui2/feed/repo/FeedRepository.kt</code>；<code>yyyyy-cdoe/Feed/feed/src/main/java/com/zhihu/android/app/feed/ui2/feed/repo/FeedLocalDataSource.kt</code>；<code>yyyyy-cdoe/Feed/feed/src/main/java/com/zhihu/android/app/feed/ui2/feed/repo/FeedRemoteDataSource.kt</code>；<code>yyyyy-cdoe/Feed/feed/src/main/java/com/zhihu/android/app/feed/ui2/feed/repo/FeedPreloadDataSource.kt</code>；<code>yyyyy-cdoe/Feed/feed/src/main/java/com/zhihu/android/app/feed/ui2/feed/FeedFragment.kt</code>；<code>yyyyy-cdoe/Feed/feed/src/main/java/com/zhihu/android/app/feed/ui2/feed/DowngradeManager.kt</code>；<code>yyyyy-cdoe/Feed/feed/src/main/java/com/zhihu/android/app/feed/ui2/feed/FeedService.kt</code>。</p>
+<p><strong>【最低安全口径】</strong></p>
+<blockquote class="callout"><p>我能说明 Feed 如何在本地、预加载、远端和降级数据之间编排，也能说明刷新 generation、缓存替换、异构 delegate 和首卡观测的风险；这不等于我负责整个 Feed。</p>
+</blockquote>
+<p><strong>STAR 候选模板【需本人确认】</strong></p>
+<ul>
+<li><strong>S</strong>：Feed 在 <code>[真实场景]</code> 出现 <code>[首屏慢/缓存闪烁/重复请求/降级不一致/卡片复用问题]</code>。</li>
+<li><strong>T</strong>：本人负责 <code>[DataSource/Repository/卡片 delegate/监控]</code> 的具体调用点。</li>
+<li><strong>A</strong>：明确数据源优先级和 generation；以稳定 id 做 Diff；区分缓存展示与网络校正；为失败和降级建立分段观测；验证用户已滚动、快速刷新和弱网。</li>
+<li><strong>R</strong>：填写真实首卡、命中率、成功率或稳定性结果；没有数据时写清回归场景。</li>
+</ul>
+<p><strong>只有确实做过才能说</strong></p>
+<ul>
+<li>修改过 FeedRepository 的数据源编排、缓存、预加载、降级或卡片 delegate。</li>
+<li>建过监控并使用其结果推动修改。</li>
+<li>“提升推荐效果/业务转化”必须有实验归因，客户端代码本身不能证明。</li>
+</ul>
+<p><strong>【结果待补】</strong></p>
+<ul>
+<li>指标：<code>[首卡 P95/预加载消费命中率/请求成功率/降级触发率/重复卡片率]</code></li>
+<li>统计口径：<code>[一次 Feed 会话、冷/热启动、缓存命中定义、实验桶]</code></li>
+<li>时间范围：<code>[实验或版本周期]</code></li>
+<li>数据来源：<code>[FeedMonitor、实验平台、网络日志、QA/线上工单]</code></li>
+</ul>
+<h3 id="2-7-评论根-子-锚点列表与互动一致性">2.7 评论根/子/锚点列表与互动一致性</h3>
+<p><strong>【源码事实】</strong></p>
+<ul>
+<li><code>CommentViewModel</code> 分别调用 <code>getRootCommentList()</code>、<code>getChildCommentList()</code>、<code>getAnchorCommentList()</code> 和 <code>getNextCommentList()</code>。</li>
+<li><code>RootCommentListRepository</code> 等 Repository 把接口结果处理后写回列表状态；<code>CommentService</code> 暴露根、子、锚点和 next URL 接口。</li>
+<li>评论互动需要以稳定 commentId 做局部更新，并处理资源 id、列表 generation、失败回滚和草稿/编辑器生命周期。</li>
+</ul>
+<p><strong>源码锚点</strong>：<code>yyyyy-cdoe/VipComment/comment/src/main/java/com/zhihu/android/comment_for_v7/viewmodel/CommentViewModel.kt</code>；<code>yyyyy-cdoe/VipComment/comment/src/main/java/com/zhihu/android/comment_for_v7/repository/RootCommentListRepository.kt</code>；<code>yyyyy-cdoe/VipComment/comment/src/main/java/com/zhihu/android/comment_for_v7/api/CommentService.kt</code>；<code>yyyyy-cdoe/VipComment/comment/src/main/java/com/zhihu/android/comment_for_v7/view/CommentListFragment.kt</code>。</p>
+<p><strong>【最低安全口径】</strong></p>
+<blockquote class="callout"><p>我能解释评论不是单一列表，而是根评论、子评论、锚点、折叠、审核和互动状态的组合；源码事实不能证明我负责过评论组件。</p>
+</blockquote>
+<p><strong>STAR 候选模板【需本人确认】</strong></p>
+<ul>
+<li><strong>S</strong>：评论在 <code>[锚点进入/点赞删除/发布回插/加载更多]</code> 场景出现 <code>[错项更新/重复数据/旧资源回写/失败无回滚]</code>。</li>
+<li><strong>T</strong>：本人负责 <code>[具体列表或互动动作]</code>，需保证 <code>[真实验收条件]</code>。</li>
+<li><strong>A</strong>：使用 commentId 和 resourceId 定位；列表 mutation 串行化或按 generation 丢弃旧回调；乐观更新保存旧值并处理失败；首屏、翻页、互动分别上报。</li>
+<li><strong>R</strong>：填写真实故障、成功率或回归结论。</li>
+</ul>
+<p><strong>只有确实做过才能说</strong></p>
+<ul>
+<li>维护过具体 Repository、Service、ViewModel 或列表 Holder。</li>
+<li>做过标准 Comment 与 VipComment 的协议差异治理。</li>
+<li>“我重构了评论架构/统一了两个仓库”必须有明确改动和迁移证据。</li>
+</ul>
+<p><strong>【结果待补】</strong></p>
+<ul>
+<li>指标：<code>[评论首屏成功率/翻页失败率/互动回滚率/重复评论率/发布到可见耗时]</code></li>
+<li>统计口径：<code>[资源类型、根/子/锚点场景、审核中评论是否纳入]</code></li>
+<li>时间范围：<code>[版本/灰度/上线前后窗口]</code></li>
+<li>数据来源：<code>[评论 APM/Grafana/OnlineLog、业务埋点、故障单]</code></li>
+</ul>
+<h3 id="2-8-rn-bridge-与-ai-生图长任务">2.8 RN Bridge 与 AI 生图长任务</h3>
+<p><strong>【源码事实】</strong></p>
+<ul>
+<li><code>GenerateAIImage.handleGenerate()</code> 创建任务并通过 Deep Link 打开结果页。</li>
+<li><code>GenerateAIImageResult.startPolling()</code> 以 taskId 轮询，当前代码使用 2 秒间隔和 60 秒超时；<code>handlePublish()</code> 按来源走 Jotai、Native Bridge 或 Deep Link。</li>
+<li><code>AIImageSelection.handleEndReached()</code> 请求服务端 <code>paging.next</code>，当前实现缺独立的翻页 loading 门禁；结果页 cleanup 停止后续调度，但不等于取消已在途 HTTP。</li>
+<li>当前 <code>pikachu</code> checkout 缺 <code>prn/*</code> 和 <code>.yarn/</code>，不能把无法 Bundle 直接归因于业务代码。</li>
+</ul>
+<p><strong>源码锚点</strong>：<code>pikachu/pages/GenerateAIImage/src/Entry.tsx</code> · <code>handleGenerate()</code>；<code>pikachu/pages/GenerateAIImageResult/src/Entry.tsx</code> · <code>startPolling()</code>、<code>stopPolling()</code>、<code>handlePublish()</code>；<code>pikachu/pages/AIImageSelection/src/components/AIImageList/index.tsx</code> · <code>handleEndReached()</code>；<code>pikachu/pages/entry/src/pages.mjs</code>、<code>pikachu/pages/entry/src/getRNPageLoaders.ts</code>。</p>
+<p><strong>【最低安全口径】</strong></p>
+<blockquote class="callout"><p>我能说明 Native/RN 合同、taskId 长任务、轮询生命周期和多消费方回传的设计与风险。若没有真实参与，只能作为源码阅读和跨端理解，不能写成项目经历。</p>
+</blockquote>
+<p><strong>STAR 候选模板【需本人确认】</strong></p>
+<ul>
+<li><strong>S</strong>：AI 生图需要长时间异步生成，并把结果回传评论、发布器或编辑器；真实问题为 <code>[重复轮询/页面卸载仍回写/Bridge 参数不兼容/分页重复]</code>。</li>
+<li><strong>T</strong>：本人负责 <code>[Native 入口/RN 页面/Bridge/轮询/分页]</code>。</li>
+<li><strong>A</strong>：以 taskId 管任务身份；增加重复请求门禁、超时和状态分类；为 Bridge/Deep Link 定义 schema；在卸载、重生成和返回栈变化时隔离旧任务；完成双端联调。</li>
+<li><strong>R</strong>：填写任务或跨端合同的真实结果；不能使用当前源码中的固定 2 秒/60 秒作为个人优化成果。</li>
+</ul>
+<p><strong>只有确实做过才能说</strong></p>
+<ul>
+<li>设计/修改过页面合同、Bridge 事件、轮询、分页或 atom 生命周期。</li>
+<li>“我实现了 PRN/RN 框架”“我负责整个 pikachu”不能说。</li>
+<li>“我取消了网络请求”只有接入 AbortSignal/等价机制并验证后才能说；当前 cleanup 只停止后续调度。</li>
+</ul>
+<p><strong>【结果待补】</strong></p>
+<ul>
+<li>指标：<code>[任务成功率/P95 完成时间/平均轮询次数/重复请求量/Bridge 失败率]</code></li>
+<li>统计口径：<code>[任务创建成功后的分母；违规/主动取消/超时如何分类]</code></li>
+<li>时间范围：<code>[版本或日期窗口]</code></li>
+<li>数据来源：<code>[RN 埋点、Native 日志、服务端任务日志、联调记录]</code></li>
+</ul>
+<h3 id="2-9-网络-路由与-hybrid-边界">2.9 网络、路由与 Hybrid 边界</h3>
+<p><strong>【源码事实】</strong></p>
+<ul>
+<li><code>Net.createService()</code> 是业务创建 Retrofit Service 的门面；<code>NetProviderImpl</code> 缓存 Service，并在 <code>initialize(...)</code> 内构建 Retrofit。</li>
+<li>ZRouter 通过 mapper、interceptor、fallback 和 launcher 完成 URL 到页面的解析与启动。</li>
+<li>Mercury 业务容器创建 <code>H5Page</code>；<code>H5PageImpl</code> 安装 <code>JsBridge</code>，<code>JsBridge</code> 用 <code>ConcurrentHashMap</code> 维护请求与回调。</li>
+<li>这些仓库是团队基础设施。业务调用侧可以排查、配置和接入，但不能自动认领 Net、Router、Mercury 或 Hybrid 内核作者身份。</li>
+</ul>
+<p><strong>源码锚点</strong>：<code>yyyyy-cdoe/Net/net-api/src/main/java/com/zhihu/android/api/net/Net.java</code> · <code>createService()</code>；<code>yyyyy-cdoe/Net/net/src/main/java/com/zhihu/android/net/common/NetProviderImpl.java</code> · <code>initialize()</code>；<code>yyyyy-cdoe/ZRouter/zrouter/src/main/java/com/zhihu/android/app/router/ZRouter.java</code>；<code>yyyyy-cdoe/Mercury/mercury/src/main/java/com/zhihu/android/app/ui/fragment/webview/WebViewFragment2.java</code>；<code>yyyyy-cdoe/mercury-core/mercury-core/src/main/java/com/zhihu/android/app/mercury/web/H5PageImpl.java</code>；<code>yyyyy-cdoe/mercury-core/mercury-core/src/main/java/com/zhihu/android/app/mercury/bridge/JsBridge.java</code>。</p>
+<p><strong>【最低安全口径】</strong></p>
+<blockquote class="callout"><p>我能从业务 Service、网络门面、DNS/连接阶段、Router 解析、WebView ready 和 Bridge callback 分段定位问题；如果底层库不是我写的，我只主张业务接入与问题定位能力。</p>
+</blockquote>
+<p><strong>STAR 候选模板【需本人确认】</strong></p>
+<ul>
+<li><strong>S</strong>：<code>[业务页面]</code> 出现 <code>[请求慢/特定网络失败/Deep Link 打不开/Hybrid 状态不同步/销毁后回调]</code>。</li>
+<li><strong>T</strong>：本人负责业务调用侧的 <code>[Service/路由参数/Bridge/生命周期]</code>。</li>
+<li><strong>A</strong>：用 requestId/businessId 串日志；按 DNS、connect、TLS、请求、响应分段；核对 mapper/interceptor/fallback；等待 WebView ready 后同步快照；销毁时解绑并校验回调业务 id。</li>
+<li><strong>R</strong>：填写真实故障恢复、错误率或验证结果；风险分析不能写成已发生事故。</li>
+</ul>
+<p><strong>只有确实做过才能说</strong></p>
+<ul>
+<li>配置或修改过具体业务 Service、路由映射/拦截、Hybrid plugin 或 Bridge 协议。</li>
+<li>完成过真实线上/测试故障的复现、定位、修复和回归。</li>
+<li>“设计了 Net/HTTPDNS/ZRouter/Mercury/WebView LRU”没有直接证据不能说。</li>
+</ul>
+<p><strong>【结果待补】</strong></p>
+<ul>
+<li>指标：<code>[接口成功率/P95 分段耗时/路由成功率/Bridge 超时率/Hybrid 首屏时间]</code></li>
+<li>统计口径：<code>[网络类型、URL/业务类型、冷/热 WebView、重试是否合并]</code></li>
+<li>时间范围：<code>[故障窗口、修复后观察期或版本]</code></li>
+<li>数据来源：<code>[EventListener/APM、路由日志、Bridge 日志、服务端日志、工单]</code></li>
+</ul>
+<h3 id="2-10-一次问题排查如何讲完整">2.10 一次问题排查如何讲完整</h3>
+<p><strong>【源码事实】</strong></p>
+<ul>
+<li>当前工作区存在多层真实观测点：HomePinTab 的 adapter LoadState、Feed 的 <code>FeedMonitor</code>、Net 的 service/dispatcher/事件链、Launcher 阶段监控、播放器会话和 Hybrid callback。</li>
+<li>当前源码也暴露出待验证风险，如 <code>ResponsePagingSource.load()</code> 捕获 <code>Throwable</code> 可能影响取消语义、默认 refresh key 为 null、RN 轮询未取消在途 HTTP、Hybrid 复用需要 reset contract。风险不等于真实事故，也不等于本人已修复。</li>
+</ul>
+<p><strong>源码锚点</strong>：<code>yyyyy-cdoe/DevKit/devkit/src/main/java/com/zhihu/android/devkit/paging/ResponsePagingSource.kt</code>；<code>yyyyy-cdoe/Feed/feed/src/main/java/com/zhihu/android/app/feed/ui2/feed/FeedFragment.kt</code> · <code>FeedMonitor.reportDuration()</code>；<code>yyyyy-cdoe/Net/net/src/main/java/com/zhihu/android/net/common/NetProviderImpl.java</code>；<code>yyyyy-cdoe/VipHome/home/src/main/java/com/zhihu/android/app/ui/activity/LauncherActivity.java</code>；<code>pikachu/pages/GenerateAIImageResult/src/Entry.tsx</code>；<code>yyyyy-cdoe/mercury-core/mercury-core/src/main/java/com/zhihu/android/app/mercury/web/H5PageImpl.java</code>。</p>
+<p><strong>【最低安全口径】</strong></p>
+<blockquote class="callout"><p>我排查问题时会先固定用户路径和任务身份，再按 UI 状态、业务状态、请求、基础库和服务端分层，用对照实验缩小范围。若没有真实故障经历，只能讲方法，不能虚构事故。</p>
+</blockquote>
+<p><strong>STAR 候选模板【需本人确认】</strong></p>
+<ul>
+<li><strong>S</strong>：<code>[时间、版本、入口、网络/设备]</code> 下出现 <code>[可观察症状]</code>，影响 <code>[真实范围]</code>。</li>
+<li><strong>T</strong>：本人作为 <code>[角色]</code> 负责 <code>[止损/定位/修复/联调]</code> 中的具体部分。</li>
+<li><strong>A</strong>：<ol>
+<li>用 <code>[requestId/taskId/businessId/generation]</code> 串起端、网关和服务端日志；</li>
+<li>建立最小复现，改变单一变量 <code>[网络/缓存/账号/入口/版本]</code>；</li>
+<li>按 <code>[View → ViewModel/State → Repository/Paging → Net/Router/Bridge → 服务端]</code> 定位首个异常点；</li>
+<li>采用 <code>[真实修复]</code>，并补 <code>[监控/测试/开关/回滚]</code>；</li>
+<li>在 <code>[机型、网络、账号、入口、冷/热状态]</code> 回归。</li>
+</ol>
+</li>
+<li><strong>R</strong>：写故障恢复时间、受影响比例、错误率变化或验证范围；每个数字都要可追溯。</li>
+</ul>
+<p><strong>只有确实做过才能说</strong></p>
+<ul>
+<li>说出本人第一次看到的证据、排除过的假设、实际改动和验证方式。</li>
+<li>“主导”“快速定位”“彻底解决”“零复发”需要职责和观察期证据。</li>
+<li>不能把文档里指出的风险直接改写成本人遇到并修复的线上事故。</li>
+</ul>
+<p><strong>【结果待补】</strong></p>
+<ul>
+<li>指标：<code>[MTTD/MTTR/受影响会话比例/修复后错误率/回归覆盖]</code></li>
+<li>统计口径：<code>[故障起止点、重复告警合并、受影响分母、复发定义]</code></li>
+<li>时间范围：<code>[故障窗口 + 修复后观察期]</code></li>
+<li>数据来源：<code>[告警、APM、端日志、服务端日志、发布记录、复盘文档]</code></li>
+</ul>
+<hr>
+<h2 id="3-简历关键词矩阵">3. 简历关键词矩阵</h2>
+<p>关键词必须能由真实工作支撑。不要为了 ATS 把没有做过的底层框架写成“精通”。</p>
+<table>
+<thead>
+<tr>
+<th>能力维度</th>
+<th>可选关键词</th>
+<th>对应故事/源码</th>
+<th>简历使用门槛</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Android 架构</td>
+<td>Kotlin、Java、ViewModel、StateFlow/Flow、LiveData、Mavericks、轻量 MVI、MVVM</td>
+<td>2.1、2.3</td>
+<td>【需本人确认】至少能讲一个真实页面的状态来源、事件入口和生命周期</td>
+</tr>
+<tr>
+<td>列表与分页</td>
+<td>Paging3、PagingSource、PagingData、CombinedLoadStates、DiffUtil、异构列表、prepend/append</td>
+<td>2.1、2.2</td>
+<td>【需本人确认】做过接口映射、卡片、分页 key、刷新或问题排查</td>
+</tr>
+<tr>
+<td>内容阅读</td>
+<td>EPUB、章节解析、预解析、阅读进度、端云同步、双向目录</td>
+<td>2.2、2.3</td>
+<td>【需本人确认】明确业务接入与公共解析内核的分界</td>
+</tr>
+<tr>
+<td>音频媒体</td>
+<td>播放会话、Service、AudioFocus、播放列表、DataSource、权益校验、厂商引擎适配</td>
+<td>2.4</td>
+<td>【需本人确认】只写本人做过的业务层/页面/联调，不认领媒体内核</td>
+</tr>
+<tr>
+<td>大型工程</td>
+<td>组件化、API/实现分离、Gradle、源码替换、多 flavor、依赖治理、启动任务</td>
+<td>2.5</td>
+<td>【需本人确认】有具体组件、版本、构建或启动任务案例</td>
+</tr>
+<tr>
+<td>内容分发与互动</td>
+<td>Feed、缓存、预加载、降级、异构 delegate、根/子/锚点评论、乐观更新</td>
+<td>2.6、2.7</td>
+<td>【需本人确认】有具体 Repository、卡片、评论或监控动作</td>
+</tr>
+<tr>
+<td>网络与路由</td>
+<td>Retrofit、OkHttp、DNS 分段、Deep Link、Router、interceptor、fallback</td>
+<td>2.9</td>
+<td>【需本人确认】写“业务接入/排查”；不写 Net/Router 作者</td>
+</tr>
+<tr>
+<td>Hybrid 与跨端</td>
+<td>WebView、JSBridge、Native/RN、Deep Link、Bridge、Jotai、taskId、轮询</td>
+<td>2.8、2.9</td>
+<td>【需本人确认】有 Native/RN/Hybrid 调用点或真实联调</td>
+</tr>
+<tr>
+<td>稳定性与性能</td>
+<td>APM、首屏、首卡、P95、generation、弱网、取消、灰度、回滚、故障复盘</td>
+<td>2.1—2.10</td>
+<td>【需本人确认】指标必须有口径、时间范围和来源</td>
+</tr>
+<tr>
+<td>测试与质量</td>
+<td>单元测试、状态机测试、fake timer、contract test、回归矩阵</td>
+<td>各 STAR</td>
+<td>【需本人确认】只写本人实际补过或执行过的测试</td>
+</tr>
+</tbody></table>
+<p>技能熟练度建议：</p>
+<ul>
+<li>做过并可深入追问：写“熟悉/有实战经验”。</li>
+<li>只在业务侧调用过：写“使用/接入过”。</li>
+<li>只读过源码：放在面试交流中说“阅读并分析过”，不要写成项目技能。</li>
+<li>没有证据：删除，不用“了解”占位。</li>
+</ul>
+<hr>
+<h2 id="4-不同岗位的定制版">4. 不同岗位的定制版</h2>
+<h3 id="4-1-android-业务开发岗">4.1 Android 业务开发岗</h3>
+<ul>
+<li><strong>标题候选【需本人确认】</strong>：Android 开发工程师｜Kotlin/Java｜内容列表、阅读/音频与复杂业务状态</li>
+<li><strong>优先保留【需本人确认】</strong>：1.1 知识首页 + 1.2 阅读，或本人真实做过的 Feed/评论。</li>
+<li><strong>重点 STAR</strong>：2.1、2.2/2.3、2.7、2.10。</li>
+<li><strong>弱化</strong>：底层 Net/Router/媒体源码细节只用于追问，不放在简历首屏。</li>
+</ul>
+<h3 id="4-2-android-架构接入-工程效率岗">4.2 Android 架构接入/工程效率岗</h3>
+<ul>
+<li><strong>标题候选【需本人确认】</strong>：Android 工程开发｜组件接入、构建治理、启动与跨模块问题定位</li>
+<li><strong>优先保留【需本人确认】</strong>：1.4 宿主交付 + 一个真实业务调用点，避免整份简历只有 Gradle。</li>
+<li><strong>重点 STAR</strong>：2.5、2.9、2.10，再用 2.1 证明能落到业务。</li>
+<li><strong>边界</strong>：写“在既有组件化体系内完成接入/治理”，不写“设计公司级组件框架”。</li>
+</ul>
+<h3 id="4-3-内容-阅读-音频岗位">4.3 内容/阅读/音频岗位</h3>
+<ul>
+<li><strong>标题候选【需本人确认】</strong>：Android 内容消费方向｜阅读进度、双向目录、音频业务与生命周期</li>
+<li><strong>优先保留【需本人确认】</strong>：1.2 + 1.3；若只做过其一，就用首页或评论补足，不强行拼完整内容闭环。</li>
+<li><strong>重点 STAR</strong>：2.2、2.3、2.4、2.10。</li>
+<li><strong>边界</strong>：不认领 ReaderSDK-CMake、解码器或媒体引擎作者身份。</li>
+</ul>
+<h3 id="4-4-native-rn-hybrid-跨端岗位">4.4 Native/RN/Hybrid 跨端岗位</h3>
+<ul>
+<li><strong>标题候选【需本人确认】</strong>：Android 跨端业务开发｜Native/RN/Hybrid 合同、长任务与生命周期</li>
+<li><strong>优先保留【需本人确认】</strong>：1.5 + 一个 Android 原生业务项目。</li>
+<li><strong>重点 STAR</strong>：2.8、2.9、2.10。</li>
+<li><strong>边界</strong>：当前 <code>pikachu</code> 是不完整 checkout；只在真实参与时写项目，不写 PRN 框架作者。</li>
+</ul>
+<h3 id="4-5-稳定性-性能专项岗位">4.5 稳定性/性能专项岗位</h3>
+<ul>
+<li><strong>标题候选【需本人确认】</strong>：Android 稳定性与性能治理｜分段观测、故障定位、灰度与回归</li>
+<li><strong>优先保留【需本人确认】</strong>：本人最有数据的一条业务线 + 1.4 或真实 Feed/播放器案例。</li>
+<li><strong>重点 STAR</strong>：2.6、2.9、2.10，并用一条实际指标证明闭环。</li>
+<li><strong>边界</strong>：没有指标时不要只堆“优化、治理、提升”；写清验证范围和仍未覆盖的风险。</li>
+</ul>
+<hr>
+<h2 id="5-不可说清单">5. 不可说清单</h2>
+<h3 id="5-1-归属与作者身份">5.1 归属与作者身份</h3>
+<ul>
+<li>不说“我设计/实现了 DevKit、Mavericks、Paging3、Net、Netdns、ZRouter、Mercury、Media、Audio、Zhplayer、mediax 或阅读内核”，除非本人有直接提交、设计记录和可解释的实现。</li>
+<li>不把业务侧使用 <code>Pager</code>、<code>Net.createService()</code>、Router 或播放器接口，改写为“我搭建了 MVI、网络、路由或播放器框架”。</li>
+<li>不把 <code>VipAndroid</code>、<code>VipHome</code>、Feed、Comment 等公司仓整体写成“个人项目”或“从零独立完成”。</li>
+<li>不把同一个 <code>Kmaudio</code> 的业务视角和基础设施视角写成两个项目。</li>
+<li>不把 Moonlight、CUDA samples、<code>html-anything</code>、Purrfolio 自动视为本人项目：<ul>
+<li>Moonlight 和 CUDA 是上游项目/样例；</li>
+<li><code>html-anything</code> 与 Purrfolio 的源码存在不能证明本人作者身份；</li>
+<li>只有提交、PR、设计、演示或历史记录能支持个人贡献。</li>
+</ul>
+</li>
+<li>不把团队工具、Agent Skills、签名配置或离线 HTML 材料包装成 Android 业务项目。</li>
+</ul>
+<h3 id="5-2-技术事实">5.2 技术事实</h3>
+<ul>
+<li>不把 DevKit 说成统一 Intent/Action/Reducer 的严格 MVI；当前真实调用是 Mavericks-based 轻量 MVI。</li>
+<li>不说 <code>PinTabState</code> 保存普通 <code>List</code>；它保存 <code>PagingData</code>，加载态主要由 adapter <code>CombinedLoadStates</code> 表达。</li>
+<li>不说刷新必须重新 new Pager；当前链路由 <code>pager.invalidate()</code> 结束旧 PagingSource 代际。</li>
+<li>不把 <code>VipAndroid</code> 与 <code>VipHome</code> 混成同一个模块；前者偏构建装配，后者偏运行时启动和导航。</li>
+<li>不把 <code>VipManuscript</code> 与 <code>VipReader</code> 混成同一个阅读器；前者突出服务端章节/双向目录，后者突出 EPUB 解析和进度。</li>
+<li>不把 Kmaudio 业务 DataSource、Audio Service、Media UI/协议和 mediax 厂商 engine 混成一层。</li>
+<li>不说 RN 轮询 cleanup 已取消在途 HTTP；当前只能确认停止后续调度。</li>
+<li>不说 <code>pikachu</code> 当前无法 Bundle 是业务代码缺陷；当前 checkout 缺 <code>prn/*</code>、<code>.yarn/</code>。</li>
+<li>不把源码中识别的风险写成已发生事故或已经完成的修复。</li>
+</ul>
+<h3 id="5-3-结果-测试与安全">5.3 结果、测试与安全</h3>
+<ul>
+<li>不写无法补全“指标 + 口径 + 时间范围 + 数据来源”的百分比和绝对收益。</li>
+<li>不用仓库当前分支、最近提交、文件数量或测试数量证明个人贡献。</li>
+<li>不说“所有测试/构建已通过”；各仓验证状态不同，且部分 checkout/工具链不完整。</li>
+<li>不说“零崩溃、零故障、彻底解决、性能翻倍”，除非有严格口径和足够观察期。</li>
+<li>不复述任何 Token、密码、密钥、机器人地址、内网地址、签名资产或凭据值。</li>
+</ul>
+<hr>
+<h2 id="6-真实性核对问卷">6. 真实性核对问卷</h2>
+<p>对每个准备放进简历的项目，至少回答完以下问题。不能回答的 bullet 先删除或降级为“了解源码机制”。</p>
+<h3 id="6-1-归属">6.1 归属</h3>
+<ol>
+<li>这是公司项目、个人项目、上游开源项目、团队工具还是本地资料？</li>
+<li>我实际参与的需求名称、版本、起止时间是什么？</li>
+<li>我负责的是哪个页面、类、接口、卡片、脚本或联调环节？</li>
+<li>哪些框架、基础库、服务和设计是团队已有能力？</li>
+<li>有什么证据支持个人贡献：commit、MR、需求单、设计稿、故障单、同事确认或演示？</li>
+</ol>
+<h3 id="6-2-技术动作">6.2 技术动作</h3>
+<ol start="6">
+<li>我第一次看到的真实症状是什么？在哪个入口、设备、网络和账号条件下出现？</li>
+<li>我排除过哪些假设？每一步用了什么日志、trace、监控或对照实验？</li>
+<li>最终修改了哪些文件或配置？如果不方便给代码，能否说清修改边界？</li>
+<li>为什么选这个方案？至少一个备选方案及其代价是什么？</li>
+<li>如何处理生命周期、并发、旧回调、重试、幂等、失败回滚和降级？</li>
+<li>哪些用例由我补测，哪些只是 QA/团队既有回归？</li>
+<li>还有什么未解决风险？为什么当时接受？</li>
+</ol>
+<h3 id="6-3-结果与数据">6.3 结果与数据</h3>
+<ol start="13">
+<li>指标名称是什么，分子、分母和聚合方式是什么？</li>
+<li>时间范围是什么，是否包含节假日、活动、灰度或版本切换？</li>
+<li>数据来自哪个监控、埋点、日志、实验平台或工单？</li>
+<li>前后版本的用户、设备、网络和实验桶是否可比？</li>
+<li>结果是相关性还是能归因到本人改动？还有哪些同时发生的变量？</li>
+<li>若没有指标，能否改写为可核验的验证范围，而不是编数字？</li>
+</ol>
+<h3 id="6-4-面试可追问性">6.4 面试可追问性</h3>
+<ol start="19">
+<li>能否不看文档画出入口到结果的调用链？</li>
+<li>能否指出至少两个真实源码文件和关键函数？</li>
+<li>能否清楚说出“团队能力”和“本人动作”的分界？</li>
+<li>面试官追问线程、生命周期、失败、缓存、测试和监控时，是否有真实答案？</li>
+<li>如果要求现场展示或请前同事核验，这段表述是否仍然成立？</li>
+</ol>
+<p>最终确认表：</p>
+<table>
+<thead>
+<tr>
+<th>项目/STAR</th>
+<th>真实需求与时间</th>
+<th>本人动作</th>
+<th>团队已有能力</th>
+<th>验证证据</th>
+<th>指标口径/时间/来源</th>
+<th>可写入简历</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>[填写]</code></td>
+<td><code>[填写]</code></td>
+<td><code>[填写]</code></td>
+<td><code>[填写]</code></td>
+<td><code>[填写]</code></td>
+<td><code>[填写或写“无指标，仅验证范围”]</code></td>
+<td><code>[是/否]</code></td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="7-面试前的一页式收口">7. 面试前的一页式收口</h2>
+<ol>
+<li>只选 <strong>1 条主线 + 1 条辅助线 + 1 个真实排障故事</strong>。</li>
+<li>每条线准备“项目定位、本人职责、关键链路、一个取舍、一个风险、两个源码锚点”。</li>
+<li>开场主动说明：框架由团队提供，本人负责业务调用侧的 <code>[真实范围]</code>。</li>
+<li>STAR 中的 A 必须是本人动作，不是把源码调用链换成第一人称。</li>
+<li>R 没有四要素数据时，改为“验证了哪些场景、覆盖了哪些版本、仍有哪些风险”。</li>
+<li>任何无法通过真实性问卷的句子，都不进入最终简历。</li>
+</ol>
+
+      </article>
+      
+    <nav class="page-pager" aria-label="文档翻页">
+      <a href="50-interview-project-summary.html"><small>← 上一篇</small><span>五条主讲项目线</span></a>
+      <a class="next" href="60-interview-question-bank.html"><small>下一篇 →</small><span>70 道面试题</span></a>
+    </nav>
+      <footer class="article-footer">
+        本站由 Markdown 源文档离线生成。涉及个人职责、动作和结果的内容，请只使用本人可核验的部分。
+      </footer>
+    </main>
+    <aside class="page-toc" aria-label="本页目录">
+      <div class="toc-heading">本页目录</div>
+      <a class="toc-link level-2" href="#0-先约定四种标记">0. 先约定四种标记</a>
+<a class="toc-link level-2" href="#1-可选简历项目经历">1. 可选简历项目经历</a>
+<a class="toc-link level-3" href="#1-1-知识首页与内容发现">1.1 知识首页与内容发现</a>
+<a class="toc-link level-3" href="#1-2-手稿与-epub-阅读消费">1.2 手稿与 EPUB 阅读消费</a>
+<a class="toc-link level-3" href="#1-3-知识音频业务接入">1.3 知识音频业务接入</a>
+<a class="toc-link level-3" href="#1-4-app-宿主交付与组件接入">1.4 App 宿主交付与组件接入</a>
+<a class="toc-link level-3" href="#1-5-native-rn-内容工具协作">1.5 Native/RN 内容工具协作</a>
+<a class="toc-link level-2" href="#2-star-故事模板">2. STAR 故事模板</a>
+<a class="toc-link level-3" href="#2-1-首页-paging3-与轻量状态管理">2.1 首页 Paging3 与轻量状态管理</a>
+<a class="toc-link level-3" href="#2-2-从任意章节进入的双向目录">2.2 从任意章节进入的双向目录</a>
+<a class="toc-link level-3" href="#2-3-epub-阅读进度与相邻预解析">2.3 EPUB 阅读进度与相邻预解析</a>
+<a class="toc-link level-3" href="#2-4-音频业务-会话与引擎分层">2.4 音频业务、会话与引擎分层</a>
+<a class="toc-link level-3" href="#2-5-启动任务与组件化交付">2.5 启动任务与组件化交付</a>
+<a class="toc-link level-3" href="#2-6-feed-的缓存-预加载与降级编排">2.6 Feed 的缓存、预加载与降级编排</a>
+<a class="toc-link level-3" href="#2-7-评论根-子-锚点列表与互动一致性">2.7 评论根/子/锚点列表与互动一致性</a>
+<a class="toc-link level-3" href="#2-8-rn-bridge-与-ai-生图长任务">2.8 RN Bridge 与 AI 生图长任务</a>
+<a class="toc-link level-3" href="#2-9-网络-路由与-hybrid-边界">2.9 网络、路由与 Hybrid 边界</a>
+<a class="toc-link level-3" href="#2-10-一次问题排查如何讲完整">2.10 一次问题排查如何讲完整</a>
+<a class="toc-link level-2" href="#3-简历关键词矩阵">3. 简历关键词矩阵</a>
+<a class="toc-link level-2" href="#4-不同岗位的定制版">4. 不同岗位的定制版</a>
+<a class="toc-link level-3" href="#4-1-android-业务开发岗">4.1 Android 业务开发岗</a>
+<a class="toc-link level-3" href="#4-2-android-架构接入-工程效率岗">4.2 Android 架构接入/工程效率岗</a>
+<a class="toc-link level-3" href="#4-3-内容-阅读-音频岗位">4.3 内容/阅读/音频岗位</a>
+<a class="toc-link level-3" href="#4-4-native-rn-hybrid-跨端岗位">4.4 Native/RN/Hybrid 跨端岗位</a>
+<a class="toc-link level-3" href="#4-5-稳定性-性能专项岗位">4.5 稳定性/性能专项岗位</a>
+<a class="toc-link level-2" href="#5-不可说清单">5. 不可说清单</a>
+<a class="toc-link level-3" href="#5-1-归属与作者身份">5.1 归属与作者身份</a>
+<a class="toc-link level-3" href="#5-2-技术事实">5.2 技术事实</a>
+<a class="toc-link level-3" href="#5-3-结果-测试与安全">5.3 结果、测试与安全</a>
+<a class="toc-link level-2" href="#6-真实性核对问卷">6. 真实性核对问卷</a>
+<a class="toc-link level-3" href="#6-1-归属">6.1 归属</a>
+<a class="toc-link level-3" href="#6-2-技术动作">6.2 技术动作</a>
+<a class="toc-link level-3" href="#6-3-结果与数据">6.3 结果与数据</a>
+<a class="toc-link level-3" href="#6-4-面试可追问性">6.4 面试可追问性</a>
+<a class="toc-link level-2" href="#7-面试前的一页式收口">7. 面试前的一页式收口</a>
+      <a class="back-to-top" href="#">↑ 返回顶部</a>
+    </aside>
+  </div>
+  <script src="assets/search-data.js"></script>
+  <script src="assets/docs.js"></script>
+</body>
+</html>

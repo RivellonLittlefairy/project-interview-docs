@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="原始执行计划：基于当前工作区源码证据整理的项目面试资料">
+  <title>全仓库项目面试资料整理计划｜项目面试资料</title>
+  <link rel="stylesheet" href="assets/docs.css">
+  <script>
+    try {
+      const savedTheme = localStorage.getItem("interview-docs-theme");
+      const preferredDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      document.documentElement.dataset.theme = savedTheme || (preferredDark ? "dark" : "light");
+    } catch {}
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <header class="topbar">
+    <button class="icon-button menu-button" type="button" data-menu-toggle aria-label="打开文档导航" aria-expanded="false">☰</button>
+    <a class="brand" href="index.html"><span class="brand-mark">⌁</span><span>项目面试资料库</span></a>
+    <div class="search-shell">
+      <label class="sr-only" for="global-search">搜索所有文档</label>
+      <input id="global-search" type="search" data-search-input placeholder="搜索仓库、技术或面试题…" autocomplete="off">
+      <span class="search-shortcut">Ctrl K</span>
+      <div class="search-results" data-search-results hidden></div>
+    </div>
+    <button class="icon-button" type="button" data-theme-toggle aria-label="切换深浅主题">◐</button>
+  </header>
+  <div class="drawer-backdrop" data-drawer-backdrop hidden></div>
+  <div class="docs-layout">
+    <nav class="sidebar" data-sidebar aria-label="全站文档导航">
+      <div class="sidebar-heading">文档导航</div>
+      
+        <section class="nav-group">
+          <h2 class="nav-group-title">逐仓文档</h2>
+          <a class="nav-link" href="repositories.html">66 个仓库独立分析</a>
+        </section>
+        <section class="nav-group">
+          <h2 class="nav-group-title">开始使用</h2>
+          <a class="nav-link" href="index.html">总览与导航</a>
+<a class="nav-link" href="50-interview-project-summary.html">五条主讲项目线</a>
+<a class="nav-link" href="70-resume-and-star-stories.html">简历与 STAR</a>
+<a class="nav-link" href="60-interview-question-bank.html">70 道面试题</a>
+        </section>
+
+        <section class="nav-group">
+          <h2 class="nav-group-title">仓库分析</h2>
+          <a class="nav-link" href="00-repository-inventory.html">全量仓库盘点</a>
+<a class="nav-link" href="10-android-business-repositories.html">Android 业务仓库</a>
+<a class="nav-link" href="20-android-infrastructure-media.html">基础设施与媒体</a>
+<a class="nav-link" href="30-cross-platform-rn-web.html">RN 与 Web</a>
+<a class="nav-link" href="31-tools-samples-and-assets.html">工具、样例与资产</a>
+        </section>
+
+        <section class="nav-group">
+          <h2 class="nav-group-title">质量复核</h2>
+          <a class="nav-link" href="40-android-docs-evidence-review.html">Android 证据复核</a>
+<a class="nav-link" href="41-full-workspace-coverage-review.html">全工作区覆盖复核</a>
+        </section>
+
+        <section class="nav-group">
+          <h2 class="nav-group-title">辅助材料</h2>
+          <a class="nav-link" href="ANALYSIS-TEMPLATE.html">仓库分析模板</a>
+<a class="nav-link active" href="2026-07-24-all-repositories-analysis-plan.html" aria-current="page">原始执行计划</a>
+        </section>
+
+        <section class="nav-group">
+          <h2 class="nav-group-title">Android 专题</h2>
+          <a class="nav-link" href="android-storage-guide.html">Android 存储方案</a>
+        </section>
+      <p class="sidebar-note">离线资料 · 证据快照 2026-07-24</p>
+    </nav>
+    <main class="article-shell" id="main-content">
+      <div class="breadcrumbs"><a href="index.html">首页</a><span>/</span><span>辅助材料</span><span>/</span><span>原始执行计划</span></div>
+      
+      <article class="markdown-body">
+        <h1 id="全仓库项目面试资料整理计划">全仓库项目面试资料整理计划</h1>
+<blockquote class="callout"><p><strong>供 agentic workers 使用：</strong> 按仓库组并行执行；每个 worker 只编辑分配给自己的文档。完成初稿后由主 agent 做覆盖率、源码证据、口径和链接四类复核。</p>
+</blockquote>
+<p><strong>目标：</strong> 对 <code>C:\Users\msf\Desktop\code</code> 下所有真实代码项目做源码级盘点，输出能用于项目复盘、简历准备和面试追问的中文文档。</p>
+<p><strong>方法：</strong> 先建立全量仓库清单，再按业务工程、基础设施与媒体、工具与跨端三个领域并行分析；第二轮从清单反查遗漏和证据薄弱项；最后生成跨项目总览、可直接复述的话术和题库。</p>
+<p><strong>输出目录：</strong> <code>C:\Users\msf\Desktop\code\docs\project-interview</code></p>
+<h2 id="全局约束">全局约束</h2>
+<ul>
+<li>覆盖 <code>66</code> 个已发现的嵌套 Git 仓库，并单独检查无 <code>.git</code> 但含源码的 <code>pikachu</code>；最终数字以全量清单复核结果为准。</li>
+<li><code>xxxxx-html</code> 作为既有文档资产检查，不把它误算成源码仓库。</li>
+<li>不修改业务源码，不提交，不推送，不执行会改变仓库状态的构建或格式化命令。</li>
+<li>所有架构、流程和亮点结论必须给出真实相对文件路径；关键结论尽量给出类、函数或配置项名称。</li>
+<li>区分“框架提供的能力”“业务侧的调用与集成”“根据代码推断但无法确认的个人职责”。</li>
+<li>不把框架作者身份套在候选人身上；面试话术优先聚焦业务实现、框架接入、问题定位、性能稳定性和取舍。</li>
+<li>凭据、令牌、内部地址只报告风险类型，不复制原值。</li>
+<li>规模很小、仅有配置或样例代码的仓库也必须进入清单，并明确“简要分析”的原因。</li>
+</ul>
+<hr>
+<h3 id="任务-1-全量仓库清单与分类">任务 1：全量仓库清单与分类</h3>
+<p><strong>文件：</strong></p>
+<ul>
+<li><p>创建：<code>docs/project-interview/00-repository-inventory.md</code></p>
+</li>
+<li><p><input disabled="" type="checkbox"> 扫描工作区内所有 <code>.git/config</code>，排除依赖缓存和生成目录。</p>
+</li>
+<li><p><input disabled="" type="checkbox"> 检查没有 <code>.git</code> 但存在构建文件和源码目录的项目。</p>
+</li>
+<li><p><input disabled="" type="checkbox"> 对每个项目记录路径、项目类型、主语言、构建入口、README、测试、CI、分支、最后提交和大致规模。</p>
+</li>
+<li><p><input disabled="" type="checkbox"> 分类为 Android 业务、Android 基础设施/媒体、RN/Web、工具/样例和未知。</p>
+</li>
+<li><p><input disabled="" type="checkbox"> 写出仓库总数、统计方法、限制和待人工确认项。</p>
+</li>
+</ul>
+<p><strong>验收：</strong></p>
+<ul>
+<li>清单中的每一行都能对应磁盘上的真实目录。</li>
+<li>清单总数能与扫描结果对上，未知项有明确原因。</li>
+</ul>
+<h3 id="任务-2-android-业务仓库源码分析">任务 2：Android 业务仓库源码分析</h3>
+<p><strong>文件：</strong></p>
+<ul>
+<li><p>创建：<code>docs/project-interview/10-android-business-repositories.md</code></p>
+</li>
+<li><p><input disabled="" type="checkbox"> 分析主工程、知识市场、首页、详情、阅读、音频、增长、账号、评论、关注、Feed 等业务仓库。</p>
+</li>
+<li><p><input disabled="" type="checkbox"> 每仓库记录定位、模块、入口、关键链路、架构、网络/数据、路由、性能、稳定性、测试和工程化。</p>
+</li>
+<li><p><input disabled="" type="checkbox"> 每仓库至少提供一段源码证据化的面试表达；核心仓库提供 STAR 版本和追问。</p>
+</li>
+<li><p><input disabled="" type="checkbox"> 标注仓库之间的依赖与调用关系，不把多个仓库孤立描述。</p>
+</li>
+</ul>
+<p><strong>验收：</strong></p>
+<ul>
+<li>核心业务结论均含文件路径和类/函数名。</li>
+<li>话术明确区分框架能力和业务集成责任。</li>
+</ul>
+<h3 id="任务-3-android-基础设施-媒体与-sdk-分析">任务 3：Android 基础设施、媒体与 SDK 分析</h3>
+<p><strong>文件：</strong></p>
+<ul>
+<li><p>创建：<code>docs/project-interview/20-android-infrastructure-media.md</code></p>
+</li>
+<li><p><input disabled="" type="checkbox"> 分析 MVI/分页、路由、网络、启动、动态化、埋点、分享、媒体、播放器、图片、编辑器、预渲染和 CMake 等仓库。</p>
+</li>
+<li><p><input disabled="" type="checkbox"> 对公共 API、线程模型、缓存、错误处理、扩展点、性能和测试进行源码核对。</p>
+</li>
+<li><p><input disabled="" type="checkbox"> 对 DevKit 明确说明其 Mavericks 轻量 MVI 边界，并用真实业务调用验证。</p>
+</li>
+<li><p><input disabled="" type="checkbox"> 给出“业务方怎样接入”“出问题怎样排查”“为什么这样取舍”的面试答案。</p>
+</li>
+</ul>
+<p><strong>验收：</strong></p>
+<ul>
+<li>不只复述 README；至少抽查实现类与真实调用方。</li>
+<li>高价值基础设施仓库均有机制说明和追问答案。</li>
+</ul>
+<h3 id="任务-4-rn-web-工具-样例和其余仓库分析">任务 4：RN、Web、工具、样例和其余仓库分析</h3>
+<p><strong>文件：</strong></p>
+<ul>
+<li><p>创建：<code>docs/project-interview/30-cross-platform-tools-samples.md</code></p>
+</li>
+<li><p><input disabled="" type="checkbox"> 分析 <code>pikachu</code> 的 RN 工作区结构、依赖、Bundle 流程、Native 边界、环境完整性和风险。</p>
+</li>
+<li><p><input disabled="" type="checkbox"> 分析 <code>html-anything</code> 的产品定位、前后端结构、数据流、测试和部署链路。</p>
+</li>
+<li><p><input disabled="" type="checkbox"> 分析 Matchfile、Android 工具、MCP、Obsidian/VIP skills、CUDA、样例 App 和其他未分组仓库。</p>
+</li>
+<li><p><input disabled="" type="checkbox"> 对不适合作为主项目讲述的仓库，说明它能支撑哪类技术能力或面试追问。</p>
+</li>
+</ul>
+<p><strong>验收：</strong></p>
+<ul>
+<li>与清单做差集后不存在无人负责的仓库。</li>
+<li>不完整项目明确区分“当前 checkout 缺失”和“项目设计本身缺失”。</li>
+</ul>
+<h3 id="任务-5-覆盖率与证据复核">任务 5：覆盖率与证据复核</h3>
+<p><strong>文件：</strong></p>
+<ul>
+<li><p>创建：<code>docs/project-interview/40-coverage-and-evidence-review.md</code></p>
+</li>
+<li><p><input disabled="" type="checkbox"> 从清单提取项目名，与三份领域分析逐项比对。</p>
+</li>
+<li><p><input disabled="" type="checkbox"> 给每个项目标记“深入、标准、简要、仅盘点”四档。</p>
+</li>
+<li><p><input disabled="" type="checkbox"> 对核心项目抽查至少三条源码路径是否存在、类名是否匹配。</p>
+</li>
+<li><p><input disabled="" type="checkbox"> 标注重复描述、推断性结论、过时版本和敏感信息风险。</p>
+</li>
+<li><p><input disabled="" type="checkbox"> 将发现的问题反馈给对应 worker 修订。</p>
+</li>
+</ul>
+<p><strong>验收：</strong></p>
+<ul>
+<li>全部项目都有覆盖状态。</li>
+<li>核心项目不存在无证据的架构和业务链路结论。</li>
+</ul>
+<h3 id="任务-6-面试总览与跨项目叙事">任务 6：面试总览与跨项目叙事</h3>
+<p><strong>文件：</strong></p>
+<ul>
+<li><p>创建：<code>docs/project-interview/README.md</code></p>
+</li>
+<li><p>创建：<code>docs/project-interview/50-interview-project-summary.md</code></p>
+</li>
+<li><p>创建：<code>docs/project-interview/60-interview-question-bank.md</code></p>
+</li>
+<li><p>创建：<code>docs/project-interview/70-resume-and-star-stories.md</code></p>
+</li>
+<li><p><input disabled="" type="checkbox"> 生成文档导航、项目分类图和推荐阅读顺序。</p>
+</li>
+<li><p><input disabled="" type="checkbox"> 选出适合三年 Android 经验候选人讲述的 3 至 5 个主项目和 5 至 8 个辅助技术点。</p>
+</li>
+<li><p><input disabled="" type="checkbox"> 按“30 秒、2 分钟、5 分钟”写可直接复述的项目介绍。</p>
+</li>
+<li><p><input disabled="" type="checkbox"> 生成架构、组件化、MVI/MVVM、Paging3、网络、路由、性能、稳定性、RN 协作等题库。</p>
+</li>
+<li><p><input disabled="" type="checkbox"> 为每个 STAR 故事标注源码证据、可确认事实和需要用户补充的个人贡献。</p>
+</li>
+</ul>
+<p><strong>验收：</strong></p>
+<ul>
+<li>所有入口文档链接有效。</li>
+<li>面试话术不夸大个人职责，并能承受基于源码的连续追问。</li>
+</ul>
+<h3 id="任务-7-最终校验">任务 7：最终校验</h3>
+<ul>
+<li><input disabled="" type="checkbox"> 重新扫描仓库列表，确认任务期间没有遗漏或误计。</li>
+<li><input disabled="" type="checkbox"> 检查所有 Markdown 相对链接和本地文件引用。</li>
+<li><input disabled="" type="checkbox"> 搜索令牌、密码、私钥和内部 URL，确保文档未复制敏感值。</li>
+<li><input disabled="" type="checkbox"> 汇总最终文件、覆盖数量、核心项目、限制与建议补充的信息。</li>
+</ul>
+
+      </article>
+      
+    <nav class="page-pager" aria-label="文档翻页">
+      <a href="ANALYSIS-TEMPLATE.html"><small>← 上一篇</small><span>仓库分析模板</span></a>
+      <span></span>
+    </nav>
+      <footer class="article-footer">
+        本站由 Markdown 源文档离线生成。涉及个人职责、动作和结果的内容，请只使用本人可核验的部分。
+      </footer>
+    </main>
+    <aside class="page-toc" aria-label="本页目录">
+      <div class="toc-heading">本页目录</div>
+      <a class="toc-link level-2" href="#全局约束">全局约束</a>
+<a class="toc-link level-3" href="#任务-1-全量仓库清单与分类">任务 1：全量仓库清单与分类</a>
+<a class="toc-link level-3" href="#任务-2-android-业务仓库源码分析">任务 2：Android 业务仓库源码分析</a>
+<a class="toc-link level-3" href="#任务-3-android-基础设施-媒体与-sdk-分析">任务 3：Android 基础设施、媒体与 SDK 分析</a>
+<a class="toc-link level-3" href="#任务-4-rn-web-工具-样例和其余仓库分析">任务 4：RN、Web、工具、样例和其余仓库分析</a>
+<a class="toc-link level-3" href="#任务-5-覆盖率与证据复核">任务 5：覆盖率与证据复核</a>
+<a class="toc-link level-3" href="#任务-6-面试总览与跨项目叙事">任务 6：面试总览与跨项目叙事</a>
+<a class="toc-link level-3" href="#任务-7-最终校验">任务 7：最终校验</a>
+      <a class="back-to-top" href="#">↑ 返回顶部</a>
+    </aside>
+  </div>
+  <script src="assets/search-data.js"></script>
+  <script src="assets/docs.js"></script>
+</body>
+</html>

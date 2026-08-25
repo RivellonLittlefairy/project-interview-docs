@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="仓库分析模板：基于当前工作区源码证据整理的项目面试资料">
+  <title>仓库分析统一模板｜项目面试资料</title>
+  <link rel="stylesheet" href="assets/docs.css">
+  <script>
+    try {
+      const savedTheme = localStorage.getItem("interview-docs-theme");
+      const preferredDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      document.documentElement.dataset.theme = savedTheme || (preferredDark ? "dark" : "light");
+    } catch {}
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <header class="topbar">
+    <button class="icon-button menu-button" type="button" data-menu-toggle aria-label="打开文档导航" aria-expanded="false">☰</button>
+    <a class="brand" href="index.html"><span class="brand-mark">⌁</span><span>项目面试资料库</span></a>
+    <div class="search-shell">
+      <label class="sr-only" for="global-search">搜索所有文档</label>
+      <input id="global-search" type="search" data-search-input placeholder="搜索仓库、技术或面试题…" autocomplete="off">
+      <span class="search-shortcut">Ctrl K</span>
+      <div class="search-results" data-search-results hidden></div>
+    </div>
+    <button class="icon-button" type="button" data-theme-toggle aria-label="切换深浅主题">◐</button>
+  </header>
+  <div class="drawer-backdrop" data-drawer-backdrop hidden></div>
+  <div class="docs-layout">
+    <nav class="sidebar" data-sidebar aria-label="全站文档导航">
+      <div class="sidebar-heading">文档导航</div>
+      
+        <section class="nav-group">
+          <h2 class="nav-group-title">逐仓文档</h2>
+          <a class="nav-link" href="repositories.html">66 个仓库独立分析</a>
+        </section>
+        <section class="nav-group">
+          <h2 class="nav-group-title">开始使用</h2>
+          <a class="nav-link" href="index.html">总览与导航</a>
+<a class="nav-link" href="50-interview-project-summary.html">五条主讲项目线</a>
+<a class="nav-link" href="70-resume-and-star-stories.html">简历与 STAR</a>
+<a class="nav-link" href="60-interview-question-bank.html">70 道面试题</a>
+        </section>
+
+        <section class="nav-group">
+          <h2 class="nav-group-title">仓库分析</h2>
+          <a class="nav-link" href="00-repository-inventory.html">全量仓库盘点</a>
+<a class="nav-link" href="10-android-business-repositories.html">Android 业务仓库</a>
+<a class="nav-link" href="20-android-infrastructure-media.html">基础设施与媒体</a>
+<a class="nav-link" href="30-cross-platform-rn-web.html">RN 与 Web</a>
+<a class="nav-link" href="31-tools-samples-and-assets.html">工具、样例与资产</a>
+        </section>
+
+        <section class="nav-group">
+          <h2 class="nav-group-title">质量复核</h2>
+          <a class="nav-link" href="40-android-docs-evidence-review.html">Android 证据复核</a>
+<a class="nav-link" href="41-full-workspace-coverage-review.html">全工作区覆盖复核</a>
+        </section>
+
+        <section class="nav-group">
+          <h2 class="nav-group-title">辅助材料</h2>
+          <a class="nav-link active" href="ANALYSIS-TEMPLATE.html" aria-current="page">仓库分析模板</a>
+<a class="nav-link" href="2026-07-24-all-repositories-analysis-plan.html">原始执行计划</a>
+        </section>
+
+        <section class="nav-group">
+          <h2 class="nav-group-title">Android 专题</h2>
+          <a class="nav-link" href="android-storage-guide.html">Android 存储方案</a>
+        </section>
+      <p class="sidebar-note">离线资料 · 证据快照 2026-07-24</p>
+    </nav>
+    <main class="article-shell" id="main-content">
+      <div class="breadcrumbs"><a href="index.html">首页</a><span>/</span><span>辅助材料</span><span>/</span><span>仓库分析模板</span></div>
+      
+      <article class="markdown-body">
+        <h1 id="仓库分析统一模板">仓库分析统一模板</h1>
+<h2 id="1-项目定位">1. 项目定位</h2>
+<ul>
+<li>仓库路径：</li>
+<li>项目类型：</li>
+<li>它解决的问题：</li>
+<li>在整个工作区中的角色：</li>
+<li>分析深度：深入 / 标准 / 简要 / 仅盘点</li>
+</ul>
+<h2 id="2-技术栈与构建">2. 技术栈与构建</h2>
+<ul>
+<li>语言与框架：</li>
+<li>构建入口：</li>
+<li>主要依赖：</li>
+<li>产物与接入方式：</li>
+</ul>
+<h2 id="3-模块与入口">3. 模块与入口</h2>
+<ul>
+<li>模块划分：</li>
+<li>App/SDK/路由入口：</li>
+<li>关键配置：</li>
+</ul>
+<h2 id="4-关键业务或技术链路">4. 关键业务或技术链路</h2>
+<p>按调用顺序描述，每一步写明：</p>
+<ol>
+<li>触发入口与文件路径；</li>
+<li>核心类/函数；</li>
+<li>状态、线程或数据怎样流转；</li>
+<li>失败、取消、刷新或重试怎样处理；</li>
+<li>最终如何回到 UI、调用方或下游模块。</li>
+</ol>
+<h2 id="5-架构与取舍">5. 架构与取舍</h2>
+<ul>
+<li>使用的架构模式及其实际边界：</li>
+<li>仓库之间的依赖关系：</li>
+<li>可扩展点：</li>
+<li>主要取舍：</li>
+</ul>
+<h2 id="6-工程质量">6. 工程质量</h2>
+<ul>
+<li>测试：</li>
+<li>CI/CD：</li>
+<li>日志、埋点和可观测性：</li>
+<li>性能：</li>
+<li>稳定性与安全：</li>
+<li>当前 checkout 的完整性：</li>
+</ul>
+<h2 id="7-面试价值">7. 面试价值</h2>
+<ul>
+<li>最值得讲的亮点：</li>
+<li>最容易被追问的难点：</li>
+<li>框架提供的能力：</li>
+<li>业务侧可合理主张的集成或实现：</li>
+<li>不能仅根据代码断言的个人贡献：</li>
+</ul>
+<h2 id="8-可直接复述">8. 可直接复述</h2>
+<h3 id="30-秒版本">30 秒版本</h3>
+<p>用“项目是什么—我负责什么—结果或能力证明”三句表达。</p>
+<h3 id="2-分钟版本">2 分钟版本</h3>
+<p>按“背景—目标—方案—难点—取舍—结果—复盘”展开。</p>
+<h3 id="star-版本">STAR 版本</h3>
+<ul>
+<li>S：</li>
+<li>T：</li>
+<li>A：</li>
+<li>R：</li>
+<li>证据：</li>
+<li>需要本人补充的数据：</li>
+</ul>
+<h2 id="9-追问与回答">9. 追问与回答</h2>
+<p>至少覆盖：</p>
+<ul>
+<li>为什么选这个方案？</li>
+<li>数据或状态怎样流动？</li>
+<li>遇到异常、并发或生命周期问题怎么办？</li>
+<li>如何测试和观测？</li>
+<li>如果重做会改什么？</li>
+</ul>
+<h2 id="10-源码证据索引">10. 源码证据索引</h2>
+<table>
+<thead>
+<tr>
+<th>结论</th>
+<th>相对路径</th>
+<th>类/函数/配置</th>
+<th>可信度</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>示例结论</td>
+<td><code>path/to/File.kt</code></td>
+<td><code>ExampleClass.example()</code></td>
+<td>已核对</td>
+</tr>
+</tbody></table>
+
+      </article>
+      
+    <nav class="page-pager" aria-label="文档翻页">
+      <a href="41-full-workspace-coverage-review.html"><small>← 上一篇</small><span>全工作区覆盖复核</span></a>
+      <a class="next" href="2026-07-24-all-repositories-analysis-plan.html"><small>下一篇 →</small><span>原始执行计划</span></a>
+    </nav>
+      <footer class="article-footer">
+        本站由 Markdown 源文档离线生成。涉及个人职责、动作和结果的内容，请只使用本人可核验的部分。
+      </footer>
+    </main>
+    <aside class="page-toc" aria-label="本页目录">
+      <div class="toc-heading">本页目录</div>
+      <a class="toc-link level-2" href="#1-项目定位">1. 项目定位</a>
+<a class="toc-link level-2" href="#2-技术栈与构建">2. 技术栈与构建</a>
+<a class="toc-link level-2" href="#3-模块与入口">3. 模块与入口</a>
+<a class="toc-link level-2" href="#4-关键业务或技术链路">4. 关键业务或技术链路</a>
+<a class="toc-link level-2" href="#5-架构与取舍">5. 架构与取舍</a>
+<a class="toc-link level-2" href="#6-工程质量">6. 工程质量</a>
+<a class="toc-link level-2" href="#7-面试价值">7. 面试价值</a>
+<a class="toc-link level-2" href="#8-可直接复述">8. 可直接复述</a>
+<a class="toc-link level-3" href="#30-秒版本">30 秒版本</a>
+<a class="toc-link level-3" href="#2-分钟版本">2 分钟版本</a>
+<a class="toc-link level-3" href="#star-版本">STAR 版本</a>
+<a class="toc-link level-2" href="#9-追问与回答">9. 追问与回答</a>
+<a class="toc-link level-2" href="#10-源码证据索引">10. 源码证据索引</a>
+      <a class="back-to-top" href="#">↑ 返回顶部</a>
+    </aside>
+  </div>
+  <script src="assets/search-data.js"></script>
+  <script src="assets/docs.js"></script>
+</body>
+</html>

@@ -1,0 +1,585 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="基础设施与媒体：基于当前工作区源码证据整理的项目面试资料">
+  <title>Android 基础设施、Hybrid 与媒体仓库：源码证据化面试手册｜项目面试资料</title>
+  <link rel="stylesheet" href="assets/docs.css">
+  <script>
+    try {
+      const savedTheme = localStorage.getItem("interview-docs-theme");
+      const preferredDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      document.documentElement.dataset.theme = savedTheme || (preferredDark ? "dark" : "light");
+    } catch {}
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <header class="topbar">
+    <button class="icon-button menu-button" type="button" data-menu-toggle aria-label="打开文档导航" aria-expanded="false">☰</button>
+    <a class="brand" href="index.html"><span class="brand-mark">⌁</span><span>项目面试资料库</span></a>
+    <div class="search-shell">
+      <label class="sr-only" for="global-search">搜索所有文档</label>
+      <input id="global-search" type="search" data-search-input placeholder="搜索仓库、技术或面试题…" autocomplete="off">
+      <span class="search-shortcut">Ctrl K</span>
+      <div class="search-results" data-search-results hidden></div>
+    </div>
+    <button class="icon-button" type="button" data-theme-toggle aria-label="切换深浅主题">◐</button>
+  </header>
+  <div class="drawer-backdrop" data-drawer-backdrop hidden></div>
+  <div class="docs-layout">
+    <nav class="sidebar" data-sidebar aria-label="全站文档导航">
+      <div class="sidebar-heading">文档导航</div>
+      
+        <section class="nav-group">
+          <h2 class="nav-group-title">逐仓文档</h2>
+          <a class="nav-link" href="repositories.html">66 个仓库独立分析</a>
+        </section>
+        <section class="nav-group">
+          <h2 class="nav-group-title">开始使用</h2>
+          <a class="nav-link" href="index.html">总览与导航</a>
+<a class="nav-link" href="50-interview-project-summary.html">五条主讲项目线</a>
+<a class="nav-link" href="70-resume-and-star-stories.html">简历与 STAR</a>
+<a class="nav-link" href="60-interview-question-bank.html">70 道面试题</a>
+        </section>
+
+        <section class="nav-group">
+          <h2 class="nav-group-title">仓库分析</h2>
+          <a class="nav-link" href="00-repository-inventory.html">全量仓库盘点</a>
+<a class="nav-link" href="10-android-business-repositories.html">Android 业务仓库</a>
+<a class="nav-link active" href="20-android-infrastructure-media.html" aria-current="page">基础设施与媒体</a>
+<a class="nav-link" href="30-cross-platform-rn-web.html">RN 与 Web</a>
+<a class="nav-link" href="31-tools-samples-and-assets.html">工具、样例与资产</a>
+        </section>
+
+        <section class="nav-group">
+          <h2 class="nav-group-title">质量复核</h2>
+          <a class="nav-link" href="40-android-docs-evidence-review.html">Android 证据复核</a>
+<a class="nav-link" href="41-full-workspace-coverage-review.html">全工作区覆盖复核</a>
+        </section>
+
+        <section class="nav-group">
+          <h2 class="nav-group-title">辅助材料</h2>
+          <a class="nav-link" href="ANALYSIS-TEMPLATE.html">仓库分析模板</a>
+<a class="nav-link" href="2026-07-24-all-repositories-analysis-plan.html">原始执行计划</a>
+        </section>
+
+        <section class="nav-group">
+          <h2 class="nav-group-title">Android 专题</h2>
+          <a class="nav-link" href="android-storage-guide.html">Android 存储方案</a>
+        </section>
+      <p class="sidebar-note">离线资料 · 证据快照 2026-07-24</p>
+    </nav>
+    <main class="article-shell" id="main-content">
+      <div class="breadcrumbs"><a href="index.html">首页</a><span>/</span><span>仓库分析</span><span>/</span><span>基础设施与媒体</span></div>
+      
+      <article class="markdown-body">
+        <h1 id="android-基础设施-hybrid-与媒体仓库-源码证据化面试手册">Android 基础设施、Hybrid 与媒体仓库：源码证据化面试手册</h1>
+<blockquote class="callout"><p>检查范围：<code>yyyyy-cdoe</code> 下 33 个指定仓库，时间为 2026-07-24。本文只陈述当前检出的源码；README 仅作线索，结论以 <code>settings.gradle</code>、构建脚本、主源码和真实业务调用为准。源码数量只用于衡量测试密度，不代表代码质量。文中不记录任何凭据值。</p>
+</blockquote>
+<blockquote class="callout"><p>[!IMPORTANT]
+<strong>源码事实不等于个人经历。</strong> 本文的类、函数、架构、测试数量和风险均是仓库事实，不能直接改写成“我负责、我设计、我实现、我推动”。只有本人确实参与过相应需求、接入、排障或治理时，才可使用文中的条件式话术；框架并非本人所写时，应明确说“我在业务侧使用/接入/排查过，并阅读源码确认其机制”。任何性能收益、成功率、故障下降、工期或业务结果都必须由本人补充可核验的真实数据、时间范围和统计口径；没有数据就只讲机制、验证方法与风险，禁止杜撰。</p>
+</blockquote>
+<h3 id="个人归因与指标填写规则">个人归因与指标填写规则</h3>
+<ul>
+<li><strong>可以直接讲的仓库事实</strong>：模块边界、调用链、类和函数行为、当前检出的测试文件、可从代码推出的风险。</li>
+<li><strong>只有确实参与时才讲的个人动作</strong>：<code>在我实际参与的某需求中，我负责/完成了______，使用了______，遇到______，通过______验证。</code></li>
+<li><strong>结果必须本人补充</strong>：<code>结果：______（指标）、______（统计口径）、______（时间范围）、______（数据来源）</code>。四项缺一时，不写百分比或绝对收益。</li>
+<li><strong>没有参与框架开发时的安全表达</strong>：<code>该能力由基础库提供；我负责的是业务调用侧的状态建模、接入、异常处理或问题定位。</code></li>
+</ul>
+<h2 id="0-先建立全局心智模型">0. 先建立全局心智模型</h2>
+<p>这组仓库实际可以拼成五条链：</p>
+<ol>
+<li><strong>应用与基础设施</strong>：<code>Futureve</code> 应用壳 → <code>FutureveGlobal</code> 全局初始化 → <code>Net</code>/<code>Netdns</code> 网络 → <code>ZRouter</code> 页面路由 → <code>Dependencies</code> 构建期依赖治理。</li>
+<li><strong>轻量状态与分页</strong>：业务 Fragment → <code>DevKit.MvxViewModel</code> → Mavericks state → Paging3 <code>Pager</code>/<code>ResponsePagingSource</code> → <code>SuperAdapter</code>。</li>
+<li><strong>Hybrid</strong>：<code>Mercury</code>/<code>VipMercury</code> 业务页面 → <code>mercury-core.H5Page</code> → <code>JsBridge</code>/插件 → <code>WebViewClient</code> 资源拦截与离线资源。</li>
+<li><strong>视频/音频</strong>：<code>VideoEntity</code>/<code>Kmaudio</code> 业务 → <code>Media</code>/<code>Audio</code> 播放协议与 UI → <code>mediax</code>/<code>Zhplayer</code> 引擎、预加载、清晰度切换。</li>
+<li><strong>内容生产与消费</strong>：<code>Camera</code>/<code>Picasa</code> 采集上传 → <code>ZhEditor</code> 编辑 → <code>Picture</code> 浏览 → <code>Share</code>/<code>ShareCore</code> 渠道分发；<code>VipPrerender</code>、<code>VipCommon</code> 做会员内容预取和复用。</li>
+</ol>
+<p>面试时不要声称“这些框架都是我写的”。更稳妥的表达是：<strong>我在业务调用点完成接入、状态建模、异常处理和性能治理，并能从源码追到底层边界</strong>。</p>
+<hr>
+<h2 id="1-devkit">1. DevKit</h2>
+<ul>
+<li><strong>定位 / 技术栈 / 模块</strong>：<code>settings.gradle</code> 只有 <code>app</code>、<code>devkit</code>；主体是 Kotlin、Coroutines、RxJava2、Airbnb Mavericks、Paging3。入口 <code>devkit/src/main/java/com/zhihu/android/devkit/DevKit.kt</code>，初始化任务是 <code>T_DevKitInit.kt</code>；状态层在 <code>mvx/</code>，分页层在 <code>paging/</code>。</li>
+<li><strong>关键机制与真实调用</strong>：<code>MvxViewModel.collectState()</code> 把 Flow/Rx 值通过 <code>setState</code> 收敛到不可变 state，<code>execute()</code> 把 Rx 过程包装成 Mavericks <code>Loading/Success/Fail</code>；<code>Pager.flow</code> 用 <code>cachedIn(coroutineScope)</code> 共享分页代际，<code>invalidate()</code> 让当前 <code>PagingSource</code> 失效；<code>ResponsePagingSource.load()</code> 把 Refresh/Append/Prepend 分派到 <code>onRefresh/onLoadMore/onLoadBefore</code>，再由 <code>resolveValue/resolvePreKey/resolveNextKey</code> 组装 <code>LoadResult.Page</code>；<code>PagerMediator</code> 用 PagingData 的 <code>filter/map</code> 做就地删除和替换。<ul>
+<li>真实链路：<code>yyyyy-cdoe/km_home_base/km_home_base/src/main/java/com/zhihu/android/feature/km_home_base/discovery/HomePinTabFragment.kt</code> 的 <code>collectFrom(viewModel, PinTabState::data)</code> → 同目录 <code>HomePinTabViewModel.kt</code> 的 <code>Pager(...){ DiscoverTabListDataSource() }</code> 和 <code>setOnEach { copy(data = it) }</code> → 网络分页；刷新由 Fragment 直接调用 <code>viewModel.refresh()</code> → <code>pager.invalidate()</code>；删除由 <code>viewModel.deleteItem()</code> → <code>pagerMediator.remove()</code>；加载态仍由 Fragment 的 <code>adapter.addLoadStateListener</code> 管理。</li>
+</ul>
+</li>
+<li><strong>必须讲清的架构边界</strong>：这是 <strong>Mavericks-based 轻量 MVI</strong>，不是严格 Redux/MVI。证据是有单一 <code>PinTabState</code>、不可变 <code>copy</code> 和 state-driven render，但没有统一 Intent/Action/Reducer 层，Fragment 直接调用 <code>refresh()</code>、<code>deleteItem()</code>；<code>CombinedLoadStates</code> 也没有全部进入 state。优势是迁移成本低、Paging3 适配顺滑；代价是事件入口和副作用没有完全统一。</li>
+<li><strong>线程、稳定性、测试与风险</strong>：<code>MultiCoroutineScope.kt</code> 用 <code>ConcurrentHashMap</code> 管 Job，<code>SafeCoroutine.kt</code>/<code>ViewScope.kt</code> 提供生命周期安全封装；当前有 <code>SuperAdapterTest</code>、<code>SafeCoroutineTest</code>、<code>InstanceContainerTest</code> 3 个单测。风险一：<code>ResponsePagingSource.load()</code> 捕获 <code>Throwable</code>，可能把 <code>CancellationException</code> 当普通错误；风险二：默认 <code>getRefreshKey()</code> 始终 <code>null</code>，不保留锚点；风险三：<code>PagerMediator.cachedDataList.add()</code> 不在同步块内，需关注并发访问假设。</li>
+<li><strong>面试问答</strong>：<ul>
+<li>问：为什么不是严格 MVI？答：状态更新是单向的，但用户动作没有统一 action/reducer，Fragment 仍调用具体 ViewModel 方法，adapter 的 load state 也留在 View 层，因此从源码边界看，应称为“以 Mavericks 为状态容器的轻量 MVI”。若本人参与过 HomePinTab，可再补充自己实际负责的业务调用侧工作。</li>
+<li>问：刷新为什么不是重新 new Pager？答：<code>Pager</code> 持有当前 <code>PagingSource</code>，<code>invalidate()</code> 结束旧代际，Paging3 通过 factory 创建新 source，原 <code>flow</code> 仍可被 UI 收集。</li>
+</ul>
+</li>
+</ul>
+<h2 id="2-dependencies">2. Dependencies</h2>
+<ul>
+<li><strong>定位 / 技术栈 / 模块</strong>：这不是 Android Runtime 库，而是纯配置治理仓库；无 Gradle 模块、无 Java/Kotlin 源码。核心文件为 <code>dependencies.json</code>、<code>dependenciesV2.json</code>、<code>substitute.json</code>、<code>permissions.json</code>、<code>thirdSdk.json</code>、<code>rules_breaker.json</code>。</li>
+<li><strong>关键机制与业务关系</strong>：<code>substitute.json</code> 描述新旧 artifact 替换，解决“新库已包含旧库但业务仍显式依赖旧库”的重复类问题；<code>permissions.json</code> 和 <code>thirdSdk.json</code> 为权限、三方 SDK 治理提供清单。主应用 <code>VipAndroid/app/gradle/check_deps.gradle</code> 会在构建期拉取/校验白名单，因此它属于 <strong>供应链控制面</strong>，不是网络或媒体数据面。</li>
+<li><strong>亮点 / 风险 / 工程化</strong>：规则外置使治理不必散落在几十个业务 <code>build.gradle</code>；风险是远端规则可用性、变更审计与版本可重复性，如果构建总取“最新规则”，就会出现同一 commit 不同时间结果不同。仓库无自动化测试，至少应给 JSON Schema、冲突样例和规则回归测试。</li>
+<li><strong>面试问答</strong>：<ul>
+<li>问：依赖治理为什么不能只靠 Gradle resolutionStrategy？答：resolutionStrategy 解决版本选择，<code>substitute.json</code> 还表达“功能替代/包含关系”；权限和三方 SDK 清单又是合规问题，所以需要更高层的策略仓库。</li>
+</ul>
+</li>
+</ul>
+<h2 id="3-net">3. Net</h2>
+<ul>
+<li><strong>定位 / 技术栈 / 模块</strong>：<code>net-api</code> 暴露稳定门面，<code>net</code> 提供 Retrofit/OkHttp 实现；Java/Kotlin、Retrofit、OkHttp、RxJava，另有 SSE、QUIC、Cookie、监控和缓存。门面见 <code>yyyyy-cdoe/Net/net-api/src/main/java/com/zhihu/android/api/net/Net.java</code>、同目录 <code>OkHttpFamily.java</code>，实现见 <code>yyyyy-cdoe/Net/net/src/main/java/com/zhihu/android/net/common/NetProviderImpl.java</code>、同目录 <code>OkHttpFamilyProviderImpl.java</code>。</li>
+<li><strong>关键机制与调用关系</strong>：业务通过 <code>Net.createService(Service.class)</code> 门面拿 Retrofit service；<code>NetProviderImpl</code> 用 <code>ConcurrentHashMap&lt;Class&lt;?&gt;, Object&gt; SERVICE_MAP</code> 缓存 service，并在 <code>initialize(...)</code> 内创建 <code>Retrofit.Builder</code>、组装 converter/call adapter 后构建 Retrofit；<code>OkHttpFamilyProviderImpl.inflateBuilder()</code> 按 <code>ClientType</code> 组合 cookie、DNS、应用 interceptor、网络 interceptor、metrics、QUIC 配置。<code>CookieStoreImpl.kt</code> 用内存 <code>ConcurrentHashMap</code> 配合持久化，<code>NetSseProviderImpl</code> 为 SSE 建独立 Retrofit。</li>
+<li><strong>并发、性能与稳定性</strong>：<code>NetThreadPool.kt</code> 是 OkHttp dispatcher 的受控线程池；<code>AsyncResponseCallManager.newCachedThreadPool()</code> 给 Retrofit callback 单独执行器；<code>DispatcherMonitor</code> 记录 execute/enqueue/urgent 数；<code>SseCallImpl</code> 用单线程 <code>ScheduledExecutorService</code> 管重连。优点是把网络调度、监控和多 client 族集中治理；风险是 interceptor 顺序高度敏感、全局 service cache 隐含进程级生命周期、SSE 重试需防抖和退出时取消。</li>
+<li><strong>测试 / 工程化</strong>：按复核时统一排除 sample app 样板项的口径，Net 有 33 个 test 文件；既有配置和缓存测试，也有部分测试辅助类。面试不要只说“封装 Retrofit”，应强调 client family、线程隔离、事件监听和协议扩展。</li>
+<li><strong>面试问答</strong>：<ul>
+<li>问：为什么要有 <code>net-api</code>？答：业务只依赖稳定抽象，具体 OkHttp、DNS、QUIC 和监控可在实现模块替换；同时减少组件间传递具体网络实现。</li>
+<li>问：请求慢怎么排查？答：先按 EventListener 拆 DNS/connect/TLS/request/response，再看 <code>DispatcherMonitor</code> 排队和 <code>NetThreadPool</code> 饱和，最后排 interceptor 与服务端耗时。</li>
+</ul>
+</li>
+</ul>
+<h2 id="4-vipnet">4. VipNet</h2>
+<ul>
+<li><strong>定位 / 技术栈 / 模块</strong>：<code>app</code>、<code>net-api</code>、<code>net</code>，是 Net 的 VIP 分支。接口形态仍是 <code>OkHttpFamily</code>/provider，主实现仍在 <code>NetProviderImpl</code>、<code>OkHttpFamilyProviderImpl</code>。</li>
+<li><strong>关键机制与差异</strong>：调用链与 Net 相同，但当前源码不是简单软链接：例如 <code>yyyyy-cdoe/VipNet/net/src/main/java/com/zhihu/android/net/common/OkHttpFamilyProviderImpl.java</code> 的 builder 装配与 Net 分支存在差异，说明已产生产品分叉。两边都有 <code>SignInterceptorTest</code>、<code>PolicyCacheFirstTest</code>、<code>PolicyNetFirstTest</code>、<code>PolicySaveOnlyTest</code> 等同组缓存策略测试；按统一排除 sample app 样板项的口径，Net 为 33 个 test 文件、VipNet 为 32 个，不能据此声称 VipNet 的缓存测试更完整。</li>
+<li><strong>亮点 / 风险</strong>：产品定制与主干隔离能降低 VIP 改动风险；最大工程风险是 <strong>双份网络栈漂移</strong>，安全补丁、超时策略、DNS/QUIC 能力可能只进一边。更合理的长期形态是共享 core + 产品 decorator，而不是复制实现。</li>
+<li><strong>面试问答</strong>：<ul>
+<li>问：如何控制双分支漂移？答：抽公共协议和 contract tests，对 public/VIP 跑同一套缓存、签名、取消、超时测试；差异通过 BuilderDecorator/配置注入。</li>
+</ul>
+</li>
+</ul>
+<h2 id="5-netdns">5. Netdns</h2>
+<ul>
+<li><strong>定位 / 技术栈 / 模块</strong>：<code>app</code> + <code>netdns</code>；Kotlin/Java、OkHttp <code>Dns</code>、DoH/HTTPDNS、IPv4/IPv6、IP 优选与 QUIC 探测。核心入口有 <code>dns/DnsFactory.java</code>、<code>dns/MainDns.java</code>、<code>dns/zhihu/ZhihuDns.java</code>、<code>preferred/IPPreferred.kt</code>。</li>
+<li><strong>关键机制与调用关系</strong>：<code>DnsFactory</code> 组装不同 DNS 实现；<code>ZhihuDns</code> 通过 <code>ResolveExecutor</code> 并发解析并用 <code>reResolvingMap</code> 合并重复任务；<code>DnsCacheHelper</code> 用内存 map + <code>ReentrantReadWriteLock</code>，<code>IpsCache</code>/<code>DnsRecordCache</code> 保存解析结果；<code>IPPreferred</code> 缓存 host 候选、上次地址和时间，<code>SpeedCheck</code> 分派 <code>CheckQuic</code> 或 <code>CheckOkHttp</code> 探测；<code>ZHDnsResolver</code> 用单线程 executor 串行处理系统 DNS 与 cancellation signal。</li>
+<li><strong>性能与稳定性亮点</strong>：并行 DNS、重复请求合并、缓存、IPv6、备用 IP 和主动探速形成完整容灾链；18 个测试覆盖 <code>ZhihuDns</code>、hijack、IPv6、backup/preferred/loopback。风险是缓存 TTL/网络切换失效复杂，<code>PreferredThreadPool</code> 使用 <code>DiscardPolicy</code> 会静默丢任务，探测本身也可能放大弱网流量。</li>
+<li><strong>面试问答</strong>：<ul>
+<li>问：HTTPDNS 为什么还需要系统 DNS？答：它不是全替代；系统 DNS 是兜底与网络本地性来源，HTTPDNS/DoH 解决劫持和解析质量，最终应按 TTL、网络状态、失败回退融合。</li>
+<li>问：怎么防止一个 host 同时发几十次解析？答：用 resolving map 做 single-flight，多个调用复用同一解析结果，并给任务设置超时和网络切换取消。</li>
+</ul>
+</li>
+</ul>
+<h2 id="6-zrouter">6. ZRouter</h2>
+<ul>
+<li><strong>定位 / 技术栈 / 模块</strong>：<code>app</code> + <code>zrouter</code>；基于 <code>com.zhihu.router</code> 的注解路由，封装 Activity/Fragment 启动、拦截器、fallback、cookie、screen name 和 launch mode。核心入口 <code>yyyyy-cdoe/ZRouter/zrouter/src/main/java/com/zhihu/android/app/router/ZRouter.java</code>、同目录 <code>RoutesResolver.java</code>、<code>RouterDispatcher.java</code>。</li>
+<li><strong>关键机制与业务调用</strong>：目标通过 <code>@Router</code> 生成 mapper；<code>RoutesAccessor.addMappers()</code> 在 mapper 写锁内注册并排序；<code>MapperCreator.generateMappers()</code> 解析 scheme/host/path/query、参数正则、priority、module 和 redirect；解析阶段经过 <code>Configs.resolveInterceptors</code>（<code>CopyOnWriteArrayList</code>），失败进入 fallback；<code>FragmentLauncher</code> 把路由结果转为 Fragment 栈操作，<code>ZHIntent</code> 承载动画和导航参数。</li>
+<li><strong>亮点 / 风险 / 测试</strong>：编译期映射避免全量运行时扫描；动态拦截和 fallback 适合登录、灰度、兼容老链接；20 个测试覆盖 URL、cookie、screen name、fallback 和 dispatcher 非法实现。风险是 URL 作为外部输入必须校验域、目标和超长参数（已有 <code>UrlTooLongException</code>）；拦截器顺序、重定向环与跨模块注册冲突要有规则。</li>
+<li><strong>面试问答</strong>：<ul>
+<li>问：路由为什么同时要 annotation 和 interceptor？答：annotation 解决静态“URL 到目标”的映射，interceptor 解决运行时登录态、实验和合规，职责不同。</li>
+</ul>
+</li>
+</ul>
+<h2 id="7-bootstrap">7. Bootstrap</h2>
+<ul>
+<li><strong>定位 / 技术栈 / 模块</strong>：<code>app</code> + <code>bootstrap</code>，是 UI 基础控件集合，不是应用启动框架。包含 <code>BottomSheetLayout</code>、连续滚动、VerticalPager、弹簧动画、引导队列、模糊工具和轻量内存缓存。</li>
+<li><strong>关键机制与调用关系</strong>：<code>consecutive/ConsecutiveScrollerLayout.java</code> 协调多个可滚动 child；<code>BottomSheetLayout.java</code> 处理拖拽与状态；<code>guide/GuideQueue.kt</code>/<code>GuideTask.kt</code> 把引导按队列串行展示；<code>MemoryCache.kt</code> 用 <code>ConcurrentHashMap&lt;String, Any&gt;</code> 做进程缓存。业务 View 直接组合这些控件，不经过 service API 层。</li>
+<li><strong>亮点 / 风险 / 测试</strong>：交互组件沉淀能统一手势和视觉；风险是嵌套滚动、触摸冲突和 Activity 泄漏，<code>MemoryCache</code> 存 Any 也容易没有淘汰策略。约 62 个主源码但未检出测试，手势状态机至少需要 Robolectric/仪器测试和截图回归。</li>
+<li><strong>面试问答</strong>：<ul>
+<li>问：连续滚动最难的是什么？答：不是把两个 RecyclerView 放一起，而是统一消费 dy、边界判断、fling 传递和 nested-scrolling contract，避免父子同时滚或速度丢失。</li>
+</ul>
+</li>
+</ul>
+<h2 id="8-futureve">8. Futureve</h2>
+<ul>
+<li><strong>定位 / 技术栈 / 模块</strong>：单 <code>app</code> 的主应用壳，不是普通 library；<code>yyyyy-cdoe/Futureve/app/src/main/java/com/zhihu/android/app/ZhihuApplication.java</code> 是应用入口，同目录 <code>ConfigCreator.java</code> 注入构建配置。仓库还包含 <code>features/</code> 动态能力和 <code>app/third/</code> 下的定制三方源码/桩。</li>
+<li><strong>关键机制与调用关系</strong>：<code>ZhihuApplication.onCreate()</code> 建立进程级环境，再由模块任务系统初始化各组件；flavor source set 提供 alpha/beta/mr/release/huawei 等差异；<code>features/VideoXFeature</code>、<code>ScannerFeature</code>、<code>LeLinkFeature</code> 显示部分能力按 feature 交付。它是 Net、Router、Mercury、Media 等组件最终汇合点。</li>
+<li><strong>亮点 / 风险 / 工程化</strong>：亮点是多 flavor、feature、定制 SDK 和初始化任务的超级应用工程能力；风险是 app 壳依赖面极大、启动路径易膨胀，<code>app/third</code> fork 会带来升级和安全补丁负担。当前检出的主源码少，是因为大量能力以外部组件和预编译/third source 接入，不能误判为小项目。</li>
+<li><strong>面试问答</strong>：<ul>
+<li>问：超大 App 怎么控制启动？答：Application 只建最小底座，其余按任务依赖、进程、隐私同意和首屏关键性分级；用 trace 校验而不是只靠“异步化”。</li>
+</ul>
+</li>
+</ul>
+<h2 id="9-futureveglobal">9. FutureveGlobal</h2>
+<ul>
+<li><strong>定位 / 技术栈 / 模块</strong>：<code>app</code> + <code>global</code>，承载可被主应用复用的全局初始化、构建配置、网络 decorator、埋点和路由入口。核心任务为 <code>T_NetInit.java</code>、<code>T_PostNetInit.java</code>、<code>T_ZAInit.java</code>、<code>T_ZhiTrackInit.java</code>。</li>
+<li><strong>关键机制与业务调用</strong>：<code>AppBuildConfig.Builder</code> 把产品 host、渠道和额外配置集中注入；<code>GlobalRequestDecorator.decorate()</code> 给 OkHttp builder 追加全局请求能力，<code>LaunchRequestCountDecorator</code> 统计启动请求；<code>T_PostNetInit.initDns()</code> 在网络底座后初始化 DNS；外链先进入 <code>RouterPortalActivity</code>，再经过 <code>RouterPortalInterceptor</code>/legacy interceptor 分发。</li>
+<li><strong>亮点 / 风险 / 测试</strong>：把 app 壳与全局实现拆开，有利于不同产品复用；风险是静态全局状态、初始化顺序和隐私边界。约 28 个主源码、5 个测试，任务依赖和 portal 安全仍应有集成测试。</li>
+<li><strong>面试问答</strong>：<ul>
+<li>问：为什么 Net 初始化和 PostNet 初始化分开？答：先建立 client/公共拦截器，再加载依赖网络或运行时配置的 DNS、监控等后置能力，可减少依赖环并明确首屏关键路径。</li>
+</ul>
+</li>
+</ul>
+<h2 id="10-mercury">10. Mercury</h2>
+<ul>
+<li><strong>定位 / 技术栈 / 模块</strong>：<code>mercury-api</code>（模型/外部插件契约）、<code>mercury</code>（业务 Web 容器）、<code>app</code>（demo）；底层依赖 <code>mercury-core</code>。包含 WebView 页面、插件、支付模型、DNS/离线资源、Hybrid 卡片和监控。</li>
+<li><strong>关键机制与调用关系</strong>：典型业务入口是 <code>yyyyy-cdoe/Mercury/mercury/src/main/java/com/zhihu/android/app/ui/fragment/webview/WebViewFragment2.java</code>，创建 <code>H5Page</code>、绑定 <code>InnerWebClient</code>，由 core 的 <code>H5PageImpl</code> 装 JSBridge 和 WebViewClient；业务插件在 <code>yyyyy-cdoe/Mercury/mercury/src/main/java/com/zhihu/android/app/mercury/plugin/</code>，API 契约放 <code>yyyyy-cdoe/Mercury/mercury-api/src/main/java/com/zhihu/android/app/mercury/plugin/H5ExternalPlugin.java</code> 等。<code>DnsWebViewClient.shouldInterceptRequest()</code> 可把 Web 资源请求切入 <code>ResourceProvider</code>。</li>
+<li><strong>亮点 / 风险 / 测试</strong>：页面容器、bridge、资源加载和业务插件分层，支持渐进迁移；约 262 个主源码、37 个测试。最大风险是 WebView/bridge 攻击面：必须做 origin、事件白名单、参数校验、页面销毁后的 callback 清理，并避免把敏感数据写入 URL/日志。</li>
+<li><strong>面试问答</strong>：<ul>
+<li>问：Hybrid 插件如何避免变成上帝接口？答：按事件拆插件契约，页面只持 <code>H5Page</code>/plugin manager；插件声明可调用域和权限，统一参数 schema、超时、一次性 callback 与审计。</li>
+</ul>
+</li>
+</ul>
+<h2 id="11-vipmercury">11. VipMercury</h2>
+<ul>
+<li><strong>定位 / 技术栈 / 模块</strong>：与 Mercury 同样的 <code>mercury-api</code>/<code>mercury</code>/<code>app</code>，是 VIP 产品分支；额外暴露 <code>WebViewEmptyViewInterface</code> 等产品能力。</li>
+<li><strong>关键机制与差异</strong>：仍由 <code>WebViewFragment2</code> → <code>H5Page</code> → <code>JsBridge</code>，资源层存在 <code>HtmlDnsWebViewClient</code>、<code>HttpGetRequestWebViewClient</code>、<code>ResourceDnsWebviewClient</code>；<code>HybridCard.Builder</code> 可链式绑定自定义 <code>IZhihuWebViewClient</code>，再由默认 client 做资源拦截和异常收口。</li>
+<li><strong>亮点 / 风险 / 测试</strong>：链式 WebViewClient 让定制逻辑可组合；约 264 个主源码、36 个测试。风险和 VipNet 相同：与 Mercury 长期复制会产生安全修复漂移，尤其 bridge、X5/系统 WebView 兼容和资源拦截是高风险区。</li>
+<li><strong>面试问答</strong>：<ul>
+<li>问：VIP 分支该怎么回收公共能力？答：把 H5Page、bridge、资源策略和 contract tests 放 core；VIP 只保留 plugin、empty view、路由和产品配置。</li>
+</ul>
+</li>
+</ul>
+<h2 id="12-mercury-core">12. mercury-core</h2>
+<ul>
+<li><strong>定位 / 技术栈 / 模块</strong>：<code>app</code> + <code>mercury-core</code>，是真正的 Hybrid 内核：抽象系统/X5 WebView、H5Page/H5Session、JSBridge、插件、资源加载、WebView/Page LRU、APM。</li>
+<li><strong>关键机制与调用关系</strong>：<code>H5PageImpl</code> 创建 <code>IZhihuWebView</code>，<code>addJavascriptInterface(mJsBridge, IJsBridge.JS_BRIDGE_NAME)</code>，再绑定 <code>H5WebViewClient</code>；<code>JsBridge</code> 用 <code>ConcurrentHashMap&lt;String,H5Event&gt;</code> 关联请求与回调，并通过 <code>evaluateJavascript()</code> 回传；<code>ResourceLoader</code>/<code>ResourceProvider</code> + <code>RequestPolicy</code> 接管离线/网络资源；<code>WebViewLruCache</code>、<code>H5PageLruCache</code> 和 <code>WebViewQueue</code> 支持复用。</li>
+<li><strong>线程、性能与稳定性</strong>：<code>AndroidWebView2.evaluateJavascript()</code> 检查 destroyed 状态并切主线程；页面 <code>onDestroy</code> 清 client、bridge 和 WebView；缓存减少冷启动但必须 reset cookie、history、JS interface、listener 和页面状态，不能只把 WebView 放 LRU。17 个测试覆盖 <code>JsBridgeTest</code>、<code>PluginManagerTest</code>、<code>H5PageStatusTest</code>、<code>WebViewHelperTest</code>、静态工具等。</li>
+<li><strong>亮点 / 风险</strong>：抽象系统/X5 内核、资源策略和页面生命周期是核心亮点；风险是 <code>addJavascriptInterface</code> 的权限模型、LRU 复用污染、回调 map 泄漏、同步资源拦截阻塞 WebView IO 线程。</li>
+<li><strong>面试问答</strong>：<ul>
+<li>问：WebView 预热为什么容易出 bug？答：复用的不只是 View，还有 WebSettings、client、bridge、cookie/history、页面 callback；必须定义可验证的 reset contract，并限制缓存上限和进程内存。</li>
+</ul>
+</li>
+</ul>
+<h2 id="13-kmreporter">13. KmReporter</h2>
+<ul>
+<li><strong>定位 / 技术栈 / 模块</strong>：它不是 Android SDK，而是 Bun + TypeScript 的成功率报表/告警服务。入口 <code>src/server.ts</code>、<code>src/main.ts</code>；数据抓取 <code>fetch.ts</code>/<code>fetchSFD.ts</code>，渲染 <code>inflater.ts</code>/<code>render.ts</code>，企业消息 <code>wework.ts</code>，定时任务 <code>task.ts</code>。</li>
+<li><strong>关键机制与调用关系</strong>：<code>main()</code> 对多产品 config 调 <code>report()</code>；<code>fetchData()</code> 从监控后端拉当前/历史数据，<code>Infalater.inflateHtml()</code> 生成报表，Puppeteer 渲染图片，再由 <code>sendImgToWework()</code> 分发；<code>monitor.ts</code> 监测服务存活并告警。</li>
+<li><strong>亮点 / 风险 / 工程化</strong>：把 Android 支付/业务指标变成自动日报和异常通知，是端到端稳定性闭环。风险是 <code>config.ts</code> 集中存大量 SQL、owner、机器人地址，配置与代码耦合且有敏感信息硬编码风险；本文不记录其值。仓库未发现测试，应补数据解析、比率、阈值、SQL 参数化和消息发送 mock；<code>forEach(async ...)</code> 也要注意未 await。</li>
+<li><strong>面试问答</strong>：<ul>
+<li>问：客户端项目为什么值得讲报表服务？答：稳定性不止是埋点 SDK；源码展示了成功率定义、监控取数、同比/环比、归因和 owner 告警的闭环。只有本人实际参与指标建设或告警治理时，才可陈述个人动作；结果需本人补充真实指标、口径、时间范围和数据来源。</li>
+</ul>
+</li>
+</ul>
+<h2 id="14-share">14. Share</h2>
+<ul>
+<li><strong>定位 / 技术栈 / 模块</strong>：<code>share-api</code> 提供 <code>ShareInfo</code>、<code>ShareUnifyInfo</code>、RN 分享模型和跨组件接口，<code>share</code> 提供业务 service、统一分享实现与短链网络接口。入口可看 <code>share/src/main/java/com/zhihu/android/module/ShareComponent.java</code>、<code>api/service2/ShareService.java</code>、<code>ShortUrlService.java</code>。</li>
+<li><strong>关键机制与业务调用</strong>：业务先构造 <code>ShareInfo</code>/<code>ShareUnifyInfo</code>，通过组件接口进入 <code>share</code>；需要平台展示、图片落盘和三方 SDK 调用时下沉 <code>ShareCore</code>。<code>IRNShareInterface.kt</code> 把 React Native 参数转成原生分享模型；<code>zhshare/ZhShareUtils.kt</code> 还支持把内容转交编辑器，体现分享与内容生产链的连接。</li>
+<li><strong>亮点 / 风险 / 测试</strong>：API/实现拆分让业务不依赖具体微信、QQ、微博 SDK；风险是 Share 与 ShareCore 模型并存、RN/Native 参数语义漂移、短链失败降级和 Activity 生命周期。约 89 个主源码、4 个测试，其中有样板测试，契约覆盖偏弱。</li>
+<li><strong>面试问答</strong>：<ul>
+<li>问：分享失败怎么定位？答：按“业务模型生成 → 短链/图片准备 → 渠道匹配 → 三方 SDK 调用 → callback/回前台”分段埋点，不能只记录一个最终失败码。</li>
+</ul>
+</li>
+</ul>
+<h2 id="15-sharecore">15. ShareCore</h2>
+<ul>
+<li><strong>定位 / 技术栈 / 模块</strong>：源码目录是 <code>sharecore</code>，但 <code>settings.gradle</code> 声明 <code>:vip_sharecore</code>，需由构建脚本映射/发布配置解释；主体是分享 UI、渠道适配、图片/长图渲染和系统 Intent fallback。</li>
+<li><strong>关键机制与调用关系</strong>：<code>base/Sharable.kt</code>/<code>AbsSharable.java</code> 定义分享对象，<code>ShareItemFactory.java</code> 根据可用渠道生成 item，<code>ShareSheetFragmentV3.startShare()</code> 选择具体渠道；<code>ShareContentSharer.share()</code> 对 URI、File、Video、Bitmap、普通文本分别组装 Intent，微信/QQ/微博走 <code>WeChatShareHelper</code>、<code>QQShareHelper</code>、<code>WeiboShareHelper</code>；Web/长图由 <code>WebRenderShareFragment</code>、<code>ViewRenderShareFragment</code> 渲染后再分发。</li>
+<li><strong>亮点 / 风险 / 测试</strong>：内容类型与渠道策略分离、系统分享兜底是亮点；风险是 Bitmap 峰值内存、FileProvider 权限、临时文件清理、三方 callback 丢失，以及 <code>settings.gradle</code> 模块名与目录不一致的工程可读性。约 180 个主源码、5 个测试，<code>WebShareUtmTest</code>、<code>CardTemplatesTest</code> 有效但渠道矩阵仍不足。</li>
+<li><strong>面试问答</strong>：<ul>
+<li>问：为什么长图分享容易 OOM？答：完整页面位图的内存约为宽×高×4，长页面很快超过堆；应分片/降采样、限制最大尺寸、后台压缩，并及时 recycle/释放引用。</li>
+</ul>
+</li>
+</ul>
+<h2 id="16-media">16. Media</h2>
+<ul>
+<li><strong>定位 / 技术栈 / 模块</strong>：<code>player-api</code>、<code>player</code>、<code>tornado-annotation</code>、<code>tornado-apt-processor</code>、<code>app</code>，约 1115 个主源码，是统一媒体播放/交互平台而不是单一播放器。既保留旧 <code>video/player2</code>、音频实现，也有 Tornado 事件化插件体系、预加载、透明视频、视频裁剪。</li>
+<li><strong>关键机制与业务关系</strong>：<code>yyyyy-cdoe/Media/player-api/src/main/java/com/zhihu/android/api/interfaces/tornado/event/TornadoGroup_player.java</code> 暴露 play/pause/seek 等事件协议；注解处理器 <code>TornadoActionMethodProcessor</code>、<code>ActionMethodParser</code> 生成 action map/group，运行时 <code>TornadoProcessor</code> 分发事件到插件；<code>ZHPluginVideoView</code> 负责播放 UI 与插件编排，<code>PlayerPool.kt</code> 复用 player；底层播放能力可由 <code>mediax</code>/<code>Zhplayer</code> 提供。<code>ZHVideoPreloadManager.preloadVideoId/preload()</code> 在列表即将曝光前预取。</li>
+<li><strong>性能与稳定性</strong>：播放器池、预加载和协议化插件降低首帧与业务耦合；<code>PlaySessionForZa</code>/<code>PlayerZaPlugin</code> 记录 prepare、首帧、卡顿、完成等会话。风险是新旧两套 player 长期并存、事件生成代码可调试性、Surface/Activity 生命周期、预加载抢带宽和缓存、复杂状态组合。11 个测试对 1115 个主源码明显偏少。</li>
+<li><strong>面试问答</strong>：<ul>
+<li>问：插件化播放器比继承一个大 View 好在哪？答：控制栏、弹幕、埋点、清晰度等按协议订阅事件，业务可以组合；代价是事件顺序和状态一致性更难，需要统一会话状态机和 contract tests。</li>
+<li>问：预加载越多越好吗？答：不是。要根据曝光概率、网络类型、缓存预算和当前播放 QoS 控制，优先首段字节而非整视频。</li>
+</ul>
+</li>
+</ul>
+<h2 id="17-mediax">17. mediax</h2>
+<ul>
+<li><strong>定位 / 技术栈 / 模块</strong>：<code>mediax-api</code>、<code>mediax</code>、<code>app</code>，只有约 9 个主源码，是 ByteDance TTVideoEngine 的薄适配层。视频实现 <code>TTVideoPlayerEngine.kt</code>，音频实现 <code>ttplay/TTPlayEngine.kt</code>，provider 为 <code>VideoPlayerProviderIml.kt</code>。</li>
+<li><strong>关键机制与调用关系</strong>：上层以 <code>IVideoPlayer</code>/<code>AudioEngine</code> 调用 <code>setPlayData/prepare/start/pause/seek/release</code>；engine 把 <code>VideoPlayData</code>/<code>PlayData</code> 转成 TT <code>StrategySource</code>，回调 <code>onPrepared/onBufferStart/onBufferEnd/onRenderStart/onCompletion/onError</code>；<code>VideoExpireService</code> 在媒体地址过期错误时刷新播放信息，<code>VideoPlayerProviderIml.addPreload()</code> 接 TT 预加载回调。</li>
+<li><strong>亮点 / 风险 / 测试</strong>：屏蔽三方 engine、支持 HTTPDNS、缓存配置、卡顿阈值、字幕和过期 URL 恢复；风险是 license 初始化、magic error code、回调线程、release 后回调和厂商 SDK 升级。仅 2 个测试且大概率是样板，最需要状态机与错误恢复 contract tests。</li>
+<li><strong>面试问答</strong>：<ul>
+<li>问：如何做到可替换播放器内核？答：上层只依赖能力接口和标准状态/错误模型；TT 专属 option、error code、DNS parser 全留在 adapter，使用同一套行为测试验证替换实现。</li>
+</ul>
+</li>
+</ul>
+<h2 id="18-videoentity">18. VideoEntity</h2>
+<ul>
+<li><strong>定位 / 技术栈 / 模块</strong>：<code>video_entity-api</code>、<code>video_entity</code>、<code>app</code>，约 1351 个主源码，是视频详情/OGV/互动/付费/弹幕/预加载等业务域，不是底层解码库。</li>
+<li><strong>关键机制与业务关系</strong>：<code>impl/ZVideoFragmentImpl.java</code> 提供视频页面组件实现，<code>OgvHostActivity.kt</code>/<code>OgvAnthologFragment.kt</code> 承载 OGV，<code>detail/VideoEntityModel.kt</code> 拉取详情并组织业务状态；播放器能力从 Media/Tornado 注入，<code>ZVideoBarrageImpl.java</code> 对接弹幕，<code>VideoTabPreloadImpl.java</code> 做 Tab 预载，相关问题由 <code>RelatedVideoQuestionViewModel.kt</code> 管理。</li>
+<li><strong>亮点 / 风险 / 测试</strong>：把复杂视频业务拆为 API、实现和插件/服务点，能复用播放器基础设施；风险是“巨型业务组件”边界过宽、Activity/Fragment/播放器多生命周期联动、付费鉴权和预加载缓存一致性。仅 3 个测试相对 1351 个主源码极低，是本批最明显的测试风险之一。</li>
+<li><strong>面试问答</strong>：<ul>
+<li>问：视频详情页如何避免所有逻辑塞 Fragment？答：播放器只维护播放状态，详情 model/ViewModel 管数据，弹幕/互动/付费做能力接口；Fragment 只编排生命周期和 UI，跨能力通过明确事件而非互相持有。</li>
+</ul>
+</li>
+</ul>
+<h2 id="19-audio">19. Audio</h2>
+<ul>
+<li><strong>定位 / 技术栈 / 模块</strong>：<code>audio-api</code>、<code>audio</code>、<code>app</code>；API 中有 <code>PlayData</code>、<code>PlayConfig</code>、<code>IVideoPlayer</code>，实现中有 <code>XPlayer</code>、<code>Player</code>、<code>AudioService</code>、通知、悬浮窗、字幕/码流 listener。</li>
+<li><strong>关键机制与调用关系</strong>：业务构造 <code>PlayData</code> 交 <code>XPlayer.kt</code>/<code>SimplePlayer.kt</code>；<code>Player.kt</code> 编排 engine、状态与 listener；<code>AudioService.kt</code> 保证后台播放，<code>XPlayerNotificationManager</code> 映射前台通知与媒体控制，<code>FloatViewManager</code> 管悬浮入口；底层 <code>AudioEngine</code> 可由 <code>mediax.TTPlayEngine</code> 或其他实现提供。</li>
+<li><strong>并发、稳定性与测试</strong>：Service + lifecycle owner 让 UI 离开后继续播放，<code>ListenerList.kt</code> 统一多监听者；风险是音频焦点、耳机拔出、电话中断、前台服务限制、通知状态与真实 engine 状态不同步。约 154 个主源码仅 2 个测试，应补 Service 重建、焦点、网络切换、进度恢复。</li>
+<li><strong>面试问答</strong>：<ul>
+<li>问：为什么播放器不能只放 ViewModel？答：ViewModel 跟页面生命周期，后台音频需要 Service 成为播放会话 owner；UI 只是订阅状态和发命令。</li>
+</ul>
+</li>
+</ul>
+<h2 id="20-zhplayer">20. Zhplayer</h2>
+<ul>
+<li><strong>定位 / 技术栈 / 模块</strong>：<code>zhplayer-api</code>、<code>zhplayer</code>、<code>app</code>；主体仅约 9 个主源码，是面向统一 <code>IPlayer</code>/<code>IPreloader</code> 的精简 facade。</li>
+<li><strong>关键机制与调用关系</strong>：<code>ZhPlayer.Builder.playerFactory()</code>/<code>preloaderFactory()</code> 注入实现；<code>setDataSource()</code>、<code>prepare()</code>、<code>pause()</code>、<code>seekTo()</code>、<code>switchQuality()</code>、<code>release()</code> 维护会话；<code>ZhPreplayerManager.preloadPlayer()</code> 创建预播放器，<code>getPreplayer()</code> 按数据源取用，<code>ZhPreloadManager</code> 管加载任务。上层 Media/业务只关心统一接口。</li>
+<li><strong>亮点 / 风险 / 测试</strong>：工厂注入与预播放器复用便于切换底层；风险是预播放对象的 source/Surface 状态污染、切清晰度连续播放位置、release 幂等。3 个测试相对体量尚可，但需确认是否覆盖行为而非样板。</li>
+<li><strong>面试问答</strong>：<ul>
+<li>问：预播放和预加载有什么区别？答：预加载偏网络/磁盘数据，预播放可能已创建 engine、prepare 到可播状态；后者首帧更快但 CPU、内存和生命周期成本更高。</li>
+</ul>
+</li>
+</ul>
+<h2 id="21-kmaudio-同时在业务文档出现">21. Kmaudio（同时在业务文档出现）</h2>
+<ul>
+<li><strong>定位 / 技术栈 / 模块</strong>：<code>kmaudio-api</code>、<code>kmaudio</code>、<code>app</code>，会员知识音频业务播放器；约 119 个主源码。API 入口 <code>yyyyy-cdoe/Kmaudio/kmaudio-api/src/main/java/com/zhihu/android/kmarket/KMPlayerInterface.java</code>，实现入口 <code>yyyyy-cdoe/Kmaudio/kmaudio/src/main/java/com/zhihu/android/kmaudio/player/KMPlayerInterfaceImpl.kt</code>、同目录全局协调器 <code>KMPlayer.kt</code>。</li>
+<li><strong>与 10 文档的覆盖关系</strong>：同一 <code>Kmaudio</code> 仓库在 10 文档按会员音频业务视角分析，在本文按播放器基础设施、数据源和引擎视角分析；这是同一仓库的双视角交叉验证，仓库覆盖数只计一次，不能当作两个独立项目或两段个人经历。</li>
+<li><strong>关键机制与调用关系</strong>：外部 <code>KMPlayerInterface.play()</code> → <code>KMPlayer.play(type,id,trackId,...)</code> → <code>KmPlayRequest</code>/<code>MixtapePlayRequest</code> 与对应 <code>DataSource</code> 拉业务数据 → <code>ZhPlayEngine.play(PlayData)</code> → Audio/底层 engine；<code>PlayerDataSource</code>、<code>GlobalPlayListDataSource</code>、<code>CurrentPlayListDataSource</code> 分离单集与播放列表；<code>KMPlayerFragment</code>/<code>KmPlayerControlVM</code> 展示控制，<code>KMPlayerTimer</code> 支持播完/倒计时。</li>
+<li><strong>亮点 / 风险 / 测试</strong>：把书籍、混音、直播等差异放 DataSource/RouterDispatcher，播放内核保持稳定；<code>PlayerApm</code>、<code>KmplayerReporter</code> 提供会话监控。风险是 <code>KMPlayer</code> 全局 object 体量大、数据源/列表/引擎三份状态一致性、试听转付费、进度落盘与进程恢复。约 5 个测试，业务状态矩阵不足。</li>
+<li><strong>面试问答</strong>：<ul>
+<li>问：全局播放器如何避免状态乱？答：定义单一播放会话 owner 和显式状态机；DataSource 只供数据，engine 只执行，UI 只订阅；切集、切源、试听到付费都串行成为会话 command。</li>
+</ul>
+</li>
+</ul>
+<h2 id="22-picture">22. Picture</h2>
+<ul>
+<li><strong>定位 / 技术栈 / 模块</strong>：<code>picture</code>、<code>app</code>、<code>FrescoStatisticGradlePlugin</code>；约 383 个主源码，覆盖图片浏览、缩放大图、Fresco 加载/预取、下载分享、二维码、全景与图片编辑。</li>
+<li><strong>关键机制与调用关系</strong>：业务通过 <code>ZHImagesViewerEntrance.kt</code>/<code>PinImagesViewerEntrance.kt</code> 打开浏览器；普通图由 Fresco，超大图由 <code>SubsamplingScaleImageView</code> 分区解码；<code>ImageDownloader.download()</code> 处理落盘，<code>ImageSharer.shareImage()</code> 接 ShareCore；<code>ImageIOPreload.preloadUrls()</code> 做预取，<code>ImageXMonitor</code> 用单线程 executor 与 duration map 记录耗时。</li>
+<li><strong>性能与稳定性</strong>：分区解码避免整张超大图进内存，Fresco prefetch 与备域 <code>BackupDomainManager</code> 提升成功率，QR executor 复用避免反复建线程。风险是 Bitmap/GL 生命周期、原图下载存储权限、CallerThreadExecutor 上回调工作量、旧 <code>AsyncTask</code>/反射兼容代码；15 个测试但体量仍大。</li>
+<li><strong>面试问答</strong>：<ul>
+<li>问：超大图为什么不能直接 BitmapFactory.decode？答：ARGB_8888 内存按像素×4，长图会 OOM；分区解码只解当前 viewport，并随缩放切 sample level。</li>
+</ul>
+</li>
+</ul>
+<h2 id="23-picasa">23. Picasa</h2>
+<ul>
+<li><strong>定位 / 技术栈 / 模块</strong>：<code>picasa-api</code>、<code>picasa</code>、<code>app</code>，是媒体选择、拍摄入口、压缩/处理、上传、视频封面编辑的统一门面；不是 Google Picasa SDK。</li>
+<li><strong>关键机制与调用关系</strong>：业务依赖 <code>IMediaSelector</code>、<code>ITakePhoto</code>、<code>IMediaUploader</code> 等 service-loader 接口；<code>MediaUploaderImpl.upload()</code> → <code>UploadProcessorStrategyImpl</code> 选择预处理 → <code>PictureUploadStrategyImpl</code>/<code>ZHUploadImageHelper</code> → <code>ZHUploadHelper.uploadWithProgress()</code> 返回 Rx <code>Observable&lt;UploadResult&gt;</code>；<code>T_PictureInit.kt</code> 注册实现。</li>
+<li><strong>亮点 / 风险 / 测试</strong>：接口把媒体来源和上传后端隔离，strategy 允许按类型/场景处理；风险是 Uri 权限、压缩与 EXIF 方向、断点/重试幂等、上传取消、原文件和临时文件清理。约 111 个主源码、4 个测试，上传失败/取消/进程死亡恢复需加强。</li>
+<li><strong>面试问答</strong>：<ul>
+<li>问：上传进度为什么用 Observable 而不是 Single？答：Single 只能给最终结果；进度是多次事件，Observable/Flow 更合适，但必须在页面销毁时取消并保证最终态唯一。</li>
+</ul>
+</li>
+</ul>
+<h2 id="24-photos">24. photos</h2>
+<ul>
+<li><strong>定位 / 当前状态</strong>：当前仓库只有 <code>.git</code> 和 <code>LICENSE</code>，没有构建文件、源码、README 或测试，不能据此判断 Android API、媒体链路或业务调用。</li>
+<li><strong>风险 / 工程化判断</strong>：这更像空仓/占位/未完整拉取，而不是可面试的实现。不能把仓库名推断成系统相册或图片库；需要确认分支、LFS/submodule、访问权限或是否已迁移。</li>
+<li><strong>面试问答</strong>：<ul>
+<li>问：遇到空仓库怎么分析？答：先核对分支、submodule/LFS 和迁移记录；证据不足就明确标“无法判断”，不编造架构。</li>
+</ul>
+</li>
+</ul>
+<h2 id="25-camera">25. Camera</h2>
+<ul>
+<li><strong>定位 / 技术栈 / 模块</strong>：<code>camera</code> + <code>app</code>，并可按 <code>settings.gradle</code> 的 source property 接入 base/account/common/structure/player；主实现只有约 6 个文件，是系统相机拍照的链式封装，不是自研 Camera2 预览/编码框架。</li>
+<li><strong>关键机制与调用关系</strong>：业务 <code>ZhihuCamera.from(activity).choose(TYPE_IMAGE).onTakenImage(...).start()</code>；<code>start()</code> 用 RxPermissions 请求 CAMERA，隐藏 <code>CallbackFragment</code> 保存 requestCode → callback 映射，<code>requestSystemCameraPhoto()</code> 发 <code>MediaStore.ACTION_IMAGE_CAPTURE</code>，提前用 FileProvider 创建输出 URI；<code>onActivityResult()</code> 通过 <code>CaptureResult.fromIntent()</code> 或预存 File 恢复结果。</li>
+<li><strong>亮点 / 风险 / 测试</strong>：隐藏 Fragment 消除业务手写 onActivityResult，预存文件兼容相机不返回 data；风险是强转 <code>AppCompatActivity</code>、随机 requestCode 冲突、<code>commitNowAllowingStateLoss</code>、legacy Agent/RxBus 路径和 retained Fragment，且未检出测试。现代化可迁移 Activity Result API。</li>
+<li><strong>面试问答</strong>：<ul>
+<li>问：为什么拍照结果 Intent 可能是 null？答：指定 <code>EXTRA_OUTPUT</code> 后相机常直接写 URI，不返回 bitmap/data，所以请求前必须保存目标文件并在结果时兜底读取。</li>
+</ul>
+</li>
+</ul>
+<h2 id="26-barrage">26. barrage</h2>
+<ul>
+<li><strong>定位 / 技术栈 / 模块</strong>：<code>barrage</code> + <code>app</code>，约 19 个主源码，是轻量弹幕渲染库。核心 <code>XBarrage.java</code>、<code>BarrageView.java</code>、<code>BarrageContext.java</code>、<code>Config.java</code>，demo 演示作为播放器插件。</li>
+<li><strong>关键机制与调用关系</strong>：业务创建 <code>Barrage</code> 数据，交 <code>XBarrage</code> 调度，<code>BarrageView</code>/<code>IBView</code> 完成轨道布局与绘制；<code>BarrageContext</code> 持运行上下文与配置。播放器只需在播放进度变化时喂数据、暂停/恢复弹幕，不必知道具体 View。</li>
+<li><strong>亮点 / 风险 / 测试</strong>：小而独立，易嵌入播放器；风险是主线程布局抖动、文本测量/富文本图片开销、轨道碰撞和 seek 后时间同步。4 个测试相对体量尚可，但必须包含高密度和 seek 场景。</li>
+<li><strong>面试问答</strong>：<ul>
+<li>问：弹幕性能怎么优化？答：对象池、预计算文本宽度、限制同屏量/轨道、按时间窗口取数据，View 层只做必要布局；卡顿时优先降密度而不是阻塞播放。</li>
+</ul>
+</li>
+</ul>
+<h2 id="27-blurview">27. BlurView</h2>
+<ul>
+<li><strong>定位 / 技术栈 / 模块</strong>：<code>library</code> + <code>app</code>，是第三方 BlurView 源码仓。<code>BlurAlgorithm</code> 抽象算法，<code>RenderNodeBlurController</code>、<code>RenderScriptBlur</code> 适配平台，<code>PreDrawBlurController</code> 在 root 预绘制阶段采样并模糊。</li>
+<li><strong>关键机制与调用关系</strong>：业务 <code>BlurView.setupWith(root)</code> 一类入口配置 overlay/半径；controller 计算缩放尺寸，抓取 root 背景到内部 bitmap/canvas，算法处理后由 <code>BlurView</code> 绘制；新平台可走 RenderNode，旧平台走 RenderScript/no-op。</li>
+<li><strong>亮点 / 风险 / 测试</strong>：下采样和多后端兼容兼顾效果与性能；风险是每帧抓屏、递归绘制、尺寸变化重分配、RenderScript 废弃和低端机 GPU/CPU 峰值。19 个主源码仅 1 个测试，需性能基准与截图测试。</li>
+<li><strong>面试问答</strong>：<ul>
+<li>问：实时模糊为什么先下采样？答：模糊复杂度与像素数/半径相关，先缩小再模糊、放大能大幅降成本，视觉差异通常可接受。</li>
+</ul>
+</li>
+</ul>
+<h2 id="28-bottomnav">28. bottomnav</h2>
+<ul>
+<li><strong>定位 / 技术栈 / 模块</strong>：<code>bottomnav-api</code>、<code>bottomnav</code>、<code>app</code>；约 92 个主源码，支持动态 Tab、badge、主题、云配置和动画资源。入口 <code>BottomNav.java</code>、安装器 <code>BottomNavInstaller.java</code>、资源层 <code>BottomNavResManager.java</code>。</li>
+<li><strong>关键机制与调用关系</strong>：业务通过 API model/event（<code>NavBadge</code>、<code>NumberBadge</code>、<code>BadgeEvent</code> 等）而非直接操作具体 View；<code>BottomNavInstaller</code> 安装菜单，<code>BottomNavConfigUtils</code>/<code>BottomNavFileUtils</code> 读取云端或本地 JSON，<code>BottomNavResManager</code> 管亮/暗主题和动画资源，<code>BottomDynamicMenu</code> 应用变化。</li>
+<li><strong>亮点 / 风险 / 测试</strong>：配置化让 Tab、红点和主题不发版更新；风险是远端 schema 兼容、坏配置回退、下载资源校验、启动时 IO 和动态菜单状态恢复。11 个测试对基础组件尚可，应重点覆盖旧 schema 和离线 fallback。</li>
+<li><strong>面试问答</strong>：<ul>
+<li>问：云控底栏如何保证不会把 App 配坏？答：版本化 schema、严格校验、原子写入、上次成功配置/内置默认三级回退，配置生效前做资源完整性检查。</li>
+</ul>
+</li>
+</ul>
+<h2 id="29-zheditor">29. ZhEditor</h2>
+<ul>
+<li><strong>定位 / 技术栈 / 模块</strong>：<code>zh_editor-api</code>、<code>zh_editor</code>、<code>app</code>，约 51 个主源码，是富文本编辑容器。入口 <code>ZhihuEditorService.java</code>、<code>EditorHostActivity.kt</code>、<code>AbsEditorFragment.kt</code>；能力以 <code>AbsZVideoAbility</code>、<code>AbsMentionAbility</code> 等拆分，UI 以 <code>PictureUIComponent</code>、<code>VideoUIComponent</code>、<code>UndoUIComponent</code> 等组合。</li>
+<li><strong>关键机制与调用关系</strong>：外部通过 service/API 进入 host activity/fragment，<code>BaseEditorViewModel</code> 管草稿和页面状态，各 Ability 对接媒体、@、附件等业务，各 UIComponent 只处理工具栏交互；<code>VideoPreviewDownloader</code> 下载预览资源，<code>EditorConsoleMessageReceiver</code> 和组合 logger 处理 Hybrid/编辑器日志。</li>
+<li><strong>亮点 / 风险 / 测试</strong>：Ability + UI component 比巨型编辑 Fragment 更可扩展；风险是编辑状态、Web/native bridge、撤销栈、草稿持久化和大媒体 Uri 权限。约 5 个测试，撤销/重做、进程死亡、复杂富文本 round-trip 应是核心。</li>
+<li><strong>面试问答</strong>：<ul>
+<li>问：编辑器为什么要区分 Ability 和 UIComponent？答：Ability 表达“能做什么”和业务依赖，UIComponent 表达“怎么触发/展示”；同一能力可在不同工具栏复用，也便于无 UI 测试。</li>
+</ul>
+</li>
+</ul>
+<h2 id="30-zim">30. ZIM</h2>
+<ul>
+<li><strong>定位 / 技术栈 / 模块</strong>：<code>zim-api</code>、<code>zim</code>、<code>app</code>，约 222 个主源码，提供 IM 输入面板、消息列表适配、表情/贴纸、富文本 span 与权限工具；API 入口 <code>IZimInterface.kt</code>，实现 <code>ZimImp.kt</code>。</li>
+<li><strong>关键机制与调用关系</strong>：<code>T_EmoticonInit.java</code> 注册表情服务，<code>EmoticonService</code>/<code>ImageCacheInterface</code> 隔离贴纸资源；<code>ImInputPanel</code>、<code>IMInputBox</code> 管输入，<code>IMRecyclerViewHelper</code>、<code>FetchLoadAdapterBuilder</code>、<code>ImListOperation</code> 处理拉取和列表增量；<code>RichSpanUtils</code>、<code>TagHandlerGroup</code> 解析富文本。</li>
+<li><strong>亮点 / 风险 / 测试</strong>：把 IM UI kit 和消息后端解耦、列表操作显式化；风险是消息顺序/去重、分页与实时消息竞态、输入法/权限、富文本不可信输入和贴纸缓存。仅 2 个测试，明显不足。</li>
+<li><strong>面试问答</strong>：<ul>
+<li>问：历史分页和实时消息同时到达怎么处理？答：以 messageId 去重、server sequence 排序，所有列表 mutation 串行进入 reducer/operation 层，不能让 adapter 在多个线程直接改。</li>
+</ul>
+</li>
+</ul>
+<h2 id="31-vipprerender">31. VipPrerender</h2>
+<ul>
+<li><strong>定位 / 技术栈 / 模块</strong>：<code>vip_prerender-api</code>、<code>vip_prerender</code>、<code>app</code>；约 41 个主源码，面向会员内容 Web/原生预渲染。入口 <code>PrerenderPlugin.kt</code>，模型 <code>PreloadBean.java</code>，缓存 <code>DataCache.kt</code>/<code>DataSource.kt</code>。</li>
+<li><strong>关键机制与调用关系</strong>：上层发送 <code>LoadAction</code>，<code>LoadActionReceiver</code> 接收；<code>NativePreload</code> 或 Web 预渲染提前取数据并写 <code>DataCache</code>，真正页面消费后更新状态；<code>ReporterCore</code>/<code>Reporter</code> 记录命中、耗时与失败。它与 Mercury 的 H5 预热、VipCommon 的业务预加载互补：前者偏页面/数据预渲染，后者偏通用资源与业务入口。</li>
+<li><strong>亮点 / 风险 / 测试</strong>：把“预测—加载—缓存—消费—上报”闭环独立出来；风险是过期数据、用户身份/会员态变化、内存预算、重复请求和命中统计口径。5 个测试对小模块尚可，但需时间与身份变更测试。</li>
+<li><strong>面试问答</strong>：<ul>
+<li>问：怎么证明预渲染有效？答：不能只看任务成功率，要看消费命中率、首屏收益、额外流量/内存、错误率；未被消费的成功预载仍是浪费。</li>
+</ul>
+</li>
+</ul>
+<h2 id="32-readersdk-cmake">32. ReaderSDK-CMake</h2>
+<ul>
+<li><strong>定位 / 技术栈 / 模块</strong>：跨 Android/iOS 的 C/C++ 阅读排版内核，约 2063 个 C/C++ 主源码；Android 由 <code>Android/CMakeLists.txt</code> 编译 wrapper 并链接 kernel、log、zlib/DRM 相关库。格式内核在 <code>kernel/epub</code>，Android JNI 在 <code>Android/src/</code>。</li>
+<li><strong>关键机制与调用关系</strong>：Java <code>com.zhihu.android.app.nextebook.jni.*</code> → <code>APPJni.h</code>/<code>DRWrap.h</code> 的 <code>JNI_FN</code> → <code>DRWrap.cpp</code>/<code>EpubWrap.cpp</code>/<code>TxtWrap.cpp</code> → <code>CEpubInterface</code>/<code>CTxtInterface</code> 单例 → 解析 EPUB/TXT、分页布局、drawPage、文字选区、搜索和图片索引；<code>StructureConvert.cpp</code> 在 JNI/内核结构间转换。</li>
+<li><strong>线程、缓存、性能与风险</strong>：<code>APPJni.cpp</code> 用全局 <code>pthread_mutex_t</code> 保护部分调用，内核有 book/page cache API。原生排版避免 Java 层高频对象和跨平台重复实现，但 JNI local/global ref、字符串编码、Bitmap 所有权、异常边界和全局单例并发都高风险；全局锁也可能把耗时排版串行化。当前只做 Android wrapper/构建/接口层审查，未逐算法验证 2000+ 文件。</li>
+<li><strong>测试 / 工程化</strong>：检出约 15 个测试相关文件，相对内核规模不足；应有同书同参数 golden page、乱码/损坏 EPUB fuzz、ABI/ASan、分页确定性和跨平台一致性测试。</li>
+<li><strong>面试问答</strong>：<ul>
+<li>问：JNI 阅读内核最常见崩溃点？答：生命周期/所有权和线程：Java 对象已释放但 native 持引用、local ref 爆表、跨线程复用 JNIEnv、Bitmap buffer 越界、异常未清理。</li>
+</ul>
+</li>
+</ul>
+<h2 id="33-vipcommon">33. VipCommon</h2>
+<ul>
+<li><strong>定位 / 技术栈 / 模块</strong>：<code>vip_common</code> + <code>app</code>，约 190 个主源码，是会员业务共享层：资源中心、预加载、奖励任务、弹窗/Fragment 队列、未读消息、装扮、公共 View 和 service。</li>
+<li><strong>关键机制与调用关系</strong>：<ul>
+<li>资源：<code>ResourceCenter.initialize()</code>/<code>preloadResource()</code> → <code>ResourceLoader.loadResource(scope,url,callback)</code>，<code>ConcurrentHashMap</code> 保存资源项并做定时清理。</li>
+<li>预载：<code>Preloader</code> 按 manuscript/mini-series/webview/pin-detail 分流；<code>WebViewPreloadHelper</code> 以 URL key 缓存 preloader；<code>PinDetailPreloadHelper</code> 预取接口、MMKV 与首图。</li>
+<li>任务：<code>TaskCenter.startTask()</code>/<code>VideoTaskCenter.startTask()</code> 用 <code>ConcurrentHashMap</code> 保存任务和 Job，协程 timer 累积时长、自动暂停、完成后请求服务端。</li>
+<li>展示串行化：<code>FragmentQueueImpl</code>/<code>DialogStackManager</code> 避免多个浮层竞争。</li>
+</ul>
+</li>
+<li><strong>亮点 / 风险 / 测试</strong>：把高复用、强协调的会员能力集中沉淀；风险是 Common 继续膨胀成业务垃圾桶，全局 map/job 的生命周期、预载缓存身份隔离、计时任务后台准确性、MQTT 与接口未读数一致性。约 3 个测试，和 190 个主源码、多个并发中心不匹配。</li>
+<li><strong>面试问答</strong>：<ul>
+<li>问：奖励计时为什么不能只用每秒 Handler +1？答：进后台、掉帧、进程重建都会漂移；应以 monotonic clock 的时间差结算，显式处理 pause/resume，并让服务端做最终校验。</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h2 id="34-条件式面试话术模板-确认本人参与后再使用">34. 条件式面试话术模板（确认本人参与后再使用）</h2>
+<p>以下三段不是默认个人经历。先把方括号内容替换为本人真实做过的需求、动作和验证；未参与底层框架开发时，保留“基础库提供能力，我负责业务调用侧”的边界。涉及结果时必须补全“指标、口径、时间范围、数据来源”，否则删除结果句。</p>
+<h3 id="34-1-基础设施线">34.1 基础设施线</h3>
+<p>“在我确实参与的 <code>[业务需求/线上故障]</code> 中，基础库提供 Net、Netdns 和 ZRouter 能力，我负责的是 <code>[业务 service 接入/拦截器配置/问题定位]</code>。从源码看，请求由业务 service 进入 Net API 门面，NetProvider 缓存 Retrofit service，OkHttpFamily 按 client type 组合 cookie、签名、DNS、metrics 和 dispatcher；DNS 再融合系统 DNS、HTTPDNS/DoH、缓存、备用 IP 和探速。页面跳转通过 ZRouter 编译期 mapper，运行时再经过登录/灰度 interceptor。我实际执行了 <code>[日志或 EventListener 分段/复现/修复/验证动作]</code>。结果仅在有真实数据时补充：<code>[指标 + 口径 + 时间范围 + 数据来源]</code>。”</p>
+<h3 id="34-2-mvi-paging3-线">34.2 MVI + Paging3 线</h3>
+<p>“如果我实际参与过 HomePinTab 或同类页面，我会先说明 DevKit 是项目基础库，不把框架实现归为个人贡献。我负责的是 <code>[页面状态建模/PagingSource 接口接入/刷新删除/加载态处理]</code>。从源码看，PagingData 在 PinTabState，ViewModel 用 Pager 创建 ResponsePagingSource，Flow 经 mediator 过滤/替换后 <code>setOnEach { copy(data = it) }</code>，Fragment 用 <code>collectFrom</code> 提交给 SuperAdapter；刷新调用 <code>pager.invalidate()</code>，删除通过 mediator 本地变换，CombinedLoadStates 仍留在 View 层。因此它是 Mavericks 轻量 MVI，而非有统一 Intent/Reducer 的严格 MVI。实际结果需补：<code>[指标 + 口径 + 时间范围 + 数据来源]</code>；没有数据只讲实现与验证。”</p>
+<h3 id="34-3-媒体与-hybrid-线">34.3 媒体与 Hybrid 线</h3>
+<p>“如果我确实参与过 <code>[音视频业务/Hybrid 页面]</code>，我会把个人工作限定为 <code>[业务接入/状态处理/预加载策略配置/线上排障]</code>。仓库事实是：媒体分为 VideoEntity/Kmaudio 业务层、Media/Audio/Zhplayer 协议与 UI 层、mediax TTVideoEngine adapter 层；Hybrid 则由 Mercury 业务容器依赖 mercury-core 的 H5Page、JsBridge、WebView 抽象和资源策略。基础库屏蔽厂商 option、错误码并统一生命周期，不等于这些能力由本人设计。若讲优化，必须补本人实际采用的 reset contract、命中率/内存/流量验证方法；收益只填写真实的 <code>[指标 + 口径 + 时间范围 + 数据来源]</code>。”</p>
+<h2 id="35-风险优先级与追问准备">35. 风险优先级与追问准备</h2>
+<table>
+<thead>
+<tr>
+<th>优先级</th>
+<th>风险</th>
+<th>证据</th>
+<th>面试追问方向</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>P0</td>
+<td>Hybrid bridge/origin/复用污染</td>
+<td><code>yyyyy-cdoe/mercury-core/mercury-core/src/main/java/com/zhihu/android/app/mercury/web/H5PageImpl.java</code>、<code>yyyyy-cdoe/mercury-core/mercury-core/src/main/java/com/zhihu/android/app/mercury/bridge/JsBridge.java</code>、<code>yyyyy-cdoe/mercury-core/mercury-core/src/main/java/com/zhihu/android/app/mercury/web/WebViewLruCache.java</code></td>
+<td>白名单、页面销毁、callback map、缓存 reset</td>
+</tr>
+<tr>
+<td>P0</td>
+<td>原生内存与 JNI 边界</td>
+<td><code>ReaderSDK-CMake/Android/src/APPJni.cpp</code>、<code>DRWrap.*</code></td>
+<td>JNIEnv、引用、Bitmap、全局锁、fuzz</td>
+</tr>
+<tr>
+<td>P1</td>
+<td>多份主干长期漂移</td>
+<td>Net/VipNet、Mercury/VipMercury 同构源码</td>
+<td>shared core、contract tests、差异注入</td>
+</tr>
+<tr>
+<td>P1</td>
+<td>巨型业务组件测试不足</td>
+<td>VideoEntity 约 1351 主源码/3 测试，Media 约 1115/11</td>
+<td>状态机、集成测试、关键会话回放</td>
+</tr>
+<tr>
+<td>P1</td>
+<td>预加载/预渲染浪费与污染</td>
+<td><code>ZHVideoPreloadManager</code>、<code>VipPrerender/DataCache</code>、VipCommon <code>Preloader</code></td>
+<td>命中率、预算、身份/版本失效</td>
+</tr>
+<tr>
+<td>P1</td>
+<td>取消语义被吞</td>
+<td><code>yyyyy-cdoe/DevKit/devkit/src/main/java/com/zhihu/android/devkit/paging/ResponsePagingSource.kt</code> 捕获 <code>Throwable</code></td>
+<td>重抛 <code>CancellationException</code></td>
+</tr>
+<tr>
+<td>P2</td>
+<td>Common/全局单例膨胀</td>
+<td><code>VipCommon</code> 多个 center，<code>KMPlayer</code> object</td>
+<td>owner、状态机、模块边界</td>
+</tr>
+<tr>
+<td>P2</td>
+<td>构建不可重复与规则可用性</td>
+<td>Dependencies + 主应用远端校验</td>
+<td>锁版本、缓存、签名、审计</td>
+</tr>
+</tbody></table>
+<h2 id="36-覆盖边界">36. 覆盖边界</h2>
+<ul>
+<li><strong>完整存在并分析</strong>：33/33 个指定路径；当前库存与仓库目录均记为 <code>Kmaudio</code>。</li>
+<li><strong>去重口径</strong>：<code>Kmaudio</code> 与 10 文档是同一仓库的业务视角/基础设施视角双重分析，33 个仓库覆盖数中只计一次，也不能包装成两段独立个人项目经历。</li>
+<li><strong>深挖链路</strong>：DevKit + HomePinTab、Net/VipNet + Netdns、ZRouter、Mercury/VipMercury + mercury-core、Media + mediax + Audio/Zhplayer/Kmaudio、Picture + Picasa、Share + ShareCore、VipCommon + VipPrerender、Futureve + FutureveGlobal。</li>
+<li><strong>有限深度</strong>：ReaderSDK-CMake 只核对 Android CMake/JNI/接口和并发边界，未逐一验证排版、DRM、压缩等内核算法；VideoEntity/Media 因体量巨大，聚焦入口、播放链路、预加载和稳定性而非每个业务插件。</li>
+<li><strong>无法从源码判断</strong>：<code>photos</code> 为空仓；<code>Dependencies</code> 是配置仓；<code>KmReporter</code> 是 TypeScript 运维服务；它们均已按真实属性记录，没有伪装成 Android Runtime 模块。</li>
+</ul>
+
+      </article>
+      
+    <nav class="page-pager" aria-label="文档翻页">
+      <a href="10-android-business-repositories.html"><small>← 上一篇</small><span>Android 业务仓库</span></a>
+      <a class="next" href="30-cross-platform-rn-web.html"><small>下一篇 →</small><span>RN 与 Web</span></a>
+    </nav>
+      <footer class="article-footer">
+        本站由 Markdown 源文档离线生成。涉及个人职责、动作和结果的内容，请只使用本人可核验的部分。
+      </footer>
+    </main>
+    <aside class="page-toc" aria-label="本页目录">
+      <div class="toc-heading">本页目录</div>
+      <a class="toc-link level-3" href="#个人归因与指标填写规则">个人归因与指标填写规则</a>
+<a class="toc-link level-2" href="#0-先建立全局心智模型">0. 先建立全局心智模型</a>
+<a class="toc-link level-2" href="#1-devkit">1. DevKit</a>
+<a class="toc-link level-2" href="#2-dependencies">2. Dependencies</a>
+<a class="toc-link level-2" href="#3-net">3. Net</a>
+<a class="toc-link level-2" href="#4-vipnet">4. VipNet</a>
+<a class="toc-link level-2" href="#5-netdns">5. Netdns</a>
+<a class="toc-link level-2" href="#6-zrouter">6. ZRouter</a>
+<a class="toc-link level-2" href="#7-bootstrap">7. Bootstrap</a>
+<a class="toc-link level-2" href="#8-futureve">8. Futureve</a>
+<a class="toc-link level-2" href="#9-futureveglobal">9. FutureveGlobal</a>
+<a class="toc-link level-2" href="#10-mercury">10. Mercury</a>
+<a class="toc-link level-2" href="#11-vipmercury">11. VipMercury</a>
+<a class="toc-link level-2" href="#12-mercury-core">12. mercury-core</a>
+<a class="toc-link level-2" href="#13-kmreporter">13. KmReporter</a>
+<a class="toc-link level-2" href="#14-share">14. Share</a>
+<a class="toc-link level-2" href="#15-sharecore">15. ShareCore</a>
+<a class="toc-link level-2" href="#16-media">16. Media</a>
+<a class="toc-link level-2" href="#17-mediax">17. mediax</a>
+<a class="toc-link level-2" href="#18-videoentity">18. VideoEntity</a>
+<a class="toc-link level-2" href="#19-audio">19. Audio</a>
+<a class="toc-link level-2" href="#20-zhplayer">20. Zhplayer</a>
+<a class="toc-link level-2" href="#21-kmaudio-同时在业务文档出现">21. Kmaudio（同时在业务文档出现）</a>
+<a class="toc-link level-2" href="#22-picture">22. Picture</a>
+<a class="toc-link level-2" href="#23-picasa">23. Picasa</a>
+<a class="toc-link level-2" href="#24-photos">24. photos</a>
+<a class="toc-link level-2" href="#25-camera">25. Camera</a>
+<a class="toc-link level-2" href="#26-barrage">26. barrage</a>
+<a class="toc-link level-2" href="#27-blurview">27. BlurView</a>
+<a class="toc-link level-2" href="#28-bottomnav">28. bottomnav</a>
+<a class="toc-link level-2" href="#29-zheditor">29. ZhEditor</a>
+<a class="toc-link level-2" href="#30-zim">30. ZIM</a>
+<a class="toc-link level-2" href="#31-vipprerender">31. VipPrerender</a>
+<a class="toc-link level-2" href="#32-readersdk-cmake">32. ReaderSDK-CMake</a>
+<a class="toc-link level-2" href="#33-vipcommon">33. VipCommon</a>
+<a class="toc-link level-2" href="#34-条件式面试话术模板-确认本人参与后再使用">34. 条件式面试话术模板（确认本人参与后再使用）</a>
+<a class="toc-link level-3" href="#34-1-基础设施线">34.1 基础设施线</a>
+<a class="toc-link level-3" href="#34-2-mvi-paging3-线">34.2 MVI + Paging3 线</a>
+<a class="toc-link level-3" href="#34-3-媒体与-hybrid-线">34.3 媒体与 Hybrid 线</a>
+<a class="toc-link level-2" href="#35-风险优先级与追问准备">35. 风险优先级与追问准备</a>
+<a class="toc-link level-2" href="#36-覆盖边界">36. 覆盖边界</a>
+      <a class="back-to-top" href="#">↑ 返回顶部</a>
+    </aside>
+  </div>
+  <script src="assets/search-data.js"></script>
+  <script src="assets/docs.js"></script>
+</body>
+</html>

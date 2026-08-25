@@ -1,0 +1,607 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Android 存储方案专题：从 SharedPreferences、MMKV、DataStore 到 Room、文件、MediaStore、SAF 与 Keystore，结合工作区真实业务源码讲解。">
+  <title>Android 存储方案：从 SP、MMKV 到 Room、文件与安全存储｜项目面试资料</title>
+  <link rel="stylesheet" href="assets/docs.css">
+  <script>
+    try {
+      const savedTheme = localStorage.getItem("interview-docs-theme");
+      const preferredDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      document.documentElement.dataset.theme = savedTheme || (preferredDark ? "dark" : "light");
+    } catch {}
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <header class="topbar">
+    <button class="icon-button menu-button" type="button" data-menu-toggle aria-label="打开文档导航" aria-expanded="false">☰</button>
+    <a class="brand" href="index.html"><span class="brand-mark">⌁</span><span>项目面试资料库</span></a>
+    <div class="search-shell">
+      <label class="sr-only" for="global-search">搜索所有文档</label>
+      <input id="global-search" type="search" data-search-input placeholder="搜索仓库、技术或面试题…" autocomplete="off">
+      <span class="search-shortcut">Ctrl K</span>
+      <div class="search-results" data-search-results hidden></div>
+    </div>
+    <button class="icon-button" type="button" data-theme-toggle aria-label="切换深浅主题">◐</button>
+  </header>
+  <div class="drawer-backdrop" data-drawer-backdrop hidden></div>
+
+  <div class="docs-layout">
+    <nav class="sidebar" data-sidebar aria-label="Android 存储专题导航">
+      <div class="sidebar-heading">Android 存储专题</div>
+      <a class="nav-link active" href="android-storage-guide.html" aria-current="page">Android 存储方案</a>
+      <section class="nav-group">
+        <h2 class="nav-group-title">返回</h2>
+        <a class="nav-link" href="index.html">资料首页</a>
+        <a class="nav-link" href="repositories.html">全部仓库</a>
+        <a class="nav-link" href="20-android-infrastructure-media.html">基础设施与媒体</a>
+      </section>
+      <section class="nav-group">
+        <h2 class="nav-group-title">先建立地图</h2>
+        <a class="nav-link" href="#storage-map">存储方案全景</a>
+        <a class="nav-link" href="#selection-first">先问四个问题</a>
+      </section>
+      <section class="nav-group">
+        <h2 class="nav-group-title">键值存储</h2>
+        <a class="nav-link" href="#sharedpreferences">SharedPreferences</a>
+        <a class="nav-link" href="#mmkv">MMKV</a>
+        <a class="nav-link" href="#datastore">Jetpack DataStore</a>
+        <a class="nav-link" href="#account-datastore">Account 同名纠错</a>
+      </section>
+      <section class="nav-group">
+        <h2 class="nav-group-title">结构化与文件</h2>
+        <a class="nav-link" href="#room-sqlite">Room / SQLite</a>
+        <a class="nav-link" href="#room-cases">真实 Room 案例</a>
+        <a class="nav-link" href="#files">文件与缓存目录</a>
+        <a class="nav-link" href="#media-saf">MediaStore / SAF</a>
+      </section>
+      <section class="nav-group">
+        <h2 class="nav-group-title">安全与面试</h2>
+        <a class="nav-link" href="#security">Keystore 与加密</a>
+        <a class="nav-link" href="#decision-table">选型决策表</a>
+        <a class="nav-link" href="#interview">面试回答</a>
+        <a class="nav-link" href="#evidence">源码证据索引</a>
+      </section>
+      <p class="sidebar-note">源码证据快照：2026-08-25。实现事实不自动等于个人贡献。</p>
+    </nav>
+
+    <main class="article-shell" id="main-content">
+      <div class="breadcrumbs"><a href="index.html">首页</a><span>/</span><span>Android 专题</span><span>/</span><span>存储方案</span></div>
+      <div class="article-grid">
+        <article class="markdown-body">
+          <h1>Android 存储方案：从 SP、MMKV 到 Room、文件与安全存储</h1>
+
+          <blockquote class="callout">
+            <p><strong>这篇重点不是背 API，而是理解“数据为什么应该放这里”。</strong></p>
+            <p>你已经知道 SharedPreferences 和 MMKV，下一步要建立完整地图：键值配置、结构化数据库、大文件、公共媒体、用户文档和密钥保护解决的是不同问题，不能用一个工具包打天下。</p>
+          </blockquote>
+
+          <section class="stats-grid" aria-label="专题统计">
+            <div class="stat-card"><strong>8</strong><span>类存储能力</span></div>
+            <div class="stat-card"><strong>10+</strong><span>真实源码入口</span></div>
+            <div class="stat-card"><strong>4</strong><span>完整 Room 案例</span></div>
+            <div class="stat-card"><strong>3</strong><span>关键同名误区</span></div>
+          </section>
+
+          <h2 id="storage-map">1. 先把 Android 存储分成六层</h2>
+
+          <table>
+            <thead><tr><th>层次</th><th>代表方案</th><th>适合的数据</th><th>不适合的数据</th></tr></thead>
+            <tbody>
+              <tr><td>少量键值</td><td>SharedPreferences、Preferences DataStore、MMKV</td><td>开关、频控、时间戳、小型配置</td><td>大量记录、条件查询、大 JSON</td></tr>
+              <tr><td>类型化配置对象</td><td>Proto DataStore</td><td>有稳定 schema 的设置对象</td><td>需要分页、关联、局部 SQL 更新的集合</td></tr>
+              <tr><td>结构化记录</td><td>SQLite、Room</td><td>草稿、历史、进度、离线缓存、关系数据</td><td>图片二进制、大视频、临时渲染文件</td></tr>
+              <tr><td>应用专属文件</td><td><code>filesDir</code>、<code>cacheDir</code>、<code>externalFilesDir</code></td><td>JSON、日志、下载物、中间文件、模型</td><td>希望直接出现在公共相册的媒体</td></tr>
+              <tr><td>公共内容</td><td>MediaStore、Storage Access Framework</td><td>相册媒体、用户选择导入导出的文档</td><td>只给本应用使用的内部状态</td></tr>
+              <tr><td>密钥与敏感数据</td><td>Android Keystore + 加密载体</td><td>加密密钥、需要静态加密的 Token/配置</td><td>把大段业务对象直接塞进 Keystore</td></tr>
+            </tbody>
+          </table>
+
+          <blockquote>
+            <p><strong>容易混淆的三个概念：</strong>SavedStateHandle/Bundle 是页面状态恢复，不是业务持久化方案；ContentProvider 是跨进程/跨应用的数据访问协议，不是底层存储本身；Glide/Coil 的磁盘缓存是缓存策略，不等于你的业务数据库。</p>
+          </blockquote>
+
+          <h2 id="selection-first">2. 选方案前先问四个问题</h2>
+
+          <ol>
+            <li><strong>数据是一两个 key，还是会不断增加的记录集合？</strong>前者偏键值，后者偏数据库。</li>
+            <li><strong>是否需要按条件查询、排序、分页、去重或事务？</strong>只要答案是“需要”，Room 通常比把 JSON 塞进 MMKV 更合理。</li>
+            <li><strong>数据能不能丢？</strong>网络可重拉缓存可以删库恢复；用户草稿、学习进度需要完整 Migration 和备份策略。</li>
+            <li><strong>数据属于谁？</strong>仅本应用使用放应用专属目录；属于用户相册或文档系统就走 MediaStore/SAF。</li>
+          </ol>
+
+          <div class="interview-script">
+            <strong>一句话判断：</strong>根据 key 直接取一个小值，用键值存储；需要从一批记录中查、排、关联，用 Room；数据本身是文件就放文件系统；要进入系统公共集合，用 MediaStore/SAF；敏感数据先解决密钥保护，再决定密文放哪里。
+          </div>
+
+          <h2 id="sharedpreferences">3. SharedPreferences：官方 XML 型键值存储</h2>
+
+          <h3>3.1 它解决什么问题</h3>
+          <p>SharedPreferences 是 Android Framework 提供的轻量键值 API。调用方通过文件名获得一个偏好对象，读写 Boolean、Int、Long、Float、String 和 String Set。实现会维护内存中的键值视图，并把变化持久化到应用私有的偏好文件。</p>
+
+          <div class="code-block">
+            <div class="code-toolbar"><span>Kotlin · 基础写法</span><button type="button" data-copy-code>复制</button></div>
+            <pre><code>val preferences = context.getSharedPreferences(
+    "feature_config",
+    Context.MODE_PRIVATE
+)
+
+preferences.edit()
+    .putBoolean("enabled", true)
+    .putLong("last_show_time", System.currentTimeMillis())
+    .apply()</code></pre>
+          </div>
+
+          <h3>3.2 <code>apply()</code> 与 <code>commit()</code></h3>
+          <table>
+            <thead><tr><th>方法</th><th>调用返回</th><th>磁盘写入</th><th>典型选择</th></tr></thead>
+            <tbody>
+              <tr><td><code>apply()</code></td><td>立即更新内存视图并返回</td><td>随后异步安排持久化</td><td>绝大多数 UI 配置、频控</td></tr>
+              <tr><td><code>commit()</code></td><td>等待写入结果，返回 Boolean</td><td>同步完成</td><td>极少数必须立即知道落盘结果的后台场景</td></tr>
+            </tbody>
+          </table>
+          <p>“apply 是异步的”不能简化成“调用后立刻读取不到”。同进程内存值会先更新；真正需要警惕的是崩溃窗口、主线程同步提交、跨进程一致性和高频整文件改写成本。</p>
+
+          <h3>3.3 真实案例：VipHome 启动推广缓存</h3>
+          <p><code>PromotionTask</code> 使用名为 <code>vip_launcher_sp_config</code> 的 SharedPreferences，保存推广 JSON、版本、展示次数、关闭开关和渲染错误标记。这类数据有明确 key、体量小、主要是启动频控，非常符合 SP 的模型。</p>
+
+          <div class="code-block">
+            <div class="code-toolbar"><span>Kotlin · 根据源码简化</span><button type="button" data-copy-code>复制</button></div>
+            <pre><code>private val sp by lazy {
+    BaseApplication.get().getSharedPreferences(
+        "vip_launcher_sp_config",
+        Context.MODE_PRIVATE
+    )
+}
+
+private fun putPromotionCache(model: PromotionModel) {
+    sp.edit()
+        .putString("vip_launcher_promotion", gson.toJson(model))
+        .putInt("show_count", 0)
+        .apply()
+}</code></pre>
+          </div>
+
+          <p><strong>实际调用链：</strong>空闲启动任务 → 拉取推广配置 → 成功回调 → 比较版本 → JSON 序列化 → SP <code>apply()</code>；展示时再读取缓存和次数进行频控。</p>
+          <p class="evidence-list"><strong>证据：</strong><code>yyyyy-cdoe/VipHome/home/src/main/java/com/zhihu/android/app/promotion/task/PromotionTask.kt:21-31, 40-52, 84-102, 112-125, 128-158</code></p>
+
+          <h3>3.4 SP 的边界</h3>
+          <ul>
+            <li>不要保存持续增长的列表；你会被迫自己做索引、删除、并发和整体 JSON 重写。</li>
+            <li>不要把 SharedPreferences 当多进程数据库；当前业务调用使用 <code>MODE_PRIVATE</code>，没有跨进程同步证据。</li>
+            <li>监听器适合观察少量配置变化，不适合构建复杂响应式数据层。</li>
+            <li>私有目录不等于加密。root、备份、调试环境或密钥泄漏仍可能暴露明文。</li>
+          </ul>
+
+          <h2 id="mmkv">4. MMKV：基于 mmap 的第三方高性能键值存储</h2>
+
+          <h3>4.1 mmap 到底是什么</h3>
+          <p>MMKV 是腾讯开源的第三方方案，不是 Android 官方 API。它通过 <code>mmap</code> 把文件映射到进程虚拟地址空间，调用方读写映射区域，脏页最终由操作系统回写文件。它不是“只存在内存”，也不是“完全没有系统调用”。</p>
+
+          <pre><code>普通文件 I/O：业务对象 → 序列化 → write() → 内核缓冲 → 文件
+
+MMKV：业务键值 → 编码 → 修改 mmap 映射页 → 操作系统回写文件</code></pre>
+
+          <p>MMKV 适合高频、小型、按 key 访问的数据，但仍不是 SQL 数据库。需要条件查询、排序、事务和关系约束时，mmap 不会自动替你解决数据建模。</p>
+
+          <h3>4.2 真实案例：Native 写、RN 读的盐言预加载</h3>
+          <p>工作区里最有价值的 MMKV 证据不是 Gradle 出现依赖，而是一条完整跨端链路：</p>
+
+          <ol>
+            <li>Native <code>PinDetailPreloadHelper</code> 初始化 MMKV，打开 ID 为 <code>com.zhvip.preload.pin</code> 的多进程实例。</li>
+            <li>请求成功后，把详情 JSON 写入 <code>pin_&lt;id&gt;</code>，同时写入时间戳；读取前校验 30 分钟 TTL。</li>
+            <li>RN <code>VipPin/PinIndex.tsx</code> 使用相同 MMKV ID，读取同一个 <code>pin_${pinId}</code>，解析成预加载详情。</li>
+          </ol>
+
+          <div class="code-block">
+            <div class="code-toolbar"><span>Kotlin · Native 写入（简化）</span><button type="button" data-copy-code>复制</button></div>
+            <pre><code>private const val MMKV_ID = "com.zhvip.preload.pin"
+private const val KEY_PREFIX = "pin_"
+
+val cache = MMKV.mmkvWithID(MMKV_ID, MMKV.MULTI_PROCESS_MODE)
+
+cache.encode("${KEY_PREFIX}${pinId}", gson.toJson(response))
+cache.encode("${KEY_PREFIX}${pinId}_timestamp", System.currentTimeMillis())</code></pre>
+          </div>
+
+          <div class="code-block">
+            <div class="code-toolbar"><span>TypeScript · RN 读取（简化）</span><button type="button" data-copy-code>复制</button></div>
+            <pre><code>const store = useMMKVStore({ id: 'com.zhvip.preload.pin' })
+const cached = store.getString(`pin_${pinId}`)
+const preloadData = cached ? JSON.parse(cached) : undefined</code></pre>
+          </div>
+
+          <p class="evidence-list"><strong>Native 证据：</strong><code>yyyyy-cdoe/VipCommon/vip_common/src/main/java/com/zhihu/android/vip_common/preload/PinDetailPreloadHelper.kt:21-49, 58-118, 195-229, 270-295</code></p>
+          <p class="evidence-list"><strong>RN 证据：</strong><code>pikachu/pages/VipPin/src/PinIndex.tsx:56-69</code></p>
+          <p class="evidence-list"><strong>调用入口：</strong><code>yyyyy-cdoe/VipCommon/vip_common/src/main/java/com/zhihu/android/vip_common/preload/Preloader.kt:148-157</code></p>
+
+          <blockquote>
+            <p><strong>证据强度：</strong><code>VipCommon/build.gradle</code> 中出现 <code>com.tencent:mmkv</code> 只能证明“模块可以使用 MMKV”；上面的 <code>mmkvWithID/encode/getString</code> 才能证明真实业务读写。面试时要区分依赖声明和调用证据。</p>
+          </blockquote>
+
+          <h3>4.3 另一个案例：RN 展示频控</h3>
+          <p><code>VIPBookshelf/Entry.tsx</code> 用 MMKV 保存礼包上次展示时间，超过 24 小时再更新并打开礼包；<code>useAtmosphereCardShow.ts</code> 用独立 ID 保存当天时间戳与 PV。这说明 MMKV 很适合时间戳和频控，但不需要把这些简单状态升级成 Room。</p>
+          <p class="evidence-list"><code>pikachu/pages/VIPBookshelf/src/Entry.tsx:53, 105-122</code><br><code>pikachu/packages/comment-components/src/hooks/useAtmosphereCardShow.ts:30-46, 59-89</code></p>
+
+          <h3>4.4 MMKV 的工程代价</h3>
+          <ul>
+            <li>引入 Native 库和 ABI 产物，需要关注包体、初始化、崩溃与升级兼容。</li>
+            <li><code>MULTI_PROCESS_MODE</code> 是明确选择，不代表所有 MMKV 调用天然跨进程。</li>
+            <li>加密能力是否安全取决于密钥怎样生成、保存和轮换，不能把加密 key 再明文硬编码。</li>
+            <li>大 JSON 虽然“能存”，但局部更新、TTL 索引和查询仍由业务手写；复杂度上来后应转 Room。</li>
+          </ul>
+
+          <h2 id="datastore">5. Jetpack DataStore：现代化的官方配置存储</h2>
+
+          <p>DataStore 是 Jetpack 的异步持久化方案，主要分为 Preferences DataStore 和 Proto DataStore。</p>
+
+          <table>
+            <thead><tr><th>类型</th><th>模型</th><th>优点</th><th>边界</th></tr></thead>
+            <tbody>
+              <tr><td>Preferences DataStore</td><td>无 schema 的类型化 key-value</td><td>协程/Flow、串行原子更新、异常流、SP 迁移</td><td>仍不适合复杂记录查询</td></tr>
+              <tr><td>Proto DataStore</td><td>Protocol Buffers schema</td><td>编译期类型、默认值、演进规则清晰</td><td>更新围绕整个配置对象，不是关系数据库</td></tr>
+            </tbody>
+          </table>
+
+          <div class="code-block">
+            <div class="code-toolbar"><span>Kotlin · Preferences DataStore 典型写法</span><button type="button" data-copy-code>复制</button></div>
+            <pre><code>val Context.settingsDataStore by preferencesDataStore("settings")
+val DARK_MODE = booleanPreferencesKey("dark_mode")
+
+suspend fun setDarkMode(context: Context, enabled: Boolean) {
+    context.settingsDataStore.edit { preferences -&gt;
+        preferences[DARK_MODE] = enabled
+    }
+}
+
+val darkMode: Flow&lt;Boolean&gt; = context.settingsDataStore.data
+    .map { it[DARK_MODE] ?: false }</code></pre>
+          </div>
+
+          <h3>5.1 “原子更新”不是数据库事务</h3>
+          <p><code>edit</code>（Preferences）或 <code>updateData</code>（Proto）会在<strong>同一个 DataStore 实例</strong>中串行执行 read-modify-write：转换成功就整体替换这一份数据快照，转换抛异常就不提交。它不能把两个 DataStore、一次网络请求和一次文件写入包成共同事务，也没有 SQL 的按行查询与局部更新。</p>
+          <ul>
+            <li>同一进程、同一文件只维护一个 DataStore 实例；通常把 delegate 放在文件顶层。</li>
+            <li>读取是 <code>Flow</code>，I/O 异常要显式处理；不能用空值静默掩盖所有损坏。</li>
+            <li>Preferences DataStore 没有 schema；key 改名、类型改变和默认值仍然是你的兼容责任。</li>
+          </ul>
+
+          <h3>5.2 从 SharedPreferences 迁移到 DataStore</h3>
+          <p>Jetpack 提供 <code>SharedPreferencesMigration</code>。迁移会在 DataStore 第一次向外提供数据之前执行；迁移成功后再把新写入收敛到 DataStore，避免新旧两份长期双写而产生冲突。</p>
+          <div class="code-block">
+            <div class="code-toolbar"><span>Kotlin · 官方迁移入口（平台知识）</span><button type="button" data-copy-code>复制</button></div>
+            <pre><code>val Context.settingsDataStore by preferencesDataStore(
+    name = "settings",
+    produceMigrations = { context -&gt;
+        listOf(
+            SharedPreferencesMigration(
+                context = context,
+                sharedPreferencesName = "legacy_settings"
+            )
+        )
+    }
+)</code></pre>
+          </div>
+          <p>迁移不是“拷完就算”：要验证旧 key 的类型与默认值、观察迁移失败率，并决定旧文件何时清理。读取 <code>data</code> 时常见的 <code>IOException</code> 与真正的数据损坏不是一回事；需要恢复损坏时，应使用与所选 DataStore 类型匹配的 corruption handler，并明确重置数据的产品后果。</p>
+
+          <h3>5.3 Proto DataStore 为什么更“类型化”</h3>
+          <p>Proto 的字段号才是持久化兼容契约。新增字段通常可以向前演进；删除字段后应保留编号，不能把旧编号重新用于另一种含义；默认值、枚举演进和未知字段都要遵守 protobuf 规则。它降低了字符串 key 和类型转换错误，但不代表 schema 可以随意修改。</p>
+
+          <blockquote class="callout">
+            <p><strong>当前工作区的负面证据同样重要：</strong>业务源码没有找到 <code>androidx.datastore</code>、<code>preferencesDataStore</code>、<code>DataStore&lt;Preferences&gt;</code>、<code>edit</code> 或 Flow 读取的真实调用。只在 <code>meter</code> 发现 Preferences DataStore 依赖声明，不能写成“项目已经使用”。</p>
+          </blockquote>
+          <p class="evidence-list"><code>yyyyy-cdoe/meter/app/build.gradle.kts:48</code><br><code>yyyyy-cdoe/meter/gradle/libs.versions.toml:13, 30</code></p>
+
+          <h2 id="account-datastore">6. 重要纠错：Account 的 DataStore 不是 Jetpack DataStore</h2>
+
+          <p><code>Account</code> 仓库中有 <code>DataStoreImpl</code>，但名字相同不代表技术相同。源码解析到同包自研抽象类 <code>accounts/data/DataStore.kt</code>，它直接在 <code>filesDir/account/&lt;id&gt;/parcel|json</code> 下读写 token、People 和简化 People 文件，并使用 <code>ReentrantReadWriteLock</code>。</p>
+
+          <pre><code>AccountManager
+    ├─ 从 SharedPreferences 取得账号 ID
+    ├─ DataStoreImpl.readAccount(id)
+    │    ├─ ParcelStore：优先读取 Parcel 字节文件
+    │    └─ JsonStore：失败时读取 JSON 文件
+    └─ 旧 FileDataStoreFactory：新路径失败时兼容兜底</code></pre>
+
+          <p><code>writeAccount</code> 同时写 ParcelStore 和 JsonStore；读取优先 Parcel、失败再回退 JSON。Parcel 版本串变化时会清理旧文件。这个设计解决的是账号文件格式迁移和兼容，不是 Jetpack DataStore 的 Preferences/Proto、Flow 或 <code>updateData</code>。</p>
+
+          <p class="evidence-list"><strong>类型证据：</strong><code>yyyyy-cdoe/Account/account/src/main/java/com/zhihu/android/app/accounts/data/DataStore.kt:20-83</code><br><strong>实现证据：</strong><code>.../accounts/data/DataStoreImpl.kt:19-87</code><br><strong>业务入口：</strong><code>.../accounts/AccountManager.java:85-116, 219-226, 443-452</code><br><strong>延迟补全：</strong><code>.../module/task/T_PeopleDelayInit.kt:15-28</code></p>
+
+          <div class="interview-script">
+            <strong>面试表达：</strong>“仓库里虽然有 DataStoreImpl，但我核对 import、同包 DataStore 抽象、实际委托类型和文件路径后确认它是自研账号文件存储，不是 Jetpack DataStore。DataStoreImpl 本身是 object，真正实现该抽象的是 ParcelStore 与 JsonStore。判断技术不能只看类名，要看依赖坐标、类型来源和实际 API。”
+          </div>
+
+          <h2 id="room-sqlite">7. SQLite 与 Room：当数据从‘一个值’变成‘一批记录’</h2>
+
+          <p>SQLite 是 Android 内置关系数据库。Room 是 Jetpack 提供的上层抽象，通过 Entity、DAO、Database、Migration 把表结构和访问契约显式化，并在编译期检查大量 SQL 问题。</p>
+
+          <pre><code>业务 Repository / Manager
+        ↓
+DAO：查询、插入、更新、事务
+        ↓
+RoomDatabase：连接、版本、Migration
+        ↓
+SQLite：表、索引、事务、查询计划、WAL/文件</code></pre>
+
+          <h3>为什么 Room 不是“更高级的 SP”</h3>
+          <ul>
+            <li>复合主键能表达“每个用户、每个业务、每个单元只有一条记录”。</li>
+            <li>索引能加速按用户、课程、时间等条件查询。</li>
+            <li>事务保证多步修改要么一起成功，要么一起回滚。</li>
+            <li>Migration 明确数据库版本升级时怎样保留不可丢数据。</li>
+            <li>SQL 可以只读取或更新需要的行，不必反序列化一个巨大 JSON。</li>
+          </ul>
+
+          <h3>7.1 事务到底包住什么</h3>
+          <p>DAO 中的 <code>@Transaction</code> 适合把一组数据库操作放进同一事务；需要跨多个 DAO 时，可以使用 <code>RoomDatabase.withTransaction</code>。事务只能保证<strong>这一个数据库中的操作</strong>原子提交，不能让网络请求、普通文件写入或另一个数据库一起回滚。读取“主表 + 关联表”时，事务也能保证映射过程看到一致快照。</p>
+          <div class="code-block">
+            <div class="code-toolbar"><span>Kotlin · Room 事务边界（平台知识）</span><button type="button" data-copy-code>复制</button></div>
+            <pre><code>@Transaction
+suspend fun moveDraft(oldType: String, oldId: String, newDraft: Draft) {
+    delete(oldType, oldId)
+    insert(newDraft)
+}
+
+db.withTransaction {
+    draftDao.delete(oldType, oldId)
+    draftDao.insert(newDraft)
+}</code></pre>
+          </div>
+
+          <h3>7.2 索引不是越多越好</h3>
+          <p>索引用额外空间和写入维护成本，换取符合索引顺序的查询更快。复合索引通常遵循左前缀：例如 <code>(userId, type, businessId)</code> 更适合先按 userId、再按 type 过滤的查询，不能自动优化任意列组合。设计时要同时看 <code>WHERE</code>、<code>ORDER BY</code> 与数据分布，并用 <code>EXPLAIN QUERY PLAN</code> 或实际 profiling 验证，而不是给所有“常用列”都建索引。</p>
+
+          <h3>7.3 Migration 是可测试的升级契约</h3>
+          <p>数据库从历史版本升级到当前版本，必须存在完整迁移路径。对不可丢数据，应导出 schema，并用 <code>MigrationTestHelper</code> 打开旧版本数据库、写入样本、执行升级，再验证表结构、索引和数据。<code>fallbackToDestructiveMigration</code> 只适合明确可从服务端重拉的缓存；重要数据不能把“升级失败就删库”当兜底。</p>
+
+          <h2 id="room-cases">8. 四个真实 Room 案例：数据价值决定迁移策略</h2>
+
+          <h3>8.1 Comment：评论草稿</h3>
+          <p><code>CommentDraft</code> 使用 <code>(commentType, resourceId)</code> 复合主键，保存正文、图片上传地址、表情、回复对象、评分和富文本 span JSON。DAO 支持按复合键查删、REPLACE、批量清理和句子草稿 LIKE 查询。</p>
+          <p>当草稿 key 改变时，<code>CommentConsumerRoomHelper</code> 用事务执行“删除旧 key + 插入新 key”；数据库操作放到 Rx <code>Schedulers.single()</code>，结果回主线程。版本 2 到 5 逐步增加 uploadedUrl、setting、score、span 列。需要注意：当前工厂的 <code>deleteRoomIfMigrationNeeded()</code> 返回 true，因此遇到未覆盖的迁移路径时允许删库重建；“提供了部分 Migration”不等于所有升级路径都保证草稿保留。</p>
+          <p class="evidence-list"><code>yyyyy-cdoe/Comment/comment/src/main/java/com/zhihu/android/comment/room/model/CommentDraft.java:31-95</code><br><code>.../room/dao/CommentDraftDao.java:22-44</code><br><code>.../room/factory/CommentDraftRoomFactory.java:22-70</code><br><code>.../room/CommentConsumerRoomHelper.java:57-138, 188-212</code><br><code>.../draft/CommentDraftRepository.kt:14-89</code></p>
+
+          <blockquote>
+            <p><strong>真实风险：</strong>LRU 清理代码依赖 <code>getAll()</code> 的默认返回顺序，但 DAO 未明确 <code>ORDER BY</code>。SQL 不保证无排序查询的顺序，生产实现应把更新时间列和排序写进契约。</p>
+          </blockquote>
+
+          <h3>8.2 KnowledgeMarket：付费文稿 HTML 一次性预加载</h3>
+          <p><code>manuscript_html</code> 以 URL 为主键，保存实际请求 URL、HTML 和时间戳。后台线程池默认核心线程 2、最大线程 10，但使用无界 <code>LinkedBlockingQueue</code>；任务通常进入 FIFO 队列，因此默认实际并发通常是核心线程数 2，最大线程数 10 很难被触发。预取时去重并写 Room。阅读页在 <code>Dispatchers.IO</code> 查询，TTL 命中后切主线程调用 WebView 加载，随后立即删除该条缓存，并没有等待 WebView 成功回调；过期则删旧记录回网络。</p>
+          <p>这不是永久离线下载，而是短生命周期的大字符串缓存。Room 适合按 URL 定位、TTL 淘汰和命中即删；如果放 SP/MMKV，业务要自己维护 URL 索引和过期清理。</p>
+          <p class="evidence-list"><code>yyyyy-cdoe/KnowledgeMarket/sku-manuscript/src/main/java/com/zhihu/android/app/sku/manuscript/preload/ManuscriptHtmlDatabaseBean.kt:11-25</code><br><code>.../ManuscriptHtmlDao.kt:12-31</code><br><code>.../ManuscriptRoomHelper.kt:12-35</code><br><code>.../MarketPreloadCenter.kt:24-119</code><br><code>.../draftpage/PaidColumnDraftFragment.kt:2121-2171</code></p>
+
+          <h3>8.3 KmBase：学习进度不能随便丢</h3>
+          <p><code>SkuProgress</code> 以 <code>(userId, type, businessId, unitId)</code> 为复合主键，并给用户/业务查询和更新时间建立索引。保存时保护已完成状态不被后续未完成进度覆盖；普通进度延迟 2 秒合并上报，完成态立即上报。</p>
+          <p>与可重拉缓存不同，学习进度显式提供 1→2、2→3 Migration，并设置迁移失败不删库。这正好说明：<strong>技术方案不仅看数据结构，还要看数据价值。</strong></p>
+          <p class="evidence-list"><code>yyyyy-cdoe/KmBase/sku-progress/src/main/java/com/zhihu/android/app/sku/progress/model/SkuProgress.kt:10-76</code><br><code>.../db/SkuProgressDao.kt:18-49</code><br><code>.../db/SkuProgressRoomFactory.kt:10-25</code><br><code>.../db/Migrate.kt:12-28</code><br><code>.../SkuProgressManager.kt:57-81, 114-191, 213-248</code></p>
+
+          <h3>8.4 ZIM：表情包是两张表，不是一个 JSON</h3>
+          <p>ZIM 使用 group 和 sticker 两个实体。网络刷新时比较 group id/version，区分新增、更新和废弃组，再按 group 拉取 sticker 列表并替换本地数据。Room 存元数据与 URL，图片二进制走独立磁盘缓存。</p>
+          <p>这里需要按 group 查询、差量更新、排序和删除失效集合，数据库模型明显优于把整个表情包序列化成一个 MMKV 字符串。当前 <code>IMStickerRoomFactory</code> 的删除开关返回 true，且迁移数组为空：这与“服务端表情缓存可重拉”的数据价值匹配，但也意味着数据库版本变化时可能直接重建，而不是保留本地行。</p>
+          <p class="evidence-list"><code>yyyyy-cdoe/ZIM/zim/src/main/java/com/zhihu/android/zim/emoticon/room/db/IMStickerDatabase.java:33-37</code><br><code>.../room/factory/IMStickerRoomFactory.java:54-66</code><br><code>.../model/IMStickerGroupEntity.java:32-86</code><br><code>.../model/IMStickerEntity.java:33-65</code><br><code>.../DefaultStickerRepository.java:57-159, 201-229</code><br><code>.../StickerRoomHelper.java:114-190</code></p>
+
+          <h3>8.5 可丢缓存与不可丢状态</h3>
+          <table>
+            <thead><tr><th>数据</th><th>丢失后能否恢复</th><th>合理策略</th></tr></thead>
+            <tbody>
+              <tr><td>表情服务端缓存</td><td>可以重新拉取</td><td>当前 ZIM 工厂允许缺失迁移时删库重建；仍应记录与监控</td></tr>
+              <tr><td>HTML 预加载</td><td>可以回网络</td><td>TTL、容量上限、命中即删</td></tr>
+              <tr><td>评论草稿</td><td>用户可能重新输入，但体验损失明显</td><td>已覆盖路径走 Migration；当前缺失路径仍允许删库，存在草稿损失</td></tr>
+              <tr><td>学习进度</td><td>本地未上报部分可能无法恢复</td><td>完整 Migration、测试、失败兜底，不能随意破坏性升级</td></tr>
+            </tbody>
+          </table>
+          <p><code>OnConflictStrategy.REPLACE</code> 在 SQLite 中更接近“冲突时删除旧行再插入”，并不等同于普通 <code>UPDATE</code>；涉及外键、触发器或不可丢记录时，要确认它的副作用。缓存可以采用更激进的重建策略，但草稿和进度的 Migration 应通过历史版本样本验证。</p>
+
+          <h2 id="files">9. 文件存储：数据本身是文件时，不要硬塞数据库</h2>
+
+          <table>
+            <thead><tr><th>目录/API</th><th>特点</th><th>适合场景</th></tr></thead>
+            <tbody>
+              <tr><td><code>filesDir</code></td><td>应用内部、卸载删除、系统通常不会主动清理</td><td>需要长期保留的应用专属文件</td></tr>
+              <tr><td><code>cacheDir</code></td><td>应用内部、空间紧张时可被清理</td><td>可重新生成的中间文件和缓存</td></tr>
+              <tr><td><code>externalFilesDir</code></td><td>外部存储上的应用专属目录，可能不可用</td><td>较大、可重新获取或有其他保障的应用资源</td></tr>
+              <tr><td><code>externalCacheDir</code></td><td>外部缓存目录，可能为 null</td><td>较大、可丢弃缓存</td></tr>
+            </tbody>
+          </table>
+          <p><code>getExternalFilesDir()</code> 与 <code>externalCacheDir</code> 可能因为介质状态返回 null，也可能在运行期间变得不可写；必须检查可用性并准备内部目录回退。现代 Android 访问自己的应用专属外部目录通常不需要广泛存储权限，但“应用专属”不等于内部私有或天然加密，重要且不可重建的数据不能只因空间较大就放外部目录。</p>
+
+          <h3>9.1 真实案例：文件选择后复制到 filesDir</h3>
+          <p><code>FilePickerFragment</code> 使用 <code>ACTION_GET_CONTENT + CATEGORY_OPENABLE</code> 让用户选择内容，从返回的 data/clipData 取得 URI，再用 <code>ContentResolver.openInputStream</code> 复制到 <code>filesDir/file_picker</code>。</p>
+          <p>复制后业务持有自己的内部副本，不再依赖外部 Provider URI 的长期权限。这不是 <code>ACTION_OPEN_DOCUMENT</code>，源码也没有 <code>takePersistableUriPermission</code>。</p>
+          <p class="evidence-list"><code>yyyyy-cdoe/Picasa/picasa/src/main/java/com/zhihu/android/picasa/unify/selector/FilePickerFragment.kt:101-155, 189-210</code></p>
+
+          <h3>9.2 真实案例：图片缓存目录与裁剪中间物</h3>
+          <p><code>PictureFileUtils</code> 在外部缓存不可用时回退 <code>cacheDir/images</code>，可用时使用 <code>externalCacheDir/images</code>；<code>ImageClipActivity</code> 把裁剪 PNG 写入 <code>cacheDir</code> 时间戳文件。它们都是可丢中间物，不应该被描述成“已保存到相册”。</p>
+          <p class="evidence-list"><code>yyyyy-cdoe/Picture/picture/src/main/java/com/zhihu/android/picture/util/PictureFileUtils.java:27-43</code><br><code>.../picture/activity/ImageClipActivity.java:150-169</code></p>
+
+          <h3>9.3 FileProvider 是授权桥梁，不是存储引擎</h3>
+          <p>FileProvider 把应用文件映射成受控 <code>content://</code> URI，并通过临时 flag 授权外部应用读写。文件仍在原来的目录，FileProvider 不会自动复制文件，也不会让它进入系统相册。</p>
+          <ul>
+            <li><code>paths.xml</code> 只暴露业务真正需要的最小子目录，不要配置根目录或整个外部存储。</li>
+            <li>Provider 通常保持 <code>exported=false</code>、<code>grantUriPermissions=true</code>，并按需求只授予读或写 flag。</li>
+            <li>Android 7.0+ 不应把 <code>file://</code> 直接发给其他应用；授权结束后，接收方不应继续假设 URI 永久可读。</li>
+          </ul>
+
+          <h2 id="media-saf">10. MediaStore、FileProvider 与 SAF：三个 content URI 场景</h2>
+
+          <h3>10.1 真正写入 MediaStore：下载图片保存到相册</h3>
+          <p><code>ImageDownloader</code> 下载完成后调用 <code>MediaStoreCompat.insertImageV2</code>。Android 10+ 实现设置 <code>RELATIVE_PATH=Pictures/知乎</code>，通过 <code>ContentResolver.insert</code> 获得目标 URI，再用文件描述符和 channel 复制字节。这是真正进入共享图片集合的链路。</p>
+          <p class="evidence-list"><code>yyyyy-cdoe/Picture/picture/src/main/java/com/zhihu/android/images_viewer/util/ImageDownloader.kt:121-159</code><br><code>.../MediaStoreCompat.java:162-176</code><br><code>.../MediaStoreAbstract.java:34-45</code><br><code>.../MediaStoreQImpl.java:27-52</code><br><code>.../PictureFileUtils.java:65-92</code></p>
+
+          <blockquote>
+            <p><strong>改进点：</strong>当前 Q+ 实现没有看到 <code>IS_PENDING</code>。Android 10+ 写共享媒体通常可先插入 <code>IS_PENDING=1</code>，写完后更新为 0 再发布，避免其他应用观察到半成品；写入失败还要删除已经插入的空记录。是否采用仍要结合目标版本和产品行为。</p>
+          </blockquote>
+
+          <h3>10.2 相机 Intent：用了 MediaStore 常量，不等于写 MediaStore</h3>
+          <p><code>ZhihuCamera</code> 发出 <code>MediaStore.ACTION_IMAGE_CAPTURE</code>，先创建本地 File，再通过 FileProvider 转成 URI，放入 <code>EXTRA_OUTPUT</code> 交给相机写。这里没有 <code>ContentResolver.insert</code>，所以它是“调用系统相机写指定应用文件”，不是“把媒体插入系统相册”。</p>
+          <p class="evidence-list"><code>yyyyy-cdoe/Camera/camera/src/main/java/com/zhihu/android/camera/ZhihuCamera.java:175-184, 218-244</code><br><code>yyyyy-cdoe/Camera/app/src/main/AndroidManifest.xml:23-32</code></p>
+
+          <h3>10.3 内容选择与 SAF：四种常见动作</h3>
+          <table>
+            <thead><tr><th>动作</th><th>含义</th><th>持久 URI 权限</th></tr></thead>
+            <tbody>
+              <tr><td><code>ACTION_GET_CONTENT</code></td><td>从可提供内容的应用选择并读取一次</td><td>通常不作为长期授权使用</td></tr>
+              <tr><td><code>ACTION_OPEN_DOCUMENT</code></td><td>通过系统文档提供器打开文档</td><td>配合 flag 和 <code>takePersistableUriPermission</code> 可持久化</td></tr>
+              <tr><td><code>ACTION_CREATE_DOCUMENT</code></td><td>让用户选择位置创建导出文档</td><td>按返回 URI 写入；是否持久化以实际 flags 为准</td></tr>
+              <tr><td><code>ACTION_OPEN_DOCUMENT_TREE</code></td><td>让用户授权一个目录树</td><td>可持久化目录授权，但应申请最小范围</td></tr>
+            </tbody>
+          </table>
+          <p><code>ACTION_GET_CONTENT</code> 更接近一次性内容选择；长期访问用户文档，应优先理解 <code>ACTION_OPEN_DOCUMENT</code> 返回的授权 flags，并把这些 flags 传给 <code>takePersistableUriPermission</code>。拿到 content URI 后不要反推“真实文件路径”，而要通过 <code>ContentResolver</code> 读写。目录树授权同样不是整块磁盘通行证，应限制到用户选择的最小目录。</p>
+          <p>当前业务源码只找到 <code>ACTION_GET_CONTENT</code> 的真实选择链路，没有找到可靠的 <code>ACTION_OPEN_DOCUMENT</code>、<code>ACTION_CREATE_DOCUMENT</code>、<code>ACTION_OPEN_DOCUMENT_TREE</code> 或持久 URI 授权调用。文档因此只把后三者作为平台知识，不冒充项目实践。</p>
+
+          <h3>10.4 只选照片时，还要知道 Photo Picker</h3>
+          <p>如果需求只是让用户选一张或几张图片/视频，现代 Android 的 Photo Picker 往往比申请整个媒体库读取权限更符合最小权限原则。它负责“用户选择媒体”；MediaStore 仍负责公共媒体集合，SAF 更偏文档与目录，两者不能互相替代。</p>
+
+          <h2 id="security">11. Android Keystore 与加密存储：先保护密钥</h2>
+
+          <p>Android Keystore 的核心职责是生成、保存或使用受系统保护的密钥材料。业务通常用这个密钥加密 Token、配置文件或数据库，再把密文放到 SP、文件或数据库。Keystore 不适合直接保存大量业务对象。</p>
+
+          <pre><code>Android Keystore：保护主密钥/密钥句柄
+        ↓
+AES-GCM 等算法：加密业务明文
+        ↓
+SP / DataStore / MMKV / 文件 / Room：保存密文、IV、版本信息</code></pre>
+
+          <h3>11.1 真实案例：meter 的 EncryptedSharedPreferences</h3>
+          <p><code>EarningsPreferences</code> 使用 AndroidX <code>MasterKey</code> 的 AES256_GCM 方案创建主密钥，再构造 <code>EncryptedSharedPreferences</code>：key 使用 AES256_SIV，value 使用 AES256_GCM，保存月薪、工作时间和午休时间。</p>
+
+          <div class="code-block">
+            <div class="code-toolbar"><span>Kotlin · 根据源码简化</span><button type="button" data-copy-code>复制</button></div>
+            <pre><code>val masterKey = MasterKey.Builder(context)
+    .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+    .build()
+
+val preferences = EncryptedSharedPreferences.create(
+    context,
+    "earnings_settings",
+    masterKey,
+    AES256_SIV,
+    AES256_GCM
+)</code></pre>
+          </div>
+          <p class="evidence-list"><code>yyyyy-cdoe/meter/app/src/main/java/com/example/meter/data/EarningsPreferences.kt:11-55</code></p>
+
+          <p><strong>边界：</strong>这证明仓库使用了 AndroidX Security 封装，不能进一步宣称业务直接实现了 <code>KeyStore.getInstance("AndroidKeyStore")</code>。工作区业务代码没有找到直接调用 <code>KeyStore.getInstance("AndroidKeyStore")</code>、<code>KeyGenParameterSpec</code> 或 <code>EncryptedFile</code> 的可靠案例；其他仓库出现普通 <code>java.security.KeyStore</code> 类型也不等于 AndroidKeyStore 密钥存储。这个样例依赖 <code>security-crypto 1.1.0-alpha06</code>，只能说明现有工程做法；新项目不能直接照搬，应检查所选 AndroidX 版本的弃用状态，并根据当前平台文档评估直接使用 Keystore + 明确密文格式，同时设计备份、设备迁移和密钥失效策略。</p>
+
+          <h3>11.2 敏感数据的常见错误</h3>
+          <ul>
+            <li>把 Token 明文放 SP，然后说“因为 MODE_PRIVATE 所以安全”。</li>
+            <li>MMKV 开启加密，却把 cryptKey 硬编码在 APK。</li>
+            <li>只加密 value，不设计密钥轮换、登出清理和解密失败恢复。</li>
+            <li>把用户密码长期保存到本地；通常应该保存短期凭证或可撤销 Token。</li>
+            <li>备份恢复到另一台设备后，密文存在但 Keystore 密钥不可用，没有兜底。</li>
+          </ul>
+
+          <h2 id="decision-table">12. 最终选型决策表</h2>
+
+          <table>
+            <thead><tr><th>需求</th><th>优先方案</th><th>原因</th><th>真实案例</th></tr></thead>
+            <tbody>
+              <tr><td>少量开关、次数、时间戳</td><td>DataStore / SP；高频或跨端已有基建可用 MMKV</td><td>直接 key-value，无复杂查询</td><td>VipHome 推广频控、RN 礼包时间戳</td></tr>
+              <tr><td>新项目响应式设置</td><td>Preferences DataStore（结合既有基建评估）</td><td>协程、Flow、串行原子更新、迁移机制</td><td>当前工作区无真实调用，不能冒充</td></tr>
+              <tr><td>稳定类型化配置对象</td><td>Proto DataStore</td><td>schema 和类型演进清晰</td><td>当前工作区无真实调用</td></tr>
+              <tr><td>草稿、进度、历史记录</td><td>Room</td><td>主键、索引、查询、事务、Migration</td><td>CommentDraft、SkuProgress</td></tr>
+              <tr><td>网络可重拉集合缓存</td><td>Room + 明确 TTL/删库恢复</td><td>按记录查询和淘汰</td><td>ZIM 表情、文稿 HTML 预加载</td></tr>
+              <tr><td>大 JSON、图片、下载物</td><td>文件；Room 只存元数据和路径</td><td>避免数据库大 BLOB 和键值整体重写</td><td>图片缓存、文件选择副本</td></tr>
+              <tr><td>保存到系统相册</td><td>MediaStore</td><td>进入共享媒体集合，适配作用域存储</td><td>Picture 图片下载</td></tr>
+              <tr><td>用户导入/导出文档</td><td>SAF</td><td>用户授权、content URI、无需真实路径</td><td>当前只有 GET_CONTENT 选择案例</td></tr>
+              <tr><td>敏感配置</td><td>Keystore 保护密钥 + 加密载体</td><td>私有目录不等于密文</td><td>meter EncryptedSharedPreferences</td></tr>
+            </tbody>
+          </table>
+
+          <h3>12.1 从 SP/MMKV 迁移时怎么做</h3>
+          <ol>
+            <li>先定义新模型和版本，不要在读取时随意猜旧格式。</li>
+            <li>读取新存储；未命中时读取旧存储并校验。</li>
+            <li>写入新存储成功后再设置迁移完成标记，必要时保留一个版本周期的回退。</li>
+            <li>统计迁移成功、解析失败、回退次数，不要静默吞掉数据损坏。</li>
+            <li>确认回滚版本是否还能读取数据；双写时间过长也会引入一致性成本。</li>
+          </ol>
+
+          <h3>12.2 一张最小判断图</h3>
+          <pre><code>是否只是少量 key-value？
+  ├─ 是 → 是否需要 Flow、原子更新或官方 SP 迁移？
+  │        ├─ 是 → 优先评估 DataStore；多进程需单独验证
+  │        └─ 否 → SP 仍可用；已有高频/跨端基建可评估 MMKV
+  └─ 否 → 是否需要查询、排序、事务、索引？
+           ├─ 是 → Room / SQLite
+           └─ 否 → 数据本身是不是大文件？
+                    ├─ 是 → 应用文件目录 / MediaStore / SAF
+                    └─ 否 → 重新检查数据模型，别先选工具
+
+任何分支若含敏感数据 → 额外设计 Keystore、加密、轮换与清理</code></pre>
+
+          <h2 id="interview">13. 面试怎么回答</h2>
+
+          <h3>13.1 40 秒版本</h3>
+          <div class="interview-script">
+            Android 存储要按数据形态选。少量配置用 SharedPreferences、DataStore 或 MMKV；DataStore 是 Jetpack 的异步配置方案，MMKV 是腾讯基于 mmap 的第三方键值方案。需要复合主键、条件查询、排序和事务的记录集合用 Room。大文件放应用专属目录，公共图片通过 MediaStore，用户选择文档通过 SAF。敏感数据不是换成 MMKV 就安全，而是用 Keystore 保护密钥，再把密文放到合适载体。实际项目里我还会根据数据能否重拉决定 Migration 还是允许删库恢复，并按用户隔离、在登出时清理，验证备份恢复后密钥是否仍可用。
+          </div>
+
+          <h3>13.2 结合项目的两分钟版本</h3>
+          <div class="interview-script">
+            我会先看访问模型，而不是比较谁跑分高。比如 VipHome 的推广 JSON、次数和开关都是少量 key-value，用 SP 很直接；盐言详情预加载要求 Native 写、RN 读同一份高速缓存，代码里使用同一个 MMKV ID 和 pin key，还显式选择多进程模式。评论草稿则是按评论类型和资源 ID 定位的多条记录，还有富文本、图片状态、LIKE 查询和跨 key 事务，所以用 Room。学习进度更不能丢，仓库里明确写了 Migration；表情和 HTML 预加载能从服务端重拉，损坏时可以采用更激进的恢复策略。保存到相册的图片不能只写 cacheDir，要通过 ContentResolver 插入 MediaStore。安全方面，meter 用 MasterKey 和 EncryptedSharedPreferences；我会继续关注密钥失效、备份和登出清理，而不是只说“文件在私有目录”。
+          </div>
+
+          <h3>13.3 高频追问</h3>
+          <details><summary>SP 的 apply 和 commit 有什么区别？</summary><p><code>apply</code> 先更新内存并立即返回，随后安排磁盘持久化；<code>commit</code> 同步等待并返回结果。不要把 apply 简化成“调用后读取不到”，也不要在主线程高频 commit。</p></details>
+          <details><summary>MMKV 为什么快？是不是一定比 SP 好？</summary><p>MMKV 通过 mmap 和紧凑编码缩短常见键值读写路径，但 mmap 本身不是性能保证，结果仍受编码、数据体量、页回写、多进程同步和设备 I/O 影响。它还引入 Native 依赖、初始化、文件恢复和密钥管理成本；复杂查询、事务和记录集合仍应使用数据库。</p></details>
+          <details><summary>DataStore 和 Room 怎么选？</summary><p>DataStore 面向一份配置对象或键值流，原子更新只覆盖单个 DataStore 数据快照；Room 面向记录集合、SQL 查询、索引、数据库事务和迁移。判断点不是数据大小一个维度，而是访问模型。</p></details>
+          <details><summary>Room Migration 失败能不能直接删库？</summary><p>取决于数据价值。服务端可重拉缓存可以明确采用破坏性恢复；用户草稿、学习进度等不可丢状态需要完整 Migration、测试和失败兜底。</p></details>
+          <details><summary>FileProvider、MediaStore、SAF 有什么区别？</summary><p>FileProvider 临时授权外部应用访问一个 app 文件；MediaStore 管理公共媒体集合；SAF 让用户通过系统文档 UI 选择或创建文档。三者都可能返回 content URI，但所有权和生命周期不同。</p></details>
+          <details><summary>Account 的 DataStoreImpl 是 Jetpack DataStore 吗？</summary><p>不是。它解析到同包自研 DataStore 抽象类，直接读写 filesDir 下的 Parcel/JSON 文件，没有 androidx.datastore 依赖或 Flow/updateData API。</p></details>
+
+          <h2 id="evidence">14. 源码证据索引与可信度说明</h2>
+
+          <table>
+            <thead><tr><th>技术</th><th>强证据</th><th>工作区结论</th></tr></thead>
+            <tbody>
+              <tr><td>SharedPreferences</td><td>PromotionTask、AtmosphereManager、ThemeRecord 等实际 get/edit/read</td><td>大量真实业务调用</td></tr>
+              <tr><td>MMKV</td><td>PinDetailPreloadHelper encode + RN PinIndex getString</td><td>存在 Native/RN 同 ID 跨端链路</td></tr>
+              <tr><td>Jetpack DataStore</td><td>仅 meter 依赖声明</td><td>没有可靠业务调用</td></tr>
+              <tr><td>Account DataStoreImpl</td><td>同包父类、filesDir 路径、Parcel/JSON 读写</td><td>自研文件存储，不是 Jetpack</td></tr>
+              <tr><td>Room</td><td>Entity + DAO + Database + 创建入口 + UI/Repository 调用</td><td>评论、表情、预加载、进度均有完整案例</td></tr>
+              <tr><td>MediaStore</td><td>ContentResolver.insert + 文件描述符写入</td><td>Picture 有真正相册入库</td></tr>
+              <tr><td>SAF</td><td>ACTION_GET_CONTENT 选择并复制</td><td>未找到 OPEN/CREATE_DOCUMENT 和持久授权</td></tr>
+              <tr><td>Keystore/加密</td><td>MasterKey + EncryptedSharedPreferences</td><td>有 AndroidX 封装案例，无直接 AndroidKeyStore 调用</td></tr>
+            </tbody>
+          </table>
+
+          <blockquote>
+            <p><strong>如何读证据：</strong>路径和行号证明当前检出源码存在这些实现，不证明候选人本人设计或编写了它们。面试时可以说“我在项目源码中核对到这条链路”；只有确实参与过的部分，才能进一步说“我负责了……”。</p>
+          </blockquote>
+
+          <footer class="article-footer">
+            本页直接以 HTML 维护，使用现有离线站共享样式与搜索。内容基于 2026-08-25 当前工作区源码；平台 API 与依赖库状态会演进，生产选型应再核对目标 SDK 和当前官方文档。
+          </footer>
+        </article>
+
+        <aside class="page-toc" aria-label="本页目录">
+          <div class="toc-heading">本页目录</div>
+          <a class="toc-link level-2" href="#storage-map">1. 存储方案全景</a>
+          <a class="toc-link level-2" href="#selection-first">2. 选型前四问</a>
+          <a class="toc-link level-2" href="#sharedpreferences">3. SharedPreferences</a>
+          <a class="toc-link level-2" href="#mmkv">4. MMKV</a>
+          <a class="toc-link level-2" href="#datastore">5. Jetpack DataStore</a>
+          <a class="toc-link level-2" href="#account-datastore">6. Account 同名纠错</a>
+          <a class="toc-link level-2" href="#room-sqlite">7. Room / SQLite</a>
+          <a class="toc-link level-2" href="#room-cases">8. Room 真实案例</a>
+          <a class="toc-link level-2" href="#files">9. 文件存储</a>
+          <a class="toc-link level-2" href="#media-saf">10. MediaStore / SAF</a>
+          <a class="toc-link level-2" href="#security">11. Keystore 与加密</a>
+          <a class="toc-link level-2" href="#decision-table">12. 选型决策表</a>
+          <a class="toc-link level-2" href="#interview">13. 面试回答</a>
+          <a class="toc-link level-2" href="#evidence">14. 证据索引</a>
+          <a class="back-to-top" href="#">↑ 返回顶部</a>
+        </aside>
+      </div>
+    </main>
+  </div>
+
+  <script src="assets/search-data.js"></script>
+  <script src="assets/docs.js"></script>
+</body>
+</html>

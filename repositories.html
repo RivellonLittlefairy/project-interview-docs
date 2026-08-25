@@ -1,0 +1,571 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="66 个有效 Git 仓库逐仓源码分析与项目面试资料">
+  <title>66 个仓库逐仓文档｜项目面试资料库</title>
+  <link rel="stylesheet" href="assets/docs.css">
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <header class="topbar">
+    <button class="icon-button menu-button" type="button" data-menu-toggle aria-label="打开文档导航" aria-expanded="false">☰</button>
+    <a class="brand" href="index.html"><span class="brand-mark">⌁</span><span>项目面试资料库</span></a>
+    <div class="search-shell">
+      <label class="sr-only" for="global-search">搜索所有仓库</label>
+      <input id="global-search" type="search" data-search-input placeholder="搜索仓库、技术、调用链或面试题…" autocomplete="off">
+      <span class="search-shortcut">Ctrl K</span>
+      <div class="search-results" data-search-results hidden></div>
+    </div>
+    <button class="icon-button" type="button" data-theme-toggle aria-label="切换深浅主题">◐</button>
+  </header>
+  <div class="drawer-backdrop" data-drawer-backdrop hidden></div>
+  <div class="docs-layout repository-hub-layout">
+    <nav class="sidebar" data-sidebar aria-label="仓库文档导航">
+      <div class="sidebar-heading">快速入口</div>
+      <a class="nav-link" href="index.html">总览首页</a>
+      <a class="nav-link active" href="repositories.html" aria-current="page">66 个仓库逐仓文档</a>
+      <a class="nav-link" href="android-storage-guide.html">Android 存储方案</a>
+      <a class="nav-link" href="50-interview-project-summary.html">项目主线总结</a>
+      <a class="nav-link" href="60-interview-question-bank.html">70 道面试题</a>
+      <a class="nav-link" href="70-resume-and-star-stories.html">简历与 STAR</a>
+      <p class="sidebar-note">每个仓库独立一页；个人经历、动作和结果仍须本人确认。</p>
+    </nav>
+    <main class="article-shell repository-hub" id="main-content">
+      <div class="breadcrumbs"><a href="index.html">首页</a><span>/</span><span>逐仓文档</span></div>
+      <article class="markdown-body">
+        <h1 id="66-repositories">66 个仓库逐仓源码与面试文档</h1>
+        <blockquote class="callout">
+          <p>这里不是把仓库名字简单列一遍。每个仓库都有独立 HTML 页面，分别说明定位、技术栈、真实入口、关键调用链、工程取舍、风险、调试路径、面试讲法、追问与源码证据。</p>
+          <p>源码能证明“仓库里有什么”，不能自动证明“候选人做过什么”。凡涉及个人职责与结果，统一按“需本人确认”处理。</p>
+        </blockquote>
+        <section class="stats-grid" aria-label="仓库统计">
+          <div class="stat-card"><strong>66/66</strong><span>有效 Git 仓库</span></div>
+          <div class="stat-card"><strong>30</strong><span>Android 业务仓</span></div>
+          <div class="stat-card"><strong>23</strong><span>Android 基础库</span></div>
+          <div class="stat-card"><strong>13</strong><span>Web、工具与其他</span></div>
+        </section>
+        
+        <section class="repository-group" id="android-business">
+          <div class="repository-group-heading">
+            <h2>Android 业务仓库</h2>
+            <span>30 个仓库</span>
+          </div>
+          <div class="repository-grid">
+            
+                  <a class="repository-card" href="repositories/account.html" data-repository-card>
+                    <span class="repository-card-category">账号业务组件</span>
+                    <strong>Account</strong>
+                    <span>Java/Kotlin · Android/Gradle</span>
+                    <small>298（中型） · Y/Y/Y</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/audio.html" data-repository-card>
+                    <span class="repository-card-category">音频业务组件/App</span>
+                    <strong>Audio</strong>
+                    <span>Java/Kotlin · Android/Gradle</span>
+                    <small>156（中型） · N/Y/Y</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/comment.html" data-repository-card>
+                    <span class="repository-card-category">评论业务组件</span>
+                    <strong>Comment</strong>
+                    <span>Kotlin/Java · Android/Gradle</span>
+                    <small>370（大型） · Y/Y/Y</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/feed.html" data-repository-card>
+                    <span class="repository-card-category">首页 Feed 业务组件</span>
+                    <strong>Feed</strong>
+                    <span>Java/Kotlin · Android/Gradle</span>
+                    <small>1,036（超大） · Y/Y/Y</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/futureve.html" data-repository-card>
+                    <span class="repository-card-category">知乎 Android 主 App 壳</span>
+                    <strong>Futureve</strong>
+                    <span>Java · Android/Gradle</span>
+                    <small>56（小型；大量能力来自制品/源码替换） · Y/Y/Y</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/futureveglobal.html" data-repository-card>
+                    <span class="repository-card-category">全局初始化/配置组件</span>
+                    <strong>FutureveGlobal</strong>
+                    <span>Java/Kotlin · Android/Gradle</span>
+                    <small>33（小型） · Y/Y/Y</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/km_home_base.html" data-repository-card>
+                    <span class="repository-card-category">知识市场首页基础业务</span>
+                    <strong>km_home_base</strong>
+                    <span>Kotlin/Java · Android/Gradle</span>
+                    <small>234（中型） · Y/Y/Y</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/km-attention.html" data-repository-card>
+                    <span class="repository-card-category">知识市场关注业务</span>
+                    <strong>km-attention</strong>
+                    <span>Kotlin/Java · Android/Gradle</span>
+                    <small>256（中型） · Y/Y/Y</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/kmaudio.html" data-repository-card>
+                    <span class="repository-card-category">知识市场音频业务</span>
+                    <strong>Kmaudio</strong>
+                    <span>Kotlin/Java · Android/Gradle</span>
+                    <small>124（中型） · Y/Y/Y</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/kmbase.html" data-repository-card>
+                    <span class="repository-card-category">知识市场业务底座</span>
+                    <strong>KmBase</strong>
+                    <span>Kotlin/Java · Android/Gradle</span>
+                    <small>552（大型） · Y/Y/Y</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/kmcommon.html" data-repository-card>
+                    <span class="repository-card-category">知识市场通用业务组件</span>
+                    <strong>kmcommon</strong>
+                    <span>Kotlin/Java · Android/Gradle</span>
+                    <small>174（中型） · Y/Y/Y</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/kmdetailpage.html" data-repository-card>
+                    <span class="repository-card-category">知识市场详情页组件</span>
+                    <strong>KmDetailPage</strong>
+                    <span>Kotlin/Java · Android/Gradle</span>
+                    <small>213（中型） · Y/N/Y</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/knowledgemarket.html" data-repository-card>
+                    <span class="repository-card-category">知识市场主业务组件</span>
+                    <strong>KnowledgeMarket</strong>
+                    <span>Kotlin/Java · Android/Gradle</span>
+                    <small>1,102（超大） · Y/Y/Y</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/liteknowledgemarket.html" data-repository-card>
+                    <span class="repository-card-category">盐选版知识市场业务</span>
+                    <strong>LiteKnowledgeMarket</strong>
+                    <span>Java/Kotlin · Android/Gradle</span>
+                    <small>968（大型） · Y/Y/Y</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/media.html" data-repository-card>
+                    <span class="repository-card-category">媒体业务组件</span>
+                    <strong>Media</strong>
+                    <span>Kotlin/Java · Android/Gradle</span>
+                    <small>1,126（超大） · Y/Y/Y</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/premium.html" data-repository-card>
+                    <span class="repository-card-category">会员/付费业务组件</span>
+                    <strong>Premium</strong>
+                    <span>Kotlin/Java · Android/Gradle</span>
+                    <small>244（中型） · Y/N/Y</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/vipandroid.html" data-repository-card>
+                    <span class="repository-card-category">知乎 VIP Android App 壳</span>
+                    <strong>VipAndroid</strong>
+                    <span>Java/Kotlin · Android/Gradle，含 RN 依赖</span>
+                    <small>61（小型；组件化装配） · Y/Y/Y</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/vipchannelcard.html" data-repository-card>
+                    <span class="repository-card-category">VIP 频道卡片组件</span>
+                    <strong>Vipchannelcard</strong>
+                    <span>Kotlin/Java · Android/Gradle</span>
+                    <small>134（中型） · Y/Y/Y</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/vipcomment.html" data-repository-card>
+                    <span class="repository-card-category">VIP 评论业务组件</span>
+                    <strong>VipComment</strong>
+                    <span>Kotlin/Java · Android/Gradle</span>
+                    <small>266（中型） · Y/Y/Y</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/vipgrowth.html" data-repository-card>
+                    <span class="repository-card-category">VIP 增长/登录转化业务</span>
+                    <strong>VipGrowth</strong>
+                    <span>Kotlin/Java · Android/Gradle</span>
+                    <small>350（大型） · Y/Y/Y</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/viphome.html" data-repository-card>
+                    <span class="repository-card-category">VIP 首页业务组件</span>
+                    <strong>VipHome</strong>
+                    <span>Java/Kotlin · Android/Gradle</span>
+                    <small>232（中型） · Y/Y/Y</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/vipkmaudio.html" data-repository-card>
+                    <span class="repository-card-category">VIP 音频业务组件</span>
+                    <strong>VipKmAudio</strong>
+                    <span>Kotlin/Java · Android/Gradle</span>
+                    <small>138（中型） · Y/Y/Y</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/vipmanuscript.html" data-repository-card>
+                    <span class="repository-card-category">VIP 阅读稿件业务</span>
+                    <strong>VipManuscript</strong>
+                    <span>Kotlin/Java · Android/Gradle</span>
+                    <small>499（大型） · Y/Y/Y</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/vipmercury.html" data-repository-card>
+                    <span class="repository-card-category">VIP Web 容器业务分支</span>
+                    <strong>VipMercury</strong>
+                    <span>Java/Kotlin · Android/Gradle</span>
+                    <small>300（中型） · Y/Y/Y</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/vippassport.html" data-repository-card>
+                    <span class="repository-card-category">VIP 登录/账号业务</span>
+                    <strong>VipPassport</strong>
+                    <span>Java/Kotlin · Android/Gradle</span>
+                    <small>248（中型） · Y/Y/Y</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/vipprerender.html" data-repository-card>
+                    <span class="repository-card-category">VIP 页面预渲染业务</span>
+                    <strong>VipPrerender</strong>
+                    <span>Kotlin/Java · Android/Gradle</span>
+                    <small>46（小型） · Y/Y/Y</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/vipprofile.html" data-repository-card>
+                    <span class="repository-card-category">VIP 个人页业务</span>
+                    <strong>VipProfile</strong>
+                    <span>Kotlin/Java · Android/Gradle</span>
+                    <small>158（中型） · Y/Y/Y</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/vipreader.html" data-repository-card>
+                    <span class="repository-card-category">VIP 阅读器业务封装</span>
+                    <strong>VipReader</strong>
+                    <span>Kotlin/Java · Android/Gradle</span>
+                    <small>81（小型） · Y/Y/Y</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/zheditor.html" data-repository-card>
+                    <span class="repository-card-category">内容编辑业务组件</span>
+                    <strong>ZhEditor</strong>
+                    <span>Kotlin/Java · Android/Gradle</span>
+                    <small>56（小型） · Y/Y/Y</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/zhihulite.html" data-repository-card>
+                    <span class="repository-card-category">知乎盐选版 Android App 壳</span>
+                    <strong>ZhihuLite</strong>
+                    <span>Java · Android/Gradle</span>
+                    <small>65（小型；组件化装配） · Y/Y/Y</small>
+                  </a>
+          </div>
+        </section>
+
+        <section class="repository-group" id="android-infrastructure">
+          <div class="repository-group-heading">
+            <h2>Android 基础设施与媒体</h2>
+            <span>23 个仓库</span>
+          </div>
+          <div class="repository-grid">
+            
+                  <a class="repository-card" href="repositories/barrage.html" data-repository-card>
+                    <span class="repository-card-category">弹幕 UI 库</span>
+                    <strong>barrage</strong>
+                    <span>Java · Android/Gradle</span>
+                    <small>23（微型） · Y/Y/Y</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/blurview.html" data-repository-card>
+                    <span class="repository-card-category">模糊视图 UI 库</span>
+                    <strong>BlurView</strong>
+                    <span>Java · Android/Gradle</span>
+                    <small>20（微型） · Y/Y/N</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/bootstrap.html" data-repository-card>
+                    <span class="repository-card-category">连续滚动、BottomSheet、引导队列等 UI 控件库</span>
+                    <strong>Bootstrap</strong>
+                    <span>Kotlin/Java · Android/Gradle</span>
+                    <small>62（小型） · Y/N/Y</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/bottomnav.html" data-repository-card>
+                    <span class="repository-card-category">底部导航 UI 库</span>
+                    <strong>bottomnav</strong>
+                    <span>Java/Kotlin · Android/Gradle</span>
+                    <small>102（中型） · Y/Y/Y</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/camera.html" data-repository-card>
+                    <span class="repository-card-category">相机能力库</span>
+                    <strong>Camera</strong>
+                    <span>Java · Android/Gradle</span>
+                    <small>6（微型） · Y/N/Y</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/common.html" data-repository-card>
+                    <span class="repository-card-category">通用基础库</span>
+                    <strong>Common</strong>
+                    <span>Java/Kotlin · Android/Gradle</span>
+                    <small>114（中型） · Y/Y/Y</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/devkit.html" data-repository-card>
+                    <span class="repository-card-category">MVI/Paging 开发框架</span>
+                    <strong>DevKit</strong>
+                    <span>Kotlin/Java · Android/Gradle、Mavericks/Paging3</span>
+                    <small>42（小型） · Y/Y/Y</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/mediax.html" data-repository-card>
+                    <span class="repository-card-category">媒体基础 API/实现</span>
+                    <strong>mediax</strong>
+                    <span>Kotlin/Java · Android/Gradle</span>
+                    <small>11（微型） · Y/Y/Y</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/mercury.html" data-repository-card>
+                    <span class="repository-card-category">WebView/Hybrid 容器</span>
+                    <strong>Mercury</strong>
+                    <span>Java/Kotlin · Android/Gradle</span>
+                    <small>299（中型） · Y/Y/Y</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/mercury-core.html" data-repository-card>
+                    <span class="repository-card-category">Mercury 核心库</span>
+                    <strong>mercury-core</strong>
+                    <span>Java/Kotlin · Android/Gradle</span>
+                    <small>185（中型） · N/Y/Y</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/net.html" data-repository-card>
+                    <span class="repository-card-category">网络基础库</span>
+                    <strong>Net</strong>
+                    <span>Java/Kotlin · Android/Gradle</span>
+                    <small>141（中型） · Y/Y/Y</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/netdns.html" data-repository-card>
+                    <span class="repository-card-category">DNS/HTTPDNS 基础库</span>
+                    <strong>Netdns</strong>
+                    <span>Java/Kotlin · Android/Gradle</span>
+                    <small>81（小型） · Y/Y/Y</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/picasa.html" data-repository-card>
+                    <span class="repository-card-category">媒体选择、拍摄、处理与上传门面</span>
+                    <strong>Picasa</strong>
+                    <span>Kotlin/Java · Android/Gradle</span>
+                    <small>115（中型） · Y/Y/Y</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/picture.html" data-repository-card>
+                    <span class="repository-card-category">图片选择/处理组件</span>
+                    <strong>Picture</strong>
+                    <span>Java/Kotlin · Android/Gradle</span>
+                    <small>395（大型） · Y/Y/Y</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/readersdk-cmake.html" data-repository-card>
+                    <span class="repository-card-category">Android/iOS 共用阅读器内核</span>
+                    <strong>ReaderSDK-CMake</strong>
+                    <span>C/C++/Objective-C · CMake</span>
+                    <small>2,118（超大） · Y/Y/N</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/share.html" data-repository-card>
+                    <span class="repository-card-category">分享能力组件/App</span>
+                    <strong>Share</strong>
+                    <span>Java/Kotlin · Android/Gradle</span>
+                    <small>93（小型） · Y/Y/Y</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/sharecore.html" data-repository-card>
+                    <span class="repository-card-category">分享核心库</span>
+                    <strong>ShareCore</strong>
+                    <span>Kotlin/Java · Android/Gradle</span>
+                    <small>185（中型） · Y/Y/Y</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/videoentity.html" data-repository-card>
+                    <span class="repository-card-category">视频实体/播放基础模型</span>
+                    <strong>VideoEntity</strong>
+                    <span>Kotlin/Java · Android/Gradle</span>
+                    <small>1,354（超大） · Y/Y/Y</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/vipcommon.html" data-repository-card>
+                    <span class="repository-card-category">VIP 通用基础库</span>
+                    <strong>VipCommon</strong>
+                    <span>Kotlin/Java · Android/Gradle</span>
+                    <small>193（中型） · Y/Y/Y</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/vipnet.html" data-repository-card>
+                    <span class="repository-card-category">VIP 网络封装</span>
+                    <strong>VipNet</strong>
+                    <span>Java/Kotlin · Android/Gradle</span>
+                    <small>125（中型） · Y/Y/Y</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/zhplayer.html" data-repository-card>
+                    <span class="repository-card-category">播放器基础库</span>
+                    <strong>Zhplayer</strong>
+                    <span>Java/Kotlin · Android/Gradle</span>
+                    <small>12（微型） · Y/Y/Y</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/zim.html" data-repository-card>
+                    <span class="repository-card-category">IM 基础能力</span>
+                    <strong>ZIM</strong>
+                    <span>Java/Kotlin · Android/Gradle</span>
+                    <small>224（中型） · Y/Y/Y</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/zrouter.html" data-repository-card>
+                    <span class="repository-card-category">路由框架</span>
+                    <strong>ZRouter</strong>
+                    <span>Java/Kotlin · Android/Gradle</span>
+                    <small>73（小型） · Y/Y/Y</small>
+                  </a>
+          </div>
+        </section>
+
+        <section class="repository-group" id="rn-web">
+          <div class="repository-group-heading">
+            <h2>RN / Web</h2>
+            <span>1 个仓库</span>
+          </div>
+          <div class="repository-grid">
+            
+                  <a class="repository-card" href="repositories/html-anything.html" data-repository-card>
+                    <span class="repository-card-category">Web 应用 monorepo/公开评测 Harness</span>
+                    <strong>html-anything</strong>
+                    <span>TypeScript/TSX · Next.js、pnpm、Playwright</span>
+                    <small>121（中型） · Y/Y/Y</small>
+                  </a>
+          </div>
+        </section>
+
+        <section class="repository-group" id="tools-samples">
+          <div class="repository-group-heading">
+            <h2>工具、样例与上游工程</h2>
+            <span>11 个仓库</span>
+          </div>
+          <div class="repository-grid">
+            
+                  <a class="repository-card" href="repositories/8j52srpw6x_matchfile.html" data-repository-card>
+                    <span class="repository-card-category">Android 发布/上传工具配置</span>
+                    <strong>8J52SRPW6X_Matchfile</strong>
+                    <span>Ruby/Fastlane 配置</span>
+                    <small>0（配置仓库） · Y/N/Y</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/cuda-samples.html" data-repository-card>
+                    <span class="repository-card-category">NVIDIA CUDA 官方样例集</span>
+                    <strong>cuda-samples</strong>
+                    <span>CUDA/C++ · CMake</span>
+                    <small>749（大型） · Y/Y/N</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/dependencies.html" data-repository-card>
+                    <span class="repository-card-category">Android 依赖治理配置</span>
+                    <strong>Dependencies</strong>
+                    <span>JSON/文本规则</span>
+                    <small>0（配置仓库） · Y/N/N</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/km-android-tools.html" data-repository-card>
+                    <span class="repository-card-category">Android 团队自动化脚本</span>
+                    <strong>km-android-tools</strong>
+                    <span>Python</span>
+                    <small>31（小型） · Y/N/N</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/kmreporter.html" data-repository-card>
+                    <span class="repository-card-category">成功率报表工具</span>
+                    <strong>KmReporter</strong>
+                    <span>TypeScript · Bun/Node/Docker</span>
+                    <small>14（微型） · Y/N/N</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/mcp-financial-calculator.html" data-repository-card>
+                    <span class="repository-card-category">金融计算 MCP 服务</span>
+                    <strong>mcp-financial-calculator</strong>
+                    <span>JavaScript · Node.js/MCP</span>
+                    <small>11（微型） · Y/Y/Y</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/meter.html" data-repository-card>
+                    <span class="repository-card-category">小型 Android 收益曲线 App/样例</span>
+                    <strong>meter</strong>
+                    <span>Kotlin · Android/Gradle Kotlin DSL</span>
+                    <small>10（微型） · N/Y/N</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/moonlight-android.html" data-repository-card>
+                    <span class="repository-card-category">第三方 Moonlight 游戏串流客户端</span>
+                    <strong>moonlight-android</strong>
+                    <span>Java/C · Android/NDK</span>
+                    <small>235（中型） · Y/N/Y</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/obsidian-skills.html" data-repository-card>
+                    <span class="repository-card-category">Obsidian Agent Skills 集合</span>
+                    <strong>obsidian-skills</strong>
+                    <span>Markdown/Agent Skills</span>
+                    <small>0（文档/技能） · Y/N/N</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/purrfolio.html" data-repository-card>
+                    <span class="repository-card-category">本地资产追踪桌面 App</span>
+                    <strong>Purrfolio</strong>
+                    <span>C# · .NET/WinUI 3</span>
+                    <small>51（小型） · Y/Y/N</small>
+                  </a>
+
+                  <a class="repository-card" href="repositories/vip-skills.html" data-repository-card>
+                    <span class="repository-card-category">VIP 团队技能仓库</span>
+                    <strong>VIP-Skills</strong>
+                    <span>Markdown/Shell · Agent Skills</span>
+                    <small>0（文档/技能） · Y/N/N</small>
+                  </a>
+          </div>
+        </section>
+
+        <section class="repository-group" id="limited-evidence">
+          <div class="repository-group-heading">
+            <h2>证据受限仓库</h2>
+            <span>1 个仓库</span>
+          </div>
+          <div class="repository-grid">
+            
+                  <a class="repository-card" href="repositories/photos.html" data-repository-card>
+                    <span class="repository-card-category">仅含 `LICENSE`，用途无法判断</span>
+                    <strong>photos</strong>
+                    <span>无源码</span>
+                    <small>0 · N/N/N</small>
+                  </a>
+          </div>
+        </section>
+      </article>
+    </main>
+    <aside class="page-toc" aria-label="仓库分类目录">
+      <div class="toc-heading">仓库分类</div>
+      <a class="toc-link level-2" href="#android-business">Android 业务仓库</a>
+<a class="toc-link level-2" href="#android-infrastructure">Android 基础设施与媒体</a>
+<a class="toc-link level-2" href="#rn-web">RN / Web</a>
+<a class="toc-link level-2" href="#tools-samples">工具、样例与上游工程</a>
+<a class="toc-link level-2" href="#limited-evidence">证据受限仓库</a>
+      <a class="back-to-top" href="#">↑ 返回顶部</a>
+    </aside>
+  </div>
+  <script src="assets/search-data.js"></script>
+  <script src="assets/docs.js"></script>
+</body>
+</html>

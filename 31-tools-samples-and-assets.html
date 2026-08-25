@@ -1,0 +1,810 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="工具、样例与资产：基于当前工作区源码证据整理的项目面试资料">
+  <title>工具、个人样例、上游工程与文档资产：面试边界手册｜项目面试资料</title>
+  <link rel="stylesheet" href="assets/docs.css">
+  <script>
+    try {
+      const savedTheme = localStorage.getItem("interview-docs-theme");
+      const preferredDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      document.documentElement.dataset.theme = savedTheme || (preferredDark ? "dark" : "light");
+    } catch {}
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <header class="topbar">
+    <button class="icon-button menu-button" type="button" data-menu-toggle aria-label="打开文档导航" aria-expanded="false">☰</button>
+    <a class="brand" href="index.html"><span class="brand-mark">⌁</span><span>项目面试资料库</span></a>
+    <div class="search-shell">
+      <label class="sr-only" for="global-search">搜索所有文档</label>
+      <input id="global-search" type="search" data-search-input placeholder="搜索仓库、技术或面试题…" autocomplete="off">
+      <span class="search-shortcut">Ctrl K</span>
+      <div class="search-results" data-search-results hidden></div>
+    </div>
+    <button class="icon-button" type="button" data-theme-toggle aria-label="切换深浅主题">◐</button>
+  </header>
+  <div class="drawer-backdrop" data-drawer-backdrop hidden></div>
+  <div class="docs-layout">
+    <nav class="sidebar" data-sidebar aria-label="全站文档导航">
+      <div class="sidebar-heading">文档导航</div>
+      
+        <section class="nav-group">
+          <h2 class="nav-group-title">逐仓文档</h2>
+          <a class="nav-link" href="repositories.html">66 个仓库独立分析</a>
+        </section>
+        <section class="nav-group">
+          <h2 class="nav-group-title">开始使用</h2>
+          <a class="nav-link" href="index.html">总览与导航</a>
+<a class="nav-link" href="50-interview-project-summary.html">五条主讲项目线</a>
+<a class="nav-link" href="70-resume-and-star-stories.html">简历与 STAR</a>
+<a class="nav-link" href="60-interview-question-bank.html">70 道面试题</a>
+        </section>
+
+        <section class="nav-group">
+          <h2 class="nav-group-title">仓库分析</h2>
+          <a class="nav-link" href="00-repository-inventory.html">全量仓库盘点</a>
+<a class="nav-link" href="10-android-business-repositories.html">Android 业务仓库</a>
+<a class="nav-link" href="20-android-infrastructure-media.html">基础设施与媒体</a>
+<a class="nav-link" href="30-cross-platform-rn-web.html">RN 与 Web</a>
+<a class="nav-link active" href="31-tools-samples-and-assets.html" aria-current="page">工具、样例与资产</a>
+        </section>
+
+        <section class="nav-group">
+          <h2 class="nav-group-title">质量复核</h2>
+          <a class="nav-link" href="40-android-docs-evidence-review.html">Android 证据复核</a>
+<a class="nav-link" href="41-full-workspace-coverage-review.html">全工作区覆盖复核</a>
+        </section>
+
+        <section class="nav-group">
+          <h2 class="nav-group-title">辅助材料</h2>
+          <a class="nav-link" href="ANALYSIS-TEMPLATE.html">仓库分析模板</a>
+<a class="nav-link" href="2026-07-24-all-repositories-analysis-plan.html">原始执行计划</a>
+        </section>
+
+        <section class="nav-group">
+          <h2 class="nav-group-title">Android 专题</h2>
+          <a class="nav-link" href="android-storage-guide.html">Android 存储方案</a>
+        </section>
+      <p class="sidebar-note">离线资料 · 证据快照 2026-07-24</p>
+    </nav>
+    <main class="article-shell" id="main-content">
+      <div class="breadcrumbs"><a href="index.html">首页</a><span>/</span><span>仓库分析</span><span>/</span><span>工具、样例与资产</span></div>
+      
+      <article class="markdown-body">
+        <h1 id="工具-个人样例-上游工程与文档资产-面试边界手册">工具、个人样例、上游工程与文档资产：面试边界手册</h1>
+<blockquote class="callout"><p>检查范围：<code>yyyyy-cdoe</code> 下 10 个指定仓库，以及非 Git 目录 <code>xxxxx-html</code>；检查时间为 2026-07-24。本文先读 README/构建入口，再抽查实现和测试。文中不记录任何证书、令牌、机器人地址、内网地址或服务配置值。</p>
+</blockquote>
+<h2 id="0-先把-是谁的项目-说清楚">0. 先把“是谁的项目”说清楚</h2>
+<table>
+<thead>
+<tr>
+<th>仓库</th>
+<th>性质判断</th>
+<th align="right">分析深度</th>
+<th>面试主张边界</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>Purrfolio</code></td>
+<td>个人/实验型完整桌面应用形态</td>
+<td align="right">深入</td>
+<td>可讲产品闭环和技术取舍；是否属于本人及个人贡献范围均需本人确认，并以 commit、PR 或演示证明</td>
+</tr>
+<tr>
+<td><code>mcp-financial-calculator</code></td>
+<td>个人/实验型 MCP 服务形态</td>
+<td align="right">深入</td>
+<td>可讲协议适配、数值算法和测试；作者身份与贡献范围需本人确认，不能仅凭本地副本认领</td>
+</tr>
+<tr>
+<td><code>meter</code></td>
+<td>个人 Android 原型/练手 App 形态</td>
+<td align="right">深入</td>
+<td>可讲小产品闭环和 Android 系统能力；项目归属需本人确认，且架构与测试仍是原型级</td>
+</tr>
+<tr>
+<td><code>ZhihuLite</code></td>
+<td>公司级 Android App 宿主壳</td>
+<td align="right">深入</td>
+<td>仅在本人确认并提供提交证据后主张具体集成、业务接入或治理；不能说整个 App/框架由本人主导</td>
+</tr>
+<tr>
+<td><code>moonlight-android</code></td>
+<td>Moonlight 官方上游开源客户端</td>
+<td align="right">标准</td>
+<td>只能讲源码学习、二次验证或真实贡献；无上游 PR 不说本人项目</td>
+</tr>
+<tr>
+<td><code>cuda-samples</code></td>
+<td>NVIDIA 官方 CUDA 样例集</td>
+<td align="right">标准</td>
+<td>只能证明 CUDA 学习与实验能力，不是候选人项目</td>
+</tr>
+<tr>
+<td><code>km-android-tools</code></td>
+<td>公司团队自动化脚本集合</td>
+<td align="right">标准</td>
+<td>仅在本人确认并提供提交证据后讲具体脚本；收益必须给出统计时间、口径和数据来源，不能把团队成果归为个人</td>
+</tr>
+<tr>
+<td><code>VIP-Skills</code></td>
+<td>公司团队 Agent Skills 工作流仓</td>
+<td align="right">标准</td>
+<td>可讲流程产品化与安全门禁；个人贡献需本人确认并提供提交证据</td>
+</tr>
+<tr>
+<td><code>obsidian-skills</code></td>
+<td>Obsidian 社区上游 Skills 样例</td>
+<td align="right">简要</td>
+<td>适合作为 Agent Skill 设计参考，不作为个人项目</td>
+</tr>
+<tr>
+<td><code>8J52SRPW6X_Matchfile</code></td>
+<td>签名同步配置/敏感资产仓</td>
+<td align="right">简要</td>
+<td>不讲业务实现，重点讲签名资产治理与事故整改</td>
+</tr>
+</tbody></table>
+<p>面试材料的推荐优先级：</p>
+<ol>
+<li><strong>主项目候选</strong>：<code>Purrfolio</code>，因为它有 UI、领域算法、持久化、系统通知、OCR 和有效单测的完整闭环。</li>
+<li><strong>第二项目候选</strong>：<code>mcp-financial-calculator</code>，适合讲 MCP 协议、输入 schema、数值稳定性和自动化测试。</li>
+<li><strong>Android 个人补充</strong>：<code>meter</code>，重点放在 widget/notification/缓存/隐私整改，不要包装成成熟架构项目。</li>
+<li><strong>大厂工程经验候选（需本人确认）</strong>：<code>ZhihuLite</code>，重点讲宿主装配、启动任务、多渠道、动态 feature 与构建治理；只有本人确认并提供证据的参与点才能作为个人经历。</li>
+<li><strong>学习证据</strong>：Moonlight、CUDA、Obsidian Skills；明确说“阅读和实验过上游实现”。</li>
+</ol>
+<h3 id="个人经历与结果填写规则">个人经历与结果填写规则</h3>
+<ul>
+<li>下文所有“可复述回答”都是<strong>条件式模板（需本人确认）</strong>，不是对候选人经历、所有权或个人贡献的事实判断。</li>
+<li>只有在本人确认且能够提供 commit、PR/MR、设计记录、演示或评审记录后，才能把模板中的【负责范围】替换为第一人称经历。</li>
+<li>任何“提升、降低、节省、覆盖、稳定性、业务结果”等结果，必须同时填写【真实指标】【统计时间区间】【计算口径】【数据来源】；若缺任一项，统一表述为“暂无可核验量化结果”。</li>
+<li>本文记录的 9/9、21/21 等是 <strong>2026-07-24 本次仓库核验结果</strong>，数据来源为文末列出的本地测试命令，不等同于候选人的历史项目业绩。</li>
+</ul>
+<hr>
+<h2 id="1-purrfolio-本地资产追踪与固定收益桌面应用">1. Purrfolio：本地资产追踪与固定收益桌面应用</h2>
+<h3 id="定位-技术栈与关键结构">定位、技术栈与关键结构</h3>
+<ul>
+<li>路径：<code>yyyyy-cdoe/Purrfolio</code>；WinUI 3 本地桌面 App，目标是资产总览、永久组合偏离、固定收益 XIRR、派息日历、复利预测和截图 OCR 导入。</li>
+<li>技术栈：C#、.NET 8、WinUI 3、CommunityToolkit.Mvvm、依赖注入、EF Core + SQLite、Win2D、xUnit；<code>Purrfolio.sln</code> 为构建入口。</li>
+<li>分层边界：<ul>
+<li><code>src/Purrfolio.App</code>：Views、ViewModels、系统通知和 OCR 客户端；</li>
+<li><code>src/Purrfolio.Core</code>：领域模型、仓储接口和纯计算；</li>
+<li><code>src/Purrfolio.Infrastructure</code>：EF Core <code>AppDbContext</code> 与 <code>SqliteInvestmentRepository</code>；</li>
+<li><code>tests/Purrfolio.Core.Tests</code>：领域算法测试。</li>
+</ul>
+</li>
+<li><code>Purrfolio.App.csproj</code> 启用 WinUI、Native AOT 和 trimming；<code>App.xaml.cs</code> 负责 DI、数据库路径、页面/ViewModel/服务注册和启动时建库。</li>
+</ul>
+<h3 id="核心链路与关键实现">核心链路与关键实现</h3>
+<p><strong>资产首页链路</strong></p>
+<ol>
+<li><code>AssetViewModel.LoadAsync()</code> 通过 <code>IInvestmentRepository.StreamInvestmentsAsync()</code> 异步读取 SQLite；</li>
+<li><code>SqliteInvestmentRepository</code> 使用 <code>IDbContextFactory</code>、<code>AsNoTracking()</code> 和 <code>IAsyncEnumerable</code> 流式返回记录；</li>
+<li>ViewModel 聚合市值后调用 <code>PermanentPortfolioAnalyzer.Analyze()</code>，按股票/黄金/国债/现金各 25% 目标计算偏离，超过 5% 预警；</li>
+<li><code>CompoundProjectionCalculator.ProjectToTarget()</code> 用月化收益率迭代目标达成月份；</li>
+<li>结果写入 <code>ObservableCollection</code> 和 observable properties，页面再绘制 donut、净值和文字状态。</li>
+</ol>
+<p><strong>固定收益链路</strong></p>
+<ol>
+<li><code>FixedIncomeViewModel.LoadAsync()</code> 筛选国债记录；</li>
+<li><code>BuildLotCashFlows()</code> 生成买入负现金流、历史票息与当前/到期终值；</li>
+<li><code>XirrCalculator.Calculate()</code> 先用 Newton-Raphson，导数过小、越界或不收敛时用二分法兜底；</li>
+<li>结果按组合、单券、批次三个层级展示；</li>
+<li><code>CouponCalendarGenerator.GenerateUpcomingEvents()</code> 生成未来派息和到期事件，<code>WindowsNotificationService</code> 推送前几条提醒。</li>
+</ol>
+<p><strong>OCR 导入链路</strong></p>
+<ol>
+<li><code>OcrImportViewModel.AnalyzeAsync()</code> 收集图片、endpoint、model 和 API key；</li>
+<li><code>MinimaxOcrService.AnalyzeScreenshotAsync()</code> 把图片编码后提交给外部模型，要求返回 JSON；</li>
+<li>服务兼容多种响应外壳，<code>ParseCandidates()</code> 归一化字段；</li>
+<li>ViewModel 先生成可编辑草稿，再逐条校验资产类型、日期、数量、价格、票息、频率和到期日；</li>
+<li>用户复核勾选后才调用仓储写入 SQLite。</li>
+</ol>
+<h3 id="测试-工程化-亮点与风险">测试、工程化、亮点与风险</h3>
+<ul>
+<li>2026-07-24 实测：<code>dotnet test tests/Purrfolio.Core.Tests/Purrfolio.Core.Tests.csproj</code> 通过 <strong>9/9</strong>。覆盖 XIRR 已知值/同号异常、永久组合偏离、复利边界、派息与到期事件。</li>
+<li>测试运行出现 NuGet 漏洞数据源不可达警告，但包还原、编译和测试成功；这不是测试失败，却说明离线/受限网络下漏洞审计不可用。</li>
+<li>亮点：纯领域计算与 UI/SQLite 解耦；XIRR 有迭代失败兜底；OCR 不是直接入库，而是“模型抽取—人工复核—字段校验—持久化”。</li>
+<li>风险与改进：<ul>
+<li><code>EnsureCreatedAsync()</code> 适合原型，不适合长期 schema 演进，应改 EF migrations；</li>
+<li>OCR 会把投资截图发送到第三方，必须增加脱敏说明、显式同意、域名白名单、超时/大小限制和可删除审计；</li>
+<li>外部接口失败时把原始响应拼进异常，可能把服务端敏感信息带到 UI/日志；</li>
+<li>API key 来自环境变量或页面输入，但没有安全存储与日志脱敏策略；</li>
+<li>派息日期从交易日机械递推，不等同真实债券付息规则；应存下一付息日、起息日与日计数约定；</li>
+<li>首页“沪深 300 年化 8%、CPI 年化 2%”是离线示意线，不是真实基准数据，必须明确标注；</li>
+<li>XIRR 对多根现金流只返回一个根，没有歧义检测；UI、仓储、OCR 和迁移缺少集成测试。</li>
+</ul>
+</li>
+</ul>
+<h3 id="面试价值-边界与可复述回答">面试价值、边界与可复述回答</h3>
+<p>最适合讲的是“把金融领域规则做成可测试 core，再由 WinUI/SQLite/系统通知组合”。不要说“做了专业投顾系统”；它当前仍是本地资产工具，估值、行情、税费、真实付息规则和合规都没有完整覆盖。</p>
+<p><strong>30 秒条件式模板（需本人确认）</strong></p>
+<blockquote class="callout"><p>若本人确认项目归属，并能提供对应 commit/PR 或演示，可回答：“该项目是一个 WinUI 3 本地资产追踪原型；本人实际负责【需填写的模块与边界】。技术方案把 UI、领域计算和 SQLite 按 App/Core/Infrastructure 分层，XIRR 采用 Newton-Raphson 并用二分法兜底，OCR 导入经过草稿和人工复核。2026-07-24 本地核验的 9 个领域测试全部通过；该数字来自 <code>dotnet test</code>，仅代表当前 checkout。项目效果为【真实指标；统计时间；计算口径；数据来源】，若无法补齐则回答‘暂无可核验量化结果’。后续改进是数据库迁移、真实基准数据和 OCR 隐私治理。”</p>
+</blockquote>
+<p><strong>追问</strong></p>
+<ul>
+<li>问：为什么 Newton 后还要二分？<br>答：Newton 收敛快，但依赖初值和导数；遇到导数接近零或越过 <code>-1</code> 边界会失败。二分慢一些，但在找到异号区间后更稳定。</li>
+<li>问：为什么仓储返回 <code>IAsyncEnumerable</code>？<br>答：它让 UI 可以边读边聚合并支持取消，也避免把读取方式暴露给 Core；但小数据量下收益有限，仍要用性能数据证明是否值得。</li>
+<li>问：如果重做 OCR 会改什么？<br>答：加入本地预处理、上传前脱敏与用户确认，限制 endpoint，API key 进入系统凭据库，原始响应不进用户错误信息，并为解析和批量事务补 contract tests。</li>
+</ul>
+<p><strong>证据索引</strong></p>
+<table>
+<thead>
+<tr>
+<th>结论</th>
+<th>文件/类/函数</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>三层与 DI</td>
+<td><code>yyyyy-cdoe/Purrfolio/src/Purrfolio.App/App.xaml.cs</code>、<code>yyyyy-cdoe/Purrfolio/Purrfolio.sln</code></td>
+</tr>
+<tr>
+<td>XIRR 双算法</td>
+<td><code>yyyyy-cdoe/Purrfolio/src/Purrfolio.Core/Utilities/XirrCalculator.cs</code> · <code>Calculate()</code> / <code>Bisect()</code></td>
+</tr>
+<tr>
+<td>资产偏离与预测</td>
+<td><code>yyyyy-cdoe/Purrfolio/src/Purrfolio.Core/Utilities/PermanentPortfolioAnalyzer.cs</code>、<code>yyyyy-cdoe/Purrfolio/src/Purrfolio.Core/Utilities/CompoundProjectionCalculator.cs</code></td>
+</tr>
+<tr>
+<td>SQLite 异步仓储</td>
+<td><code>yyyyy-cdoe/Purrfolio/src/Purrfolio.Infrastructure/Repositories/SqliteInvestmentRepository.cs</code></td>
+</tr>
+<tr>
+<td>OCR 人工复核</td>
+<td><code>yyyyy-cdoe/Purrfolio/src/Purrfolio.App/ViewModels/OcrImportViewModel.cs</code>、<code>yyyyy-cdoe/Purrfolio/src/Purrfolio.App/Services/MinimaxOcrService.cs</code></td>
+</tr>
+<tr>
+<td>有效测试</td>
+<td><code>yyyyy-cdoe/Purrfolio/tests/Purrfolio.Core.Tests/XirrCalculatorTests.cs</code>、<code>yyyyy-cdoe/Purrfolio/tests/Purrfolio.Core.Tests/PermanentPortfolioAnalyzerTests.cs</code>、<code>yyyyy-cdoe/Purrfolio/tests/Purrfolio.Core.Tests/CouponCalendarGeneratorTests.cs</code>、<code>yyyyy-cdoe/Purrfolio/tests/Purrfolio.Core.Tests/CompoundProjectionCalculatorTests.cs</code></td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="2-mcp-financial-calculator-金融计算-mcp-服务">2. mcp-financial-calculator：金融计算 MCP 服务</h2>
+<h3 id="定位-技术栈与结构">定位、技术栈与结构</h3>
+<ul>
+<li>路径：<code>yyyyy-cdoe/mcp-financial-calculator</code>；Node.js ESM 的 stdio MCP server。</li>
+<li>技术栈：<code>@modelcontextprotocol/sdk</code>、Zod、Node 内置 test runner；<code>package.json</code> 提供 <code>npm start</code> 和 <code>npm test</code>。</li>
+<li><code>src/index.js</code> 创建 <code>McpServer</code>，读取包版本，调用 <code>registerAllTools()</code>，再连接 <code>StdioServerTransport</code>。</li>
+<li><code>src/tools/</code> 把工具按 basic、cashflow、TVM、metrics 分组；<code>src/schemas.js</code> 统一输入边界；<code>src/lib/finance.js</code> 承载纯算法；<code>src/lib/result.js</code> 统一文本 JSON 响应。</li>
+<li>共注册 <strong>17 个工具</strong>：4 个基础算术、5 个现金流、5 个货币时间价值、3 个指标工具。</li>
+</ul>
+<h3 id="核心链路与算法">核心链路与算法</h3>
+<ol>
+<li>MCP client 通过 stdio 发起 tool call；</li>
+<li>SDK 根据工具注册信息和 Zod schema 校验输入，例如 rate 必须大于 <code>-1</code>、日期必须是严格 <code>YYYY-MM-DD</code>、现金流至少两项；</li>
+<li>handler 调用 <code>calcXirr()</code>、<code>calcRate()</code> 等纯函数；</li>
+<li>IRR/XIRR/RATE 先执行 Newton 迭代；失败后从接近 <code>-1</code> 的有限下界向正区间扩张，再做二分；</li>
+<li>handler 用 <code>numberResult()</code> 或 <code>jsonResult()</code> 返回 JSON 字符串；IRR 类同时提供小数和百分比。</li>
+</ol>
+<p>金融约定需要主动说明：</p>
+<ul>
+<li><code>XNPV/XIRR</code> 使用 Actual/365；</li>
+<li>正数代表流入，负数代表流出；</li>
+<li>TVM 使用 Excel 风格的正负号约定；</li>
+<li>payback period 在跨零的期间内做线性插值；</li>
+<li>数值结果允许浮点误差。</li>
+</ul>
+<h3 id="测试-工程化-亮点与风险-2">测试、工程化、亮点与风险</h3>
+<ul>
+<li>2026-07-24 实测 <code>npm test</code>：<strong>21/21 通过</strong>，总耗时约 0.19 秒。</li>
+<li>测试覆盖已知 NPV/MIRR/CAGR、PV/FV 互逆、IRR/XIRR 残差、RATE 方程残差、无根报错、严格日期和 schema 边界。</li>
+<li>亮点：协议层、schema、工具注册与纯算法分离；无数据库和网络副作用，适合作为确定性工具；测试不只比常量，还验证“求出的 rate 代回方程后残差接近零”。</li>
+<li>风险与改进：<ul>
+<li>非常规现金流可能存在多个 IRR；当前返回一个根，没有扫描和歧义提示；</li>
+<li>day-count convention 只有 Actual/365，没有 30/360、Actual/Actual 等选项；</li>
+<li>只有算法/schema 测试，没有真正走 MCP transport 的注册、调用、错误响应 contract test；</li>
+<li>所有能力集中在单个 <code>finance.js</code>，继续扩展后应按 cashflow/TVM/metrics 拆分；</li>
+<li>stdio 本身缩小了网络攻击面，但 host 进程仍需限制可执行路径、依赖来源和日志内容；</li>
+<li>财务结果没有精度/舍入策略与“非投资建议”语义，不能直接当生产金融决策系统。</li>
+</ul>
+</li>
+</ul>
+<h3 id="面试价值-边界与可复述回答-2">面试价值、边界与可复述回答</h3>
+<p><strong>30 秒条件式模板（需本人确认）</strong></p>
+<blockquote class="callout"><p>若本人确认项目归属，并能提供对应 commit/PR 或演示，可回答：“该服务基于 Node.js MCP SDK，包含 17 个工具，并把协议注册、Zod 输入校验和纯算法分层。本人实际负责【需填写的模块与边界】。IRR、XIRR 和 RATE 使用 Newton 加二分兜底，测试还会把结果代回 NPV 方程检查残差。2026-07-24 本地核验的 21 个测试全部通过；该数字来自 <code>npm test</code>，仅代表当前 checkout。项目效果为【真实指标；统计时间；计算口径；数据来源】，若无法补齐则回答‘暂无可核验量化结果’。后续计划是 MCP contract test、多 IRR 检测和日计数约定。”</p>
+</blockquote>
+<p><strong>追问</strong></p>
+<ul>
+<li>问：为什么不用普通 REST？<br>答：场景是给 Agent/LLM 作为本地确定性工具，MCP 已定义工具发现、schema 和调用协议；stdio 又不需要额外开放端口。若跨机器、多租户或需要审计，再考虑 HTTP transport 和鉴权。</li>
+<li>问：为什么 schema 校验不够，还要算法内校验？<br>答：schema 只保证类型和基础范围；“现金流必须同时有正负值”“方程必须存在可括区间”属于领域与数值约束，必须由算法层守住。</li>
+<li>问：怎么处理多 IRR？<br>答：对更宽利率范围分段扫描符号变化，输出所有候选根或明确提示歧义，并推荐 MIRR；不能悄悄返回一个看似精确的值。</li>
+</ul>
+<p><strong>证据索引</strong></p>
+<table>
+<thead>
+<tr>
+<th>结论</th>
+<th>文件/类/函数</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>MCP stdio 入口</td>
+<td><code>yyyyy-cdoe/mcp-financial-calculator/src/index.js</code></td>
+</tr>
+<tr>
+<td>工具分组</td>
+<td><code>yyyyy-cdoe/mcp-financial-calculator/src/tools/index.js</code>、<code>yyyyy-cdoe/mcp-financial-calculator/src/tools/basic.js</code>、<code>yyyyy-cdoe/mcp-financial-calculator/src/tools/cashflow.js</code>、<code>yyyyy-cdoe/mcp-financial-calculator/src/tools/tvm.js</code>、<code>yyyyy-cdoe/mcp-financial-calculator/src/tools/metrics.js</code></td>
+</tr>
+<tr>
+<td>严格输入校验</td>
+<td><code>yyyyy-cdoe/mcp-financial-calculator/src/schemas.js</code> · <code>isStrictIsoDate()</code></td>
+</tr>
+<tr>
+<td>数值求根</td>
+<td><code>yyyyy-cdoe/mcp-financial-calculator/src/lib/finance.js</code> · <code>solveRateByRoot()</code></td>
+</tr>
+<tr>
+<td>21 个有效测试</td>
+<td><code>yyyyy-cdoe/mcp-financial-calculator/test/finance.test.js</code>、<code>yyyyy-cdoe/mcp-financial-calculator/test/schemas.test.js</code></td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="3-meter-工资实时计量-android-原型">3. meter：工资实时计量 Android 原型</h2>
+<h3 id="定位-技术栈与关键文件">定位、技术栈与关键文件</h3>
+<ul>
+<li>路径：<code>yyyyy-cdoe/meter</code>；单 <code>app</code> 模块、Kotlin + XML/ViewBinding，包名仍为 <code>com.example.meter</code>，更像个人原型而非正式产品。</li>
+<li>技术栈：AGP 8.7.2、Kotlin 2.0、Java 17、Retrofit/Gson、Coroutines、EncryptedSharedPreferences、App Widget、Notification、Canvas 自绘；minSdk 32。</li>
+<li><code>MainActivity</code> 同时负责表单、权限、动画、趋势图、保存、通知和 widget 刷新；</li>
+<li><code>EarningsCalculator</code> 是纯计算；</li>
+<li><code>HolidayRepository</code> 管 API、24 小时 SharedPreferences 缓存和工作日 fallback；</li>
+<li><code>EarningsWidgetProvider</code> 管 RemoteViews 与定时更新；</li>
+<li><code>EarningsTrendView</code> 自绘日/月累计曲线。</li>
+</ul>
+<h3 id="核心链路">核心链路</h3>
+<ol>
+<li>用户录入月薪、上下班和午休时间；</li>
+<li><code>EarningsPreferences.saveSettings()</code> 加密保存；</li>
+<li><code>HolidayRepository</code> 优先读缓存，未命中时同步路径先按周一至周五 fallback，异步预取再请求节假日服务；</li>
+<li><code>EarningsCalculator.calculateTodayEarnings()</code> 用月薪/本月工作日/每日有效分钟计算当前累计收入；</li>
+<li>Activity、notification 和 widget 各自读取配置与工作日并重复计算；</li>
+<li><code>EarningsTrendView</code> 根据日内时间或当月工作日绘制曲线。</li>
+</ol>
+<h3 id="测试-工程化-亮点与风险-3">测试、工程化、亮点与风险</h3>
+<ul>
+<li>本仓只有 Android Studio 默认的 <code>2 + 2 = 4</code> 单测与包名仪器测试，没有覆盖 <code>EarningsCalculator</code>、节假日缓存、widget 或通知。</li>
+<li>2026-07-24 尝试运行 <code>gradlew testDebugUnitTest --offline</code>，wrapper 仍下载 Gradle 8.9，60 秒后超时，<strong>没有进入测试执行</strong>；未继续做长时间构建。</li>
+<li>亮点：一个小 App 串起了加密偏好、网络缓存、通知、widget、自绘 View 和纯计算，产品闭环清楚。</li>
+<li>高优先级风险：<ul>
+<li><code>MainActivity</code> 和 <code>EarningsPreferences</code> 把工资及作息写入 debug 日志；加密存储不能抵消日志泄露；</li>
+<li><code>EarningsWidgetProvider</code> 使用 <code>GlobalScope</code>，生命周期、异常和取消不可控；</li>
+<li>试图用 <code>AlarmManager.setInexactRepeating()</code> 每 10 秒刷新，既不精确也不符合移动端电量策略；系统通常会强制拉长；</li>
+<li>receiver <code>exported=true</code> 且接收自定义 action，没有权限保护，外部应用可触发刷新；</li>
+<li>声明了开机权限却没有清晰的开机恢复 receiver 链路；</li>
+<li>时间字符串保存前没有完整校验，<code>LocalTime.parse()</code> 可能在计算路径抛异常；</li>
+<li>节假日判断依赖服务返回的中文字符串，fallback 无法识别调休工作日；</li>
+<li>Activity、widget、notification 重复装配依赖与计算，缺少单一 use case/repository；</li>
+<li><code>security-crypto</code> 为 alpha 依赖，且应用允许备份，需要明确加密偏好和密钥备份行为。</li>
+</ul>
+</li>
+</ul>
+<h3 id="面试价值-边界与可复述回答-3">面试价值、边界与可复述回答</h3>
+<p><strong>30 秒条件式模板（需本人确认）</strong></p>
+<blockquote class="callout"><p>若本人确认项目归属，并能提供对应 commit/PR 或演示，可回答：“该项目是一个 Android 工资实时计量原型；本人实际负责【需填写的模块与边界】。用户配置月薪和作息后，应用结合节假日缓存计算当日/当月累计，并同步到自绘曲线、通知和桌面组件。它仍是原型：Activity 过重、真实测试缺失，10 秒 AlarmManager 和敏感日志需要整改。项目效果为【真实指标；统计时间；计算口径；数据来源】，若无法补齐则回答‘暂无可核验量化结果’。重做时会抽出 use case，选择符合系统限制的后台机制，并补计算与缓存测试。”</p>
+</blockquote>
+<p><strong>追问</strong></p>
+<ul>
+<li>问：为什么 10 秒 AlarmManager 不合理？<br>答：inexact alarm 不保证这个频率，Doze 和系统最小间隔也会干预；高频刷新耗电。widget 应降低更新频率，用户打开 App 时再高频动画，通知只在必要节点更新。</li>
+<li>问：工资已经加密为什么仍然不安全？<br>答：当前把明文工资打进日志，调试日志、崩溃采集或 adb 都可能泄露。安全是端到端的，存储加密、日志脱敏、备份策略和 UI 防窥都要一起做。</li>
+<li>问：怎么测试？<br>答：先给 <code>EarningsCalculator</code> 注入固定 <code>now</code> 做上班前、午休、下班后、非工作日和非法时间测试；再用 fake holiday API 测缓存 TTL/调休/fallback；最后做 widget RemoteViews 与通知的 Robolectric/仪器测试。</li>
+</ul>
+<p><strong>证据索引</strong></p>
+<table>
+<thead>
+<tr>
+<th>结论</th>
+<th>文件/类/函数</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>页面职责过重</td>
+<td><code>yyyyy-cdoe/meter/app/src/main/java/com/example/meter/MainActivity.kt</code></td>
+</tr>
+<tr>
+<td>核心计算</td>
+<td><code>yyyyy-cdoe/meter/app/src/main/java/com/example/meter/data/EarningsCalculator.kt</code></td>
+</tr>
+<tr>
+<td>节假日缓存/fallback</td>
+<td><code>yyyyy-cdoe/meter/app/src/main/java/com/example/meter/data/HolidayRepository.kt</code>、<code>yyyyy-cdoe/meter/app/src/main/java/com/example/meter/data/HolidayApiService.kt</code></td>
+</tr>
+<tr>
+<td>加密存储但日志泄露</td>
+<td><code>yyyyy-cdoe/meter/app/src/main/java/com/example/meter/data/EarningsPreferences.kt</code></td>
+</tr>
+<tr>
+<td>高频 widget/GlobalScope</td>
+<td><code>yyyyy-cdoe/meter/app/src/main/java/com/example/meter/widget/EarningsWidgetProvider.kt</code></td>
+</tr>
+<tr>
+<td>测试仍为模板</td>
+<td><code>yyyyy-cdoe/meter/app/src/test/java/com/example/meter/ExampleUnitTest.kt</code>、<code>yyyyy-cdoe/meter/app/src/androidTest/java/com/example/meter/ExampleInstrumentedTest.kt</code></td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="4-zhihulite-公司级组件化-android-宿主壳">4. ZhihuLite：公司级组件化 Android 宿主壳</h2>
+<h3 id="定位-技术栈与边界">定位、技术栈与边界</h3>
+<ul>
+<li>路径：<code>yyyyy-cdoe/ZhihuLite</code>；知乎盐选版 Android App 宿主与构建装配仓，不是一个只有几十个 Java 文件的小应用。</li>
+<li>当前 checkout 约 63 个 Java 文件、68 个 Gradle 文件；业务主体通过公司 Maven 制品、Sugar modules、源码替换和 dynamic feature 接入。</li>
+<li>构建栈较旧：Gradle 6.7.1、AGP 4.2.0、Kotlin 1.3.50；app <code>compileSdkVersion 30</code>，target 在脚本中被改到 33。</li>
+<li><code>settings.gradle</code> 加载 <code>sourcecode.gradle</code>、<code>auto_maven_repo.gradle</code> 和 <code>settings_feature.gradle</code>；开发时可以把 Maven artifact 替换为相邻仓库源码。</li>
+<li><code>features.json</code> 声明 Scanner、VideoX、LeLink 等 feature 的启用、依赖、flavor 和自动路由信息。</li>
+</ul>
+<h3 id="启动-构建与路由链路">启动、构建与路由链路</h3>
+<p><strong>启动链</strong></p>
+<ol>
+<li><code>ZhihuApplication.attachBaseContext()</code> 做 IPv6 策略、最早期 crash logger、<code>ConfigCreator.create()</code>、SafeBoot 判断、内存/泄漏治理和插件 attach；</li>
+<li><code>onCreate()</code> 先判断 SafeBoot，再设置多进程 RxJava 错误策略、预初始化/隐私同意后的 SDK、crash provider；</li>
+<li>真正的组件初始化委托给外部 <code>ZhihuApplicationDelegate</code>；</li>
+<li><code>app/launch_config/TaskManager.json</code> 用 scheduler、<code>dependsOn</code>、<code>finalizedBy</code>、delay 描述启动 DAG，把网络、账号、推送、Feed 预取、RN、VIP RN 等任务分层调度；</li>
+<li><code>Slim</code>/<code>ZPlugin</code> 初始化插件能力，最后 <code>LiteRouterConfig.init()</code> 覆盖路由匹配规则。</li>
+</ol>
+<p><strong>构建装配链</strong></p>
+<ol>
+<li>根 <code>build.gradle</code> 加载公司 Gradle 插件与自动 Maven 仓库；</li>
+<li><code>app/build.gradle</code> 叠加 task manager、cross manager、monitor、AOP、Qigsaw、Robust、资源压缩、依赖检查等插件；</li>
+<li>dev/alpha/mr/beta/market/厂商预装等 flavors 决定包名、版本、推送、ABI、资源和诊断能力；</li>
+<li>release 路径包含 R8/ProGuard、resource shrink、APK 检查、符号/渠道处理；</li>
+<li>dynamic feature 根据 <code>features.json</code> 进入宿主，同时从静态 Sugar module 列表中移除重复模块。</li>
+</ol>
+<p><strong>路由兼容</strong></p>
+<p><code>LiteRouterConfig</code> 给 <code>Routers</code> 设置自定义 <code>EqualChecker</code>：HTTP(S) 只允许受控 host 集合互相兼容，非 HTTP scheme 比较 host，以兼容主站链接与 Lite scheme。它是产品适配层，不是完整路由框架本身。</p>
+<h3 id="测试-工程化-亮点与风险-4">测试、工程化、亮点与风险</h3>
+<ul>
+<li>当前仅检出 3 个 feature 的默认 Example 单测和仪器测试；<code>app/build.gradle</code> 接入 Jacoco，但本 checkout 没有与启动 DAG、flavor、路由和动态 feature 对应的有效测试证据。</li>
+<li>未运行完整构建：它依赖内网 Maven/公司插件、服务配置、旧 JDK/Gradle 兼容环境和多渠道资源，贸然构建既慢也不能代表可复现。</li>
+<li>亮点：源码/制品可切换、任务 DAG、SafeBoot、多 flavor、动态 feature、热修复与体积治理共同解决大型 App 的装配和启动问题。</li>
+<li>风险与改进：<ul>
+<li>构建链依赖大量内部插件与远端仓库，可复现性、供应链审计和版本锁定成本高；</li>
+<li>Gradle/AGP/Kotlin 较旧，升级会同时碰到自定义插件、Transform、R8、Jetifier 和三方 SDK；</li>
+<li><code>lint abortOnError false</code>、部分 release 检查关闭，质量门禁更依赖 CI 的其他任务；</li>
+<li><code>app/third</code> 存在三方源码 fork，安全补丁和许可证治理压力大；</li>
+<li>仓内存在服务配置文件、签名/密钥形态配置和硬编码参数；本文不记录值，实际应做 secret scanning、分环境注入和历史轮换；</li>
+<li>Application 仍直接初始化若干能力，任务 DAG 与隐私门禁要用 trace 和自动化测试持续校验；</li>
+<li><code>startService()</code> 吞掉运行时异常虽然防特定厂商崩溃，但降低可观测性，应至少记录受控指标。</li>
+</ul>
+</li>
+</ul>
+<h3 id="面试价值-边界与可复述回答-4">面试价值、边界与可复述回答</h3>
+<p>不要说“整个知乎 Lite 组件化架构由本人设计”。<strong>条件式可复述模板（需本人确认）</strong>：</p>
+<blockquote class="callout"><p>若本人确认曾参与该宿主，并能提供 MR/commit、需求或评审记录，可回答：“本人在该公司级 Android 宿主中实际负责【具体组件/业务接入或治理范围】。宿主通过源码替换与 Maven 制品支持独立开发，通过启动任务 DAG 控制依赖、线程和延迟，通过 flavor/dynamic feature 处理渠道与按需交付。个人贡献只限定在【可核验提交范围】，结果为【真实指标；统计时间；计算口径；数据来源】；若无法补齐则回答‘暂无可核验量化结果’。”若无法确认参与证据，只讲源码观察，不使用第一人称经历。</p>
+</blockquote>
+<p><strong>追问</strong></p>
+<ul>
+<li>问：为什么源码只有几十个文件却是大工程？<br>答：这是宿主装配仓，业务实现主要来自组件制品、源码替换、Sugar modules 和 feature；复杂度在依赖图、启动、渠道和构建插件，不应按本仓 Java 文件数判断。</li>
+<li>问：启动 DAG 比全部异步化好在哪里？<br>答：它显式表达依赖、线程、延迟和关键节点，避免“异步但乱序”；还可以基于 trace 调整关键路径。隐私同意、主进程/子进程和 SafeBoot 仍需额外约束。</li>
+<li>问：如果升级 AGP，怎么做？<br>答：先盘点所有自定义插件与废弃 API，建立可构建基线和关键 flavor smoke tests；按 Gradle/JDK、AGP、Kotlin、R8/插件分阶段升级，不一次跨越所有变量。</li>
+</ul>
+<p><strong>证据索引</strong></p>
+<table>
+<thead>
+<tr>
+<th>结论</th>
+<th>文件/类/函数</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>源码替换与 feature 装配</td>
+<td><code>yyyyy-cdoe/ZhihuLite/settings.gradle</code>、<code>yyyyy-cdoe/ZhihuLite/settings_feature.gradle</code>、<code>yyyyy-cdoe/ZhihuLite/features.json</code></td>
+</tr>
+<tr>
+<td>大型构建控制面</td>
+<td><code>yyyyy-cdoe/ZhihuLite/build.gradle</code>、<code>yyyyy-cdoe/ZhihuLite/app/build.gradle</code>、<code>yyyyy-cdoe/ZhihuLite/app/gradle/functions.gradle</code>、<code>yyyyy-cdoe/ZhihuLite/app/gradle/qigsaw.gradle</code>、<code>yyyyy-cdoe/ZhihuLite/app/gradle/jacoco.gradle</code>、<code>yyyyy-cdoe/ZhihuLite/app/gradle/apk_check.gradle</code></td>
+</tr>
+<tr>
+<td>启动主链</td>
+<td><code>yyyyy-cdoe/ZhihuLite/app/src/main/java/com/zhihu/android/app/ZhihuApplication.java</code></td>
+</tr>
+<tr>
+<td>配置注入</td>
+<td><code>yyyyy-cdoe/ZhihuLite/app/src/main/java/com/zhihu/android/app/ConfigCreator.java</code></td>
+</tr>
+<tr>
+<td>启动 DAG</td>
+<td><code>yyyyy-cdoe/ZhihuLite/app/launch_config/TaskManager.json</code></td>
+</tr>
+<tr>
+<td>产品路由兼容</td>
+<td><code>yyyyy-cdoe/ZhihuLite/app/src/main/java/com/zhihu/android/app/LiteRouterConfig.java</code></td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="5-moonlight-android-可学习的低延迟串流边界-但不是本人项目">5. moonlight-android：可学习的低延迟串流边界，但不是本人项目</h2>
+<h3 id="定位-技术栈-关键链路">定位、技术栈、关键链路</h3>
+<ul>
+<li>README 明确它是 Moonlight 官方 Android 客户端，作者与下载渠道均指向上游项目；<code>.gitmodules</code> 继续引用官方 <code>moonlight-common-c</code>。这是外部开源工程。</li>
+<li>Java + Android SDK + NDK/ndk-build + JNI；依赖 OkHttp、Bouncy Castle、JmDNS、JCodec；root/nonRoot 两个 flavor，release 强制追加 unofficial application id 后缀。</li>
+<li>架构边界很值得学习：<ul>
+<li>发现/设备：<code>DiscoveryService</code>、<code>ComputerManagerService</code>、mDNS；</li>
+<li>控制面：<code>NvHTTP</code>、<code>PairingManager</code> 完成主机查询、配对、应用列表和 launch/resume；</li>
+<li>流媒体编排：<code>NvConnection</code> 做能力协商、连接类型判断、分辨率/HDR/codec 参数选择；</li>
+<li>JNI 边界：<code>MoonBridge</code> 把 Java audio/video/input listener 接到 <code>moonlight-common-c</code>；</li>
+<li>数据面：<code>MediaCodecDecoderRenderer</code> 解码视频，<code>AndroidAudioRenderer</code> 播音频，<code>ControllerHandler</code>/touch/keyboard 把输入回传；</li>
+<li>UI：<code>PcView</code> → <code>AppView</code> → <code>Game</code>。</li>
+</ul>
+</li>
+</ul>
+<p>典型链路是：主机发现/手动添加 → <code>NvHTTP</code> 拉 server info 与 app list → 配对 → <code>Game</code> 根据设备能力建立 <code>StreamConfiguration</code> → <code>NvConnection.start()</code> → <code>MoonBridge.startConnection()</code> → native 协议栈回调 Java 解码/音频 → 输入事件再通过 <code>MoonBridge</code> 回传。</p>
+<h3 id="工程化-亮点-风险与面试边界">工程化、亮点、风险与面试边界</h3>
+<ul>
+<li>亮点：控制面和实时数据面分离；Java 与 native 通过窄 JNI bridge 协作；MediaCodec、音频、输入与网络协商都有清晰边界；连接启停用 semaphore 和 <code>synchronized(MoonBridge.class)</code> 保护 native 非线程安全区。</li>
+<li>风险：<code>Game.java</code> 体量很大，UI/设备输入/连接/错误处理耦合；native + codec + 厂商设备矩阵使回归困难；仓内未检出自动化测试目录，主要质量证据来自上游 CI、设备测试和运行时错误处理。</li>
+<li>README 要求 Android Studio + NDK + submodule；当前未做构建，因为它需要 NDK、完整子模块和较长 native 编译。</li>
+<li><strong>条件式可复述模板（需本人确认）</strong>：</li>
+</ul>
+<blockquote class="callout"><p>Moonlight Android 是上游开源项目，不得作为本人项目。若本人确认做过源码实验，可回答：“基于【实验日期与环境】对 Moonlight Android 串流链路做过【具体只读分析/实验】，重点验证控制面 <code>NvHTTP/NvConnection</code>、JNI <code>MoonBridge</code> 和 MediaCodec/audio/input 数据面的边界；实验结果为【真实指标；统计时间；计算口径；数据来源】。”若有真实 fork、patch 或上游 PR，只讲可链接验证的贡献；否则回答“仅做源码学习，暂无个人代码贡献”。</p>
+</blockquote>
+<p><strong>追问</strong></p>
+<ul>
+<li>问：低延迟串流为什么需要 JNI？<br>答：核心协议、拥塞/重传与跨平台复用放在 C 层，Android 层专注设备 codec、音频和输入；JNI 应保持窄接口、明确线程和 buffer 生命周期。</li>
+<li>问：最难测什么？<br>答：codec/设备差异、弱网、HDR/分辨率协商和输入延迟；需要协议层测试、录制流回放、网络仿真和真实设备矩阵。</li>
+</ul>
+<hr>
+<h2 id="6-cuda-samples-cuda-能力地图-不是候选人项目">6. cuda-samples：CUDA 能力地图，不是候选人项目</h2>
+<h3 id="定位-技术栈与学习链路">定位、技术栈与学习链路</h3>
+<ul>
+<li>README 明确是 NVIDIA CUDA Toolkit 12.9 官方样例；CMake 3.20+，C/C++/CUDA 17，覆盖多代 GPU architecture。</li>
+<li>根 <code>CMakeLists.txt</code> 统一启用 CUDA、架构和 debug/lineinfo，<code>Samples/</code> 按 Introduction、Concepts、Features、Libraries、Domain、Performance、Platform、libNVVM 分层。</li>
+<li><code>vectorAdd.cu</code> 展示最小闭环：host 分配/初始化 → <code>cudaMalloc</code> → H2D → kernel launch → D2H → CPU 校验 → free。</li>
+<li><code>matrixMul.cu</code> 展示共享内存 tiling 与性能测量，但 README 也明确样例不等于严谨 benchmark。</li>
+<li><code>simpleCudaGraphs.cu</code> 同时展示手工 graph node 编排与 stream capture，把 memcpy、memset、kernel、host callback 固化成可复用执行图。</li>
+<li><code>run_tests.py</code> 会发现可执行文件、读取 <code>test_args.json</code>、识别 GPU 数、按 min GPU/skip 配置过滤、并行运行、设置单样例超时并汇总退出码。</li>
+</ul>
+<h3 id="测试-亮点-风险与面试边界">测试、亮点、风险与面试边界</h3>
+<ul>
+<li>没有执行 CUDA 构建/样例：需要匹配的 GPU、driver 和 Toolkit，且全量样例构建耗时高。</li>
+<li>官方 README 主动声明 <code>run_tests.py</code> 只是 sanity check，不覆盖边界，也不是性能验证套件。</li>
+<li><code>.pre-commit-config.yaml</code> 提供尾空格、行尾和 clang-format 自动化；这是代码卫生，不等于算法正确性测试。</li>
+<li>面试价值是讲清 host/device 内存、线程层次、shared memory、stream/event、graph 与库调用的适用边界。</li>
+<li><strong>条件式可复述模板（需本人确认）</strong>：</li>
+</ul>
+<blockquote class="callout"><p>NVIDIA CUDA samples 是上游样例，不得作为本人项目。若本人确认做过实验，可回答：“在【实验日期、GPU、驱动、Toolkit 版本】上运行过【具体样例】，通过 vectorAdd、reduction、matrixMul 或 CUDA Graphs 验证【具体假设】；结果为【真实指标；统计时间；计算口径；Nsight/日志来源】。”若没有可复现实验记录，则回答“仅阅读上游源码，暂无可核验性能结果”。</p>
+</blockquote>
+<p><strong>追问</strong></p>
+<ul>
+<li>问：为什么 sample 的 matrixMul 不能直接当 benchmark？<br>答：输入尺寸、预热、校验、计时范围和硬件适配都是样例设定，官方也不承诺它是性能套件；生产评估应和 cuBLAS、不同 shape、精度及端到端数据搬运一起测。</li>
+<li>问：CUDA Graph 解决什么？<br>答：对重复的多 kernel/memcpy DAG，它把每轮 CPU launch 编排成本摊薄；图变化频繁或单个 kernel 已很重时收益可能不大。</li>
+</ul>
+<hr>
+<h2 id="7-km-android-tools-团队-gitlab-周报-发布自动化">7. km-android-tools：团队 GitLab/周报/发布自动化</h2>
+<h3 id="定位-技术栈与工作流">定位、技术栈与工作流</h3>
+<ul>
+<li>Python 脚本集合，不是 Android Runtime 仓；依赖 python-gitlab、requests、GitPython、Atlassian/Confluence、BeautifulSoup。</li>
+<li>主要工作流：<ul>
+<li><code>network_tool.py</code> + <code>generator.py</code>：拉取项目/里程碑信息，生成 HTML 周报并发布；</li>
+<li><code>weekly.py</code>：聚合 GitLab MR，按 feature/bug/engineer、状态、人员和 milestone 生成周会模板；</li>
+<li><code>mr_report/km-mr-report.py</code>：统计 MR、提交、AAR 体积和变更项目，输出 HTML/Wiki 报告；</li>
+<li><code>daily_release2develop_mr.py</code>：比较 release/develop 提交，发现漏合并时创建 MR；</li>
+<li><code>codereview/gitlab_mr_developer_check.py</code>、<code>codereview/gitlab_mr_codereviewer_check.py</code>：解析 MR 描述、审批与 reviewer，推送提醒；</li>
+<li><code>utils/git_helper.py</code>、<code>utils/cli.py</code>：封装 clone/rebase/commit/push 与命令执行。</li>
+</ul>
+</li>
+</ul>
+<p>核心自动化链是：CI/Jenkins/Webhook 提供项目和 MR 上下文 → GitLab/项目管理/Wiki API 拉数据 → 规则过滤和聚合 → BeautifulSoup/模板生成报告 → 发布 Wiki 或企业消息 → 以脚本退出码/日志反馈。</p>
+<h3 id="工程质量-风险与面试价值">工程质量、风险与面试价值</h3>
+<ul>
+<li>未检出自动化测试、类型检查、lint 或统一 CLI 入口；多个脚本 import 时就创建客户端或直接执行任务，测试隔离困难。</li>
+<li><code>requirements.txt</code> 中多个依赖版本较旧，且依赖名里存在可疑占位包，应做依赖来源审计。</li>
+<li><strong>严重安全问题</strong>：源码中存在硬编码 token、账号口令、HMAC key、机器人 webhook 与内网地址。本文不复述任何值；实际应立即吊销轮换、清理 Git 历史、改用 CI secret、最小权限 service account 和 secret scanning。</li>
+<li>网络调用普遍缺少统一 timeout/retry/backoff、分页和幂等处理；创建 MR/发消息需要防重复。</li>
+<li>HTML 拼装和 MR 文本进入消息/Wiki 前需要转义，避免注入与格式破坏。</li>
+<li>面试价值不是“会写脚本”，而是能讲清数据源、规则、幂等、权限、审计和收益指标。</li>
+</ul>
+<p><strong>条件式可复述模板（需本人确认，30 秒）</strong></p>
+<blockquote class="callout"><p>这是团队 Python 自动化仓，不能把全仓成果归为个人。若本人确认维护过具体脚本，并能提供 MR/commit 或运行记录，可回答：“本人实际负责【脚本与函数范围】，它把 GitLab MR、里程碑或构建产物聚合成【周报/版本报告/提醒】。结果为【节省人时、漏合并率或到达率的真实指标；统计时间；计算口径；CI/Wiki/监控来源】，若无法补齐则回答‘暂无可核验量化结果’。复盘重点是把硬编码凭据迁到 CI secret，并统一 API client 的超时、重试、幂等和测试。”若无个人提交证据，只讲团队仓的源码结构。</p>
+</blockquote>
+<p><strong>追问</strong></p>
+<ul>
+<li>问：自动创建 MR 怎么防重复？<br>答：先按 source/target/open state 查询已有 MR，以确定性 key 做幂等；创建后记录结果，网络超时后先查状态再重试。</li>
+<li>问：怎么测试这类脚本？<br>答：把 API client、规则和 renderer 拆开；规则用 fixture 单测，HTTP 用 fake server/recording contract test，发布动作在 dry-run 输出差异。</li>
+</ul>
+<hr>
+<h2 id="8-vip-skills-把团队经验编码为-agent-工作流">8. VIP-Skills：把团队经验编码为 Agent 工作流</h2>
+<h3 id="定位-关键文件与自动化链">定位、关键文件与自动化链</h3>
+<ul>
+<li>团队 Agent Skills 仓，当前有 5 个有效 <code>SKILL.md</code>：<code>analyze-project</code>、<code>add-debugs</code>、<code>app-icon-prompt</code>、<code>release-new-version</code>、<code>xcode-build</code>；<code>yes-sir</code> 目录为空，不算已实现技能。</li>
+<li><code>SKILL_GUIDE.md</code> 是创建规范，<code>install-skills.sh</code> 负责扫描包含 <code>SKILL.md</code> 的目录，交互选择技能与 Claude/Cursor/Kiro 目标，再建立全局符号链接。</li>
+<li>工作流设计：<ul>
+<li><code>analyze-project</code>：先看既有文档，再扫描结构/入口/业务并生成索引；</li>
+<li><code>add-debugs</code>：识别语言和日志方式，选择函数入口、状态变化、API 与异常点；</li>
+<li><code>release-new-version</code>：检查 Git 状态、识别项目类型、更新版本/README、tag/publish；</li>
+<li><code>xcode-build</code>：识别 workspace/project、选择平台/设备、构建运行测试；</li>
+<li><code>app-icon-prompt</code>：从产品定位、平台、UI 与品牌生成图标方案。</li>
+</ul>
+</li>
+</ul>
+<h3 id="工程质量-风险与面试价值-2">工程质量、风险与面试价值</h3>
+<ul>
+<li>亮点：把隐性团队经验变成可复用、可发现的步骤；技能元数据定义触发边界，安装器支持多 IDE。</li>
+<li>未检出 skill lint、样例 fixture、dry-run snapshot 或安装脚本测试；技能文本中绑定了特定工具名/旧命令，跨 Agent 兼容性会漂移。</li>
+<li>安装器对目标技能目录执行递归删除后建符号链接，没有备份、目标归属校验和冲突预览，属于高风险覆盖操作。</li>
+<li>发布 skill 涉及 commit/tag/push/publish，必须把“读检查—用户确认—可逆变更—外部发布”分级，不能一次授权全部动作。</li>
+<li><code>add-debugs</code> 应补敏感字段禁止日志化；<code>analyze-project</code> 应默认排除凭据和二进制；<code>xcode-build</code> 应避免把签名身份、证书路径写入输出。</li>
+</ul>
+<p><strong>条件式可复述模板（需本人确认）</strong></p>
+<blockquote class="callout"><p>这是团队 Agent Skills 仓，不能把全仓成果归为个人。若本人确认参与过具体 skill 或安装器，并能提供 MR/commit、评审或使用记录，可回答：“本人实际负责【具体 skill/脚本范围】，把开发流程编码为触发条件、前置检查、用户确认、执行步骤和验证标准。落地结果为【真实采用量/成功率/节省时间；统计时间；计算口径；调用日志或调研来源】，若无法补齐则回答‘暂无可核验量化结果’。当前可复盘的问题是安装器会覆盖目标目录，且技能缺自动化回归。”若无个人提交证据，只讲团队工作流设计。</p>
+</blockquote>
+<p><strong>追问</strong></p>
+<ul>
+<li>问：怎么测试一个 Skill？<br>答：准备代表性小仓库 fixture，断言触发选择、计划、写入范围、危险动作确认和最终验证；对文本产物做结构化规则与 snapshot，对外部动作统一 mock/dry-run。</li>
+<li>问：为什么不能把团队 skill 当个人项目？<br>答：仓库本身是团队知识资产；只有本人 commit、设计记录和落地指标能证明个人贡献。</li>
+</ul>
+<hr>
+<h2 id="9-obsidian-skills-上游标准化知识样例">9. obsidian-skills：上游标准化知识样例</h2>
+<h3 id="定位-关键技能与工作流">定位、关键技能与工作流</h3>
+<ul>
+<li>README 明确这是 Obsidian Agent Skills 上游仓，兼容 Agent Skills specification，可安装到 Claude Code、Codex CLI、OpenCode 等。</li>
+<li>5 个技能：<ul>
+<li><code>obsidian-markdown</code>：frontmatter、wikilink、embed、callout；</li>
+<li><code>obsidian-bases</code>：<code>.base</code> YAML 的 filter/formula/view/summary；</li>
+<li><code>json-canvas</code>：<code>.canvas</code> node/edge schema 与引用完整性；</li>
+<li><code>obsidian-cli</code>：读写/search/property/task，以及插件 reload/error/screenshot/DOM 调试闭环；</li>
+<li><code>defuddle</code>：把网页抽取为干净 Markdown。</li>
+</ul>
+</li>
+<li>设计亮点是“主 SKILL 只放高频工作流，复杂语法放 references”，既降低上下文成本，又保留按需查阅能力。</li>
+</ul>
+<h3 id="测试-风险-面试边界">测试、风险、面试边界</h3>
+<ul>
+<li>仓库主要是 Markdown 指令与 references，没有传统构建或自动化测试。</li>
+<li>风险：Obsidian CLI/Bases 语法会随产品变化；<code>defuddle</code> 提示全局安装 npm 包和访问网络，必须经过权限/供应链确认；所有写 vault 的技能都应先限定目标路径和备份策略。</li>
+<li><strong>条件式可复述模板（需本人确认）</strong>：</li>
+</ul>
+<blockquote class="callout"><p>这是 Obsidian 社区上游参考，不得作为本人项目。若本人确认做过学习或实验，可回答：“在【日期与 Obsidian/CLI 版本】基于该仓验证过【具体 skill 或语法】，关注触发描述、渐进披露、schema 校验和真实应用验证闭环；结果为【真实指标；统计时间；计算口径；截图/命令日志来源】。”若没有实验记录，则回答“仅阅读上游资料，暂无个人代码贡献或可核验实验结果”。</p>
+</blockquote>
+<p><strong>追问</strong></p>
+<ul>
+<li>问：references 为什么不全塞进 SKILL？<br>答：触发时只需要核心流程；少见语法按需加载能降低 token 和误用概率，同时保持单一事实来源。</li>
+</ul>
+<hr>
+<h2 id="10-8j52srpw6x-matchfile-签名同步仓首先是安全治理问题">10. 8J52SRPW6X_Matchfile：签名同步仓首先是安全治理问题</h2>
+<h3 id="定位-构建入口与链路">定位、构建入口与链路</h3>
+<ul>
+<li>这是 Ruby/Fastlane Match 配置仓，不是 Android 业务仓；README 的两条主命令分别以 <code>--readonly</code> 同步 development 与 appstore 签名材料。</li>
+<li><code>Gemfile</code> 固定 Fastlane 2.193.0；<code>Matchfile</code> 配置 platform、app identifier、git branch/url、API key path 等；GitLab CI 有 development/appstore 两个 job。</li>
+<li>正常链路应是：受控 CI runner 注入短期凭据 → Fastlane Match 只读访问加密签名仓 → 下载指定类型证书/provisioning profile → 仅在 job 临时 keychain 使用 → job 结束销毁。</li>
+</ul>
+<h3 id="当前风险与整改顺序">当前风险与整改顺序</h3>
+<ul>
+<li>仓内存在 API-key 结构的 JSON 凭据文件，<code>Matchfile</code> 又直接引用它；无论该值是否仍有效，都应按泄露处理。</li>
+<li>README 强调“无需验证码直接执行”不是安全优势，而是非交互凭据已具备访问能力，更需要最小权限、审计和轮换。</li>
+<li><code>--readonly</code> 只能防止 Match 修改签名仓，不能防止本地凭据泄露、runner 被滥用或过宽 API 权限。</li>
+<li>Fastlane 版本较旧，需要在隔离分支验证升级，并检查 Ruby/Bundler 与 Apple API 兼容性。</li>
+<li>测试/工程化方面只有 CI job 和人工同步命令，未检出安全回归或 dry-run 测试；应增加受控测试 App、证书到期预警、权限审计和不暴露 secret 的 pipeline smoke test。</li>
+</ul>
+<p>整改优先级：</p>
+<ol>
+<li>立即吊销/轮换仓内凭据，检查 CI、Apple 后台和签名仓访问日志；</li>
+<li>从 Git 历史清除敏感文件，并启用 secret scanning/pre-receive 阻断；</li>
+<li>凭据迁入受保护 CI secret 或专用 secret manager，只给所需 App/只读权限；</li>
+<li>runner 使用临时 keychain、限制 protected branch/tag、禁用 fork pipeline 读取 secret；</li>
+<li>证书/profile 到期、撤销和人员离职形成台账与演练；</li>
+<li>文档只保留变量名和申请流程，不保留真实值、内网仓地址或证书副本。</li>
+</ol>
+<p><strong>条件式可复述模板（需本人确认）</strong></p>
+<blockquote class="callout"><p>该仓不是业务项目，而是签名供应链配置，不能据此推断个人经历。若本人确认承担过治理或整改，并能提供脱敏工单、MR 或审计记录，可回答：“本人实际负责【治理范围】。该仓使用 Fastlane Match 只读同步开发和商店签名，但仓内存在凭据形态文件；整改顺序是轮换与审计、迁移受保护 CI secret、临时 keychain、protected ref 和最小权限。整改结果为【真实指标；统计时间；计算口径；审计/CI 来源】，若无法补齐则回答‘暂无可核验量化结果’。<code>--readonly</code> 只防误写，不等于凭据安全。”不得在回答或证据中展示任何敏感值。</p>
+</blockquote>
+<p><strong>追问</strong></p>
+<ul>
+<li>问：为什么不能只删当前文件？<br>答：Git 历史、缓存、fork 和日志里仍可能存在；必须先轮换，再清历史并审计使用记录。</li>
+<li>问：CI 如何避免开发分支拿到发布证书？<br>答：把 appstore job 限制到 protected tag/branch、受信 runner 和审批环境，secret 只在该环境注入，普通 MR 只拿开发签名或不签名。</li>
+</ul>
+<hr>
+<h2 id="11-xxxxx-html-既有离线文档资产-不是源码仓库">11. <code>xxxxx-html</code>：既有离线文档资产，不是源码仓库</h2>
+<ul>
+<li><code>C:/Users/msf/Desktop/code/xxxxx-html</code> 没有 <code>.git</code>，应作为已经生成的学习/面试材料管理，不计入 10 个源码仓库。</li>
+<li>当前共有 <strong>64 个 HTML 文件</strong>，约 3.63 MB：<ul>
+<li>顶层 4 个：DevKit/ZRouter 的架构详解与面试讲稿；</li>
+<li><code>basic-components/</code> 60 个：Android 基础组件总览及逐组件文档。</li>
+</ul>
+</li>
+<li>资产价值：适合离线检索、复习和面试演练；不能替代当前源码验证。组件 API、依赖、类名和结论可能随仓库演进而过期。</li>
+<li>建议治理：<ul>
+<li>在每页写明生成日期、来源 commit、适用分支和“已验证/待复核”状态；</li>
+<li>用索引页链接到本系列 Markdown，避免两套文档独立漂移；</li>
+<li>对 HTML 做链接检查、敏感词/内网链接扫描和最小化发布；</li>
+<li>面试前以真实业务 call site 复核，不直接背静态讲稿。</li>
+</ul>
+</li>
+</ul>
+<p><strong>条件式可复述模板（需本人确认）</strong></p>
+<blockquote class="callout"><p><code>xxxxx-html</code> 是非 Git 离线文档资产，不能仅凭本地目录推断所有权。若本人确认由其生成或维护，并能提供生成记录，可回答：“该目录作为离线架构与面试资料库使用，不是源码项目；每个结论仍回到当前仓库和真实调用点验证，并记录对应 commit。”若无法确认归属，只称其为“工作区既有文档资产”。</p>
+</blockquote>
+<hr>
+<h2 id="12-组合式面试讲法">12. 组合式面试讲法</h2>
+<h3 id="个人项目候选线-需本人确认">个人项目候选线（需本人确认）</h3>
+<blockquote class="callout"><p>仅在本人确认项目归属并提供 commit/PR/演示后，才把 Purrfolio 或 MCP financial calculator 作为个人项目：前者可讲 WinUI/MVVM、Core 领域算法、SQLite、通知和 OCR，后者可讲 schema、数值稳定性与本次 21 个测试。meter 也必须先确认归属，只适合作为 Android 原型补充。每个结果填写【真实指标、统计时间、计算口径、数据来源】；缺失时明确“暂无可核验量化结果”。</p>
+</blockquote>
+<h3 id="公司工程候选线-需本人确认">公司工程候选线（需本人确认）</h3>
+<blockquote class="callout"><p>仅在本人确认参与范围并提供 MR/commit、需求或评审记录后，才用 ZhihuLite 讲具体宿主接入，用 km-android-tools/VIP-Skills 讲具体自动化或工作流贡献。所有表述限定到可核验调用点、脚本和提交；结果必须包含【真实指标、统计时间、计算口径、数据来源】，不得把公司框架或团队仓整体归为个人成果。</p>
+</blockquote>
+<h3 id="上游学习线">上游学习线</h3>
+<blockquote class="callout"><p>Moonlight、CUDA samples、Obsidian Skills 均为上游学习材料，不得当作个人项目。只有在本人确认具体学习/实验行为并提供日期、环境、命令或笔记后，才能使用对应条件式模板；任何实验结果仍需给出【真实指标、统计时间、计算口径、数据来源】。</p>
+</blockquote>
+<h2 id="13-验证记录与限制">13. 验证记录与限制</h2>
+<ul>
+<li>实际覆盖：<strong>10/10 个指定仓库</strong>，另检查 <strong>1 个非 Git HTML 资产目录</strong>。</li>
+<li>深入分析：<code>Purrfolio</code>、<code>mcp-financial-calculator</code>、<code>meter</code>、<code>ZhihuLite</code>。</li>
+<li>标准分析：<code>moonlight-android</code>、<code>cuda-samples</code>、<code>km-android-tools</code>、<code>VIP-Skills</code>。</li>
+<li>简要分析：<code>obsidian-skills</code>、<code>8J52SRPW6X_Matchfile</code>；两者分别因“上游纯技能文档”和“敏感签名配置”控制读取与展开范围。</li>
+<li>动态验证：<ul>
+<li>MCP：<code>npm test</code>，21/21 通过；</li>
+<li>Purrfolio：<code>dotnet test</code>，9/9 通过，伴随 NuGet 漏洞数据源不可达警告；</li>
+<li>meter：Gradle wrapper 下载超时，未执行到测试；</li>
+<li>Moonlight/CUDA/ZhihuLite：因 NDK/GPU/内网依赖和构建时长未做全量构建。</li>
+</ul>
+</li>
+<li>静态验证：逐仓读取 README 或根构建入口，并抽查关键实现与测试；<code>Matchfile</code> 和团队工具仓只确认敏感资产/配置的存在与治理问题，未在文档中复制任何值。</li>
+</ul>
+
+      </article>
+      
+    <nav class="page-pager" aria-label="文档翻页">
+      <a href="30-cross-platform-rn-web.html"><small>← 上一篇</small><span>RN 与 Web</span></a>
+      <a class="next" href="40-android-docs-evidence-review.html"><small>下一篇 →</small><span>Android 证据复核</span></a>
+    </nav>
+      <footer class="article-footer">
+        本站由 Markdown 源文档离线生成。涉及个人职责、动作和结果的内容，请只使用本人可核验的部分。
+      </footer>
+    </main>
+    <aside class="page-toc" aria-label="本页目录">
+      <div class="toc-heading">本页目录</div>
+      <a class="toc-link level-2" href="#0-先把-是谁的项目-说清楚">0. 先把“是谁的项目”说清楚</a>
+<a class="toc-link level-3" href="#个人经历与结果填写规则">个人经历与结果填写规则</a>
+<a class="toc-link level-2" href="#1-purrfolio-本地资产追踪与固定收益桌面应用">1. Purrfolio：本地资产追踪与固定收益桌面应用</a>
+<a class="toc-link level-3" href="#定位-技术栈与关键结构">定位、技术栈与关键结构</a>
+<a class="toc-link level-3" href="#核心链路与关键实现">核心链路与关键实现</a>
+<a class="toc-link level-3" href="#测试-工程化-亮点与风险">测试、工程化、亮点与风险</a>
+<a class="toc-link level-3" href="#面试价值-边界与可复述回答">面试价值、边界与可复述回答</a>
+<a class="toc-link level-2" href="#2-mcp-financial-calculator-金融计算-mcp-服务">2. mcp-financial-calculator：金融计算 MCP 服务</a>
+<a class="toc-link level-3" href="#定位-技术栈与结构">定位、技术栈与结构</a>
+<a class="toc-link level-3" href="#核心链路与算法">核心链路与算法</a>
+<a class="toc-link level-3" href="#测试-工程化-亮点与风险-2">测试、工程化、亮点与风险</a>
+<a class="toc-link level-3" href="#面试价值-边界与可复述回答-2">面试价值、边界与可复述回答</a>
+<a class="toc-link level-2" href="#3-meter-工资实时计量-android-原型">3. meter：工资实时计量 Android 原型</a>
+<a class="toc-link level-3" href="#定位-技术栈与关键文件">定位、技术栈与关键文件</a>
+<a class="toc-link level-3" href="#核心链路">核心链路</a>
+<a class="toc-link level-3" href="#测试-工程化-亮点与风险-3">测试、工程化、亮点与风险</a>
+<a class="toc-link level-3" href="#面试价值-边界与可复述回答-3">面试价值、边界与可复述回答</a>
+<a class="toc-link level-2" href="#4-zhihulite-公司级组件化-android-宿主壳">4. ZhihuLite：公司级组件化 Android 宿主壳</a>
+<a class="toc-link level-3" href="#定位-技术栈与边界">定位、技术栈与边界</a>
+<a class="toc-link level-3" href="#启动-构建与路由链路">启动、构建与路由链路</a>
+<a class="toc-link level-3" href="#测试-工程化-亮点与风险-4">测试、工程化、亮点与风险</a>
+<a class="toc-link level-3" href="#面试价值-边界与可复述回答-4">面试价值、边界与可复述回答</a>
+<a class="toc-link level-2" href="#5-moonlight-android-可学习的低延迟串流边界-但不是本人项目">5. moonlight-android：可学习的低延迟串流边界，但不是本人项目</a>
+<a class="toc-link level-3" href="#定位-技术栈-关键链路">定位、技术栈、关键链路</a>
+<a class="toc-link level-3" href="#工程化-亮点-风险与面试边界">工程化、亮点、风险与面试边界</a>
+<a class="toc-link level-2" href="#6-cuda-samples-cuda-能力地图-不是候选人项目">6. cuda-samples：CUDA 能力地图，不是候选人项目</a>
+<a class="toc-link level-3" href="#定位-技术栈与学习链路">定位、技术栈与学习链路</a>
+<a class="toc-link level-3" href="#测试-亮点-风险与面试边界">测试、亮点、风险与面试边界</a>
+<a class="toc-link level-2" href="#7-km-android-tools-团队-gitlab-周报-发布自动化">7. km-android-tools：团队 GitLab/周报/发布自动化</a>
+<a class="toc-link level-3" href="#定位-技术栈与工作流">定位、技术栈与工作流</a>
+<a class="toc-link level-3" href="#工程质量-风险与面试价值">工程质量、风险与面试价值</a>
+<a class="toc-link level-2" href="#8-vip-skills-把团队经验编码为-agent-工作流">8. VIP-Skills：把团队经验编码为 Agent 工作流</a>
+<a class="toc-link level-3" href="#定位-关键文件与自动化链">定位、关键文件与自动化链</a>
+<a class="toc-link level-3" href="#工程质量-风险与面试价值-2">工程质量、风险与面试价值</a>
+<a class="toc-link level-2" href="#9-obsidian-skills-上游标准化知识样例">9. obsidian-skills：上游标准化知识样例</a>
+<a class="toc-link level-3" href="#定位-关键技能与工作流">定位、关键技能与工作流</a>
+<a class="toc-link level-3" href="#测试-风险-面试边界">测试、风险、面试边界</a>
+<a class="toc-link level-2" href="#10-8j52srpw6x-matchfile-签名同步仓首先是安全治理问题">10. 8J52SRPW6X_Matchfile：签名同步仓首先是安全治理问题</a>
+<a class="toc-link level-3" href="#定位-构建入口与链路">定位、构建入口与链路</a>
+<a class="toc-link level-3" href="#当前风险与整改顺序">当前风险与整改顺序</a>
+<a class="toc-link level-2" href="#11-xxxxx-html-既有离线文档资产-不是源码仓库">11. xxxxx-html ：既有离线文档资产，不是源码仓库</a>
+<a class="toc-link level-2" href="#12-组合式面试讲法">12. 组合式面试讲法</a>
+<a class="toc-link level-3" href="#个人项目候选线-需本人确认">个人项目候选线（需本人确认）</a>
+<a class="toc-link level-3" href="#公司工程候选线-需本人确认">公司工程候选线（需本人确认）</a>
+<a class="toc-link level-3" href="#上游学习线">上游学习线</a>
+<a class="toc-link level-2" href="#13-验证记录与限制">13. 验证记录与限制</a>
+      <a class="back-to-top" href="#">↑ 返回顶部</a>
+    </aside>
+  </div>
+  <script src="assets/search-data.js"></script>
+  <script src="assets/docs.js"></script>
+</body>
+</html>

@@ -1,0 +1,641 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="从 Maven 仓库、Gradle 依赖解析、AAR、组件层级、API 与实现隔离、源码替换、启动任务和路由通信，理解盐言 Android 组件化原理">
+  <title>盐言 Android 组件化原理｜VipAndroid 壳工程源码分析</title>
+  <link rel="stylesheet" href="../assets/docs.css">
+  <style>
+    .principle-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:18px 0}
+    .principle-card{border:1px solid var(--border-color);border-radius:12px;padding:16px;background:var(--surface-1)}
+    .principle-card h3{margin-top:0}.flow{display:flex;align-items:stretch;gap:10px;overflow-x:auto;padding:12px 2px 18px;margin:12px 0}
+    .flow-step{min-width:150px;flex:1;border:1px solid var(--border-color);border-radius:10px;padding:13px;background:var(--surface-1)}
+    .flow-step strong{display:block;margin-bottom:6px;color:var(--accent-color)}.flow-arrow{align-self:center;font-size:22px;color:var(--muted-color)}
+    .layer-stack{display:grid;gap:8px;margin:16px 0}.layer{border-left:5px solid var(--accent-color);padding:12px 15px;background:var(--surface-1);border-radius:8px}
+    .layer small{display:block;color:var(--muted-color);margin-top:4px}.term{font-weight:700;color:var(--accent-color)}
+    .truth-table td:first-child{white-space:nowrap;font-weight:700}.code-path{overflow-wrap:anywhere}
+    @media(max-width:760px){.principle-grid{grid-template-columns:1fr}.flow-arrow{display:none}.flow{display:grid}.flow-step{min-width:0}}
+  </style>
+  <script>try{const t=localStorage.getItem("interview-docs-theme");document.documentElement.dataset.theme=t||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light")}catch{}</script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <header class="topbar">
+    <button class="icon-button menu-button" type="button" data-menu-toggle aria-label="打开文档导航" aria-expanded="false">☰</button>
+    <a class="brand" href="../index.html"><span class="brand-mark">⌁</span><span>项目面试资料库</span></a>
+    <div class="search-shell"><label class="sr-only" for="global-search">搜索文档</label><input id="global-search" type="search" data-search-input placeholder="搜索仓库、技术或面试题…" autocomplete="off"><div class="search-results" data-search-results hidden></div></div>
+    <button class="icon-button" type="button" data-theme-toggle aria-label="切换深浅主题">◐</button>
+  </header>
+  <div class="drawer-backdrop" data-drawer-backdrop hidden></div>
+  <div class="docs-layout">
+    <nav class="sidebar" data-sidebar aria-label="文档导航">
+      <div class="sidebar-heading">盐言组件化</div>
+      <section class="nav-group">
+        <h2 class="nav-group-title">返回</h2>
+        <a class="nav-link" href="../repositories.html">全部仓库</a>
+        <a class="nav-link" href="../index.html">资料首页</a>
+        <a class="nav-link" href="../10-android-business-repositories.html">业务仓聚合分析</a>
+      </section>
+      <section class="nav-group">
+        <h2 class="nav-group-title">本页重点</h2>
+        <a class="nav-link" href="#maven">Maven 与依赖解析</a>
+        <a class="nav-link" href="#aar">AAR 与 APK</a>
+        <a class="nav-link" href="#three-phases">三个阶段</a>
+        <a class="nav-link" href="#assembly">构建期组装</a>
+        <a class="nav-link" href="#component-hierarchy">组件层级</a>
+        <a class="nav-link" href="#communication">运行时通信</a>
+        <a class="nav-link" href="#debugging">排障方法</a>
+        <a class="nav-link" href="#interview">面试讲法</a>
+      </section>
+      <p class="sidebar-note">以当前本地源码为准 · 2026-08-20</p>
+    </nav>
+    <main class="article-shell" id="main-content">
+      <div class="breadcrumbs"><a href="../index.html">首页</a><span>/</span><a href="../repositories.html">仓库索引</a><span>/</span><span>VipAndroid</span></div>
+      <div class="article-grid">
+        <article class="markdown-body">
+          <h1 id="vipandroid">盐言 Android 组件化原理：从 VipAndroid 壳工程看懂“组件怎样变成一个 App”</h1>
+
+          <blockquote class="callout"><p><strong>适合谁：</strong>已经写过几年 Android，平时会加依赖、调路由、调用组件 API，也处理过冲突，但对“Maven、Maven 仓库与 Gradle 是什么关系，壳工程为什么只剩一个 app 模块，AAR 怎么进 APK，API/实现为什么能分开，源码替换到底替换了什么”还没有形成完整模型。</p></blockquote>
+
+          <p>这篇不从“怎样新建一个组件”讲起，而是从<strong>最终 APK 是怎么被组装出来的</strong>反推。盐言壳工程的关键价值不是承载大量页面代码，而是确定：这次构建选哪些组件、用哪个版本、替换成哪个 VIP 实现、哪些渠道差异生效、启动时按什么顺序初始化，以及不合规的依赖能不能进入产物。</p>
+
+          <h2 id="answer-first">1. 先给结论：盐言组件化到底是什么</h2>
+
+          <div class="principle-grid">
+            <section class="principle-card"><h3>开发阶段</h3><p>业务被拆进独立仓库或独立 Gradle 模块，各自可以有实现模块、API 模块和 demo app。团队可以并行开发、独立发布。</p></section>
+            <section class="principle-card"><h3>集成阶段</h3><p>组件通常发布成 Maven 制品（Android 组件多为 AAR）。VipAndroid 根据坐标和版本把它们放进同一张 Gradle 依赖图。</p></section>
+            <section class="principle-card"><h3>构建阶段</h3><p>壳工程裁剪普通知乎组件，替换成盐言版本，合并 Manifest、资源、字节码和 SO，针对不同 flavor 生成 APK。</p></section>
+            <section class="principle-card"><h3>运行阶段</h3><p>打进 APK 后不存在几十个独立 App。组件通过路由、接口服务、事件或任务系统协作，共用同一个 Android 进程和 Application 生命周期（特殊多进程除外）。</p></section>
+          </div>
+
+          <p>所以，盐言组件化不是“运行时下载几十个业务模块”，也不是简单地“把代码分文件夹”。它主要是一套<strong>编译期模块边界 + 制品化交付 + 壳工程统一装配 + 运行时解耦通信</strong>的工程体系。</p>
+
+          <h2 id="why">2. 为什么要组件化：它解决的是组织和依赖问题</h2>
+
+          <p>一个小 App 把所有代码放在 <code>:app</code> 里也能运行。项目变大后，真正难的不是 Activity 数量，而是：</p>
+          <ul>
+            <li>任何模块都能直接 import 任何实现类，修改一处会牵动很多地方；</li>
+            <li>所有人同时改一个仓库，构建、评审、发布互相阻塞；</li>
+            <li>普通知乎 App 与盐言 App 需要复用基础能力，但产品功能集合不同；</li>
+            <li>一个组件升级后可能传递引入另一版组件或三方库，产生重复类、资源冲突或运行时崩溃；</li>
+            <li>本地调试需要改组件源码，但正式构建又必须回到可追踪的 Maven 版本。</li>
+          </ul>
+
+          <p>组件化的本质是控制变化传播。理想边界是：组件内部高内聚，对外只暴露稳定契约；调用方依赖契约，不依赖某个具体 Fragment、Repository 或数据库实现。</p>
+
+          <h2 id="terms">3. 先把几个容易混的词说清楚</h2>
+
+          <table class="truth-table"><thead><tr><th>名词</th><th>在本工程中的含义</th><th>容易产生的误解</th></tr></thead><tbody>
+            <tr><td>壳工程</td><td><code>VipAndroid</code>。它是最终 Android application，负责产品配置、组件装配、渠道和产物治理。</td><td>壳不是“空项目”，它仍有 Application、启动任务和少量盐言专属适配代码。</td></tr>
+            <tr><td>业务组件</td><td>例如 <code>vip_comment</code>、<code>vip_growth</code>、<code>vip_manuscript</code>。通常发布成 AAR 并进入依赖图。</td><td>组件不一定等于一个 Git 仓库；一个仓库里可以有实现、API、widget 和 demo 多个模块。</td></tr>
+            <tr><td>API 模块</td><td>放接口、跨组件模型或少量契约类型。例如 <code>comment-api</code> 中的 <code>ICommentLikeViewProvider</code>。</td><td>API 模块不是 HTTP API 的同义词，它更接近“给其他组件看的编译契约”。</td></tr>
+            <tr><td>实现模块</td><td>真正的页面、网络、存储和接口实现。例如 <code>comment</code> 中的 <code>CommentLikeViewProviderImpl</code>。</td><td>调用方不应该为了一个能力直接依赖实现模块里的内部类。</td></tr>
+            <tr><td>基础库/新分层</td><td><code>library</code>、<code>foundation</code>、<code>service</code>、<code>feature</code>、<code>sharedui</code> 等坐标体系。</td><td>不是所有能力都沿用老的 <code>com.zhihu.android.component</code> 分组，工程里存在新旧架构并行。</td></tr>
+            <tr><td>源码依赖</td><td>把某个 Maven 坐标临时替换成本地 Gradle project，用于联调。</td><td>不是运行时热更新，也不是复制源码到壳工程。</td></tr>
+          </tbody></table>
+
+          <h2 id="maven">4. Maven 是包管理工具吗：先分清工具、仓库和制品</h2>
+
+          <blockquote class="callout"><p><strong>先回答：</strong>把 Maven 简称为“包管理工具”方便交流，但不够准确。<strong>Apache Maven</strong> 是 Java 生态的构建与依赖管理工具；<strong>Maven 仓库</strong>是存放和分发 JAR、AAR、POM 等制品的仓库约定。VipAndroid 真正执行构建的是 <strong>Gradle</strong>，它只是按 Maven 仓库规则去解析和下载组件。</p></blockquote>
+
+          <h3>4.1 四个角色不要混为一谈</h3>
+          <table><thead><tr><th>角色</th><th>它负责什么</th><th>在 VipAndroid 中怎样理解</th></tr></thead><tbody>
+            <tr><td>Apache Maven</td><td>Java 生态的一套构建与依赖管理工具，普及了 POM、GAV 坐标和标准仓库布局。</td><td>这里不是用 Maven 命令构建 App；“Maven 依赖”通常是在说依赖来自 Maven 格式仓库。</td></tr>
+            <tr><td>Maven 仓库</td><td>按坐标保存制品及元数据的目录或服务，可以是公共仓库、公司私服、本地目录或 <code>mavenLocal()</code>。</td><td><code>repositories</code> 配置告诉 Gradle 去哪里寻找盐言组件。</td></tr>
+            <tr><td>Gradle</td><td>读取构建脚本、建立任务图、解析依赖图并执行构建。</td><td>读取 <code>app/build.gradle</code> 中的组件坐标，选择版本和变体，命中缓存或从仓库下载。</td></tr>
+            <tr><td>Android Gradle Plugin</td><td>给 Gradle 增加 Android 专用的 variant、Manifest、资源、DEX、签名和 APK/AAB 打包能力。</td><td>把解析到的 AAR/JAR 和 <code>:app</code> 源码加工成最终 Android 产物。</td></tr>
+          </tbody></table>
+
+          <p>可以把关系记成一句话：<strong>Gradle 是施工队，Android Gradle Plugin 提供 Android 施工工艺，Maven 仓库是材料仓库，AAR/JAR 是材料，POM 或 Gradle Module Metadata 是材料清单和依赖说明。</strong></p>
+
+          <h3>4.2 GAV 坐标：Gradle 怎样准确找到一个组件</h3>
+          <p>盐言评论组件在当前版本表中可以组成下面这个真实坐标：</p>
+          <pre><code>com.zhihu.android.component:vip_comment:9.12.0.15
+└────────── groupId ──────────┘ └artifactId┘ └version┘</code></pre>
+          <ul>
+            <li><strong>groupId：</strong>组织或命名空间，这里是 <code>com.zhihu.android.component</code>；</li>
+            <li><strong>artifactId：</strong>具体发布模块，这里是 <code>vip_comment</code>；</li>
+            <li><strong>version：</strong>不可省略的版本标识，这里由 <code>version.gradle</code> 集中维护。</li>
+          </ul>
+          <p>仓库通常会把 group 中的点转换成目录层级，因此这个坐标大致映射到 <code>com/zhihu/android/component/vip_comment/9.12.0.15/</code>。目录下可能同时有 <code>vip_comment-9.12.0.15.aar</code>、<code>.pom</code>、<code>.module</code> 和校验文件。坐标不是文件本身，它是定位某个模块版本的地址信息。</p>
+
+          <h3>4.3 repositories 决定“去哪里找”，dependencies 决定“需要什么”</h3>
+          <pre><code>repositories {
+    maven { url = uri("公司 Maven 私服") }
+    mavenLocal()
+}
+
+dependencies {
+    implementation("com.zhihu.android.component:vip_comment:9.12.0.15")
+}</code></pre>
+          <p><code>repositories</code> 只是声明候选查找位置，不等于马上下载；<code>dependencies</code> 给当前 configuration 的依赖图增加需求，也不直接指定文件从哪个 URL 下载。Gradle 会结合仓库顺序、缓存、元数据、variant 属性和版本规则统一解析。</p>
+          <p>VipAndroid 的 <code>settings.gradle</code> 应用了 <code>gradle/auto_maven_repo.gradle</code>；该脚本定义了按本地配置加入指定 Maven 目录或 <code>mavenLocal()</code> 的能力。当前根 <code>build.gradle</code> 只在 <code>buildscript.repositories</code> 中调用这个本地仓库闭包，而普通工程依赖的 <code>allprojects.repositories</code> 配置公司 Maven 私服；<code>app/build.gradle</code> 再把 <code>allComponents</code> 转换成具体组件坐标。不能把“存在本地仓库脚本”直接理解成“所有 App 依赖都会优先从本地取”。</p>
+
+          <h3>4.4 POM 是说明书，不是 Android 代码包</h3>
+          <p><strong>POM</strong> 是 Project Object Model 的缩写，常见形式是 XML。一个组件的 POM 可以声明自己的名称、打包类型、直接依赖、版本、scope 和 exclusions；Gradle 读取它以后，才知道这个 AAR 还需要哪些其他库。<strong>POM 里没有评论页面的 class 和资源，真正的 Android 内容在 AAR 中。</strong></p>
+          <p><strong>Gradle Module Metadata</strong> 通常是 <code>.module</code> JSON 文件，能比传统 POM 更完整地描述 variant、属性、能力以及 API/运行时依赖差异，这是 Gradle 的通用能力。但当前 VipAndroid 公司仓库块明确只配置了 <code>mavenPom()</code> 与 <code>artifact()</code>，没有启用 <code>gradleMetadata()</code>：它会读取 POM；若 POM 缺失，仍可直接发现 AAR/JAR 制品，但这时没有 POM 提供的传递依赖信息；该仓库配置不会消费 <code>.module</code>。所以不能把 Gradle 的全部能力等同于当前工程实际启用的元数据源。</p>
+
+          <h3>4.5 Gradle 从一行坐标到可编译输入，经历了什么</h3>
+          <ol>
+            <li>读取当前 variant 对应 configuration 中的直接依赖坐标；</li>
+            <li>按仓库声明顺序和内容过滤规则查找模块元数据；</li>
+            <li>读取仓库允许的元数据并选择实际文件；对当前公司仓库就是读取 POM，或在缺少 POM 时以 <code>artifact()</code> 发现制品；</li>
+            <li>展开元数据中声明的依赖，形成包含直接依赖和传递依赖的图；</li>
+            <li>同一模块出现多个版本时执行冲突解决，并应用 force、约束、平台/BOM 或替换规则；</li>
+            <li>从 Gradle 缓存复用已有文件，或下载 AAR/JAR 和元数据并写入缓存；</li>
+            <li>把最终选中的文件交给 Java/Kotlin 编译器及 Android Gradle Plugin 后续处理。</li>
+          </ol>
+          <p>“Gradle 默认总选数字最大的版本”也是过度简化。它会按自己的版本比较和冲突规则选择候选版本，但 version constraint、<code>strictly</code>、平台、resolution strategy、dependency substitution 等都可以改变结果。最终以目标 configuration 的 <code>dependencies</code>/<code>dependencyInsight</code> 输出为准。</p>
+
+          <h3>4.6 Gradle 缓存了什么：为什么仓库有新包，本地却没变化</h3>
+          <p>Gradle 不只是缓存一个 AAR 文件。理解缓存最好拆成三层：</p>
+          <ul>
+            <li><strong>元数据缓存：</strong>某个坐标有哪些版本、POM 声明了哪些传递依赖、某次查询没有找到模块等解析结果；</li>
+            <li><strong>制品缓存：</strong>实际下载的 AAR、JAR、POM 以及按内容校验的文件；</li>
+            <li><strong>转换缓存：</strong>AAR 解压、Jetifier 或其他 transform 的中间结果，输入和参数未变时可以复用。</li>
+          </ul>
+          <table><thead><tr><th>版本类型</th><th>含义</th><th>缓存时最容易误解的点</th></tr></thead><tbody>
+            <tr><td>固定版本</td><td>例如 <code>9.12.0.15</code>，坐标明确指向一个发布版本。</td><td>仓库应把它当作不可变制品；覆盖发布同一 GAV 会破坏可复现性，不能指望每次构建自动发现内容被偷换。</td></tr>
+            <tr><td>动态版本</td><td>例如 <code>1.+</code> 或 <code>latest.release</code>，需要先解析“当前匹配哪个版本”。</td><td>“动态选择结果”会缓存，在缓存期内仓库出现新版本也可能仍使用旧的解析结果。</td></tr>
+            <tr><td>Changing module</td><td>同一个版本坐标被明确允许内容变化，Maven SNAPSHOT 是典型场景。</td><td>是否 changing 取决于依赖/仓库语义与配置；版本名里出现 <code>TEMP</code> 不会自动让它成为 changing module。</td></tr>
+          </tbody></table>
+          <p>当前 VipAndroid 在 <code>configurations.all</code> 中只对 <strong>CI 环境</strong>设置 <code>cacheChangingModulesFor 30 minutes</code>，含义是 CI 对已经被识别为 changing 的模块每 30 分钟重新检查一次，并不是所有组件每 30 分钟强制下载，也不改变固定版本应不可变的原则。</p>
+          <p>排查“版本没更新”时，先用 <code>dependencyInsight</code> 确认最终选中的坐标和选择原因；确认确实是缓存问题后，再使用 <code>--refresh-dependencies</code> 让 Gradle 重新校验依赖状态。不要一上来删除整个 Gradle 缓存，因为那会丢失定位证据并显著放大构建成本。</p>
+          <pre><code>.\gradlew :app:dependencyInsight --dependency vip_comment --configuration devDebugRuntimeClasspath
+.\gradlew --refresh-dependencies :app:assembleDevDebug</code></pre>
+
+          <h3>4.7 本地仓库、公司私服和公共仓库有什么区别</h3>
+          <table><thead><tr><th>位置</th><th>典型用途</th><th>要注意什么</th></tr></thead><tbody>
+            <tr><td><code>mavenLocal()</code></td><td>从本机 Maven 本地仓库读取临时发布物，适合快速验证。</td><td>只对本机生效，最容易出现“我这里能编，CI 找不到”或旧版本污染。</td></tr>
+            <tr><td>本地目录 Maven 仓库</td><td>开发脚本把指定文件夹当成 Maven 布局仓库。</td><td>仍依赖正确的目录结构、坐标和元数据，不等于直接把 AAR 拖进 <code>libs</code>。</td></tr>
+            <tr><td>公司 Maven 私服</td><td>保存内部组件、代理公共制品、统一权限和版本发布。</td><td>正式构建更可复现，但发布权限、版本不可变策略和凭据都需要治理。</td></tr>
+            <tr><td>公共仓库</td><td>提供公开三方库，例如 Android/Java 生态常用组件。</td><td>需要考虑可用性、供应链安全、许可证以及公司镜像策略。</td></tr>
+          </tbody></table>
+
+          <h2 id="three-phases">5. 最重要的基础模型：分清三个阶段</h2>
+
+          <div class="flow" aria-label="组件从源码到运行时的三个阶段">
+            <div class="flow-step"><strong>阶段一：配置与解析</strong>Gradle 读取版本、组件清单、排除和替换规则，求出依赖图。</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step"><strong>阶段二：编译与打包</strong>组件 AAR/源码的 Manifest、资源、class、assets、SO 被处理并合进产物。</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step"><strong>阶段三：App 运行</strong>Application 启动，任务图初始化能力，页面通过路由或接口服务通信。</div>
+          </div>
+
+          <p>很多面试回答混乱，都是因为把三个阶段揉在一起。例如：</p>
+          <ul>
+            <li><code>dependencyReplace</code> 是构建期规则，不会在用户点击页面时再替换类；</li>
+            <li><code>sourcecode.properties</code> 改的是编译输入，不会让线上 APK 动态读取你的本地目录；</li>
+            <li><code>ZRouter.open()</code> 和 <code>InstanceProvider.get()</code> 是运行时通信，它们的目标代码必须先在构建期进入 APK 并完成注册；</li>
+            <li><code>TaskManager.json</code> 描述运行时初始化依赖，但任务类来自已经装配进 APK 的壳或组件。</li>
+          </ul>
+
+          <h2 id="shell">6. 为什么 settings.gradle 看起来只有一个 app 模块</h2>
+
+          <p>VipAndroid 的 <code>settings.gradle</code> 明确 <code>include ':app'</code>，随后应用 <code>gradle/sourcecode.gradle</code>。这不代表整个盐言只有一个业务模块，而是代表<strong>默认集成形态以远程 Maven 制品为主</strong>。</p>
+
+          <div class="layer-stack">
+            <div class="layer"><strong>壳源码 project</strong><small>默认只有 <code>:app</code>，负责生成最终 APK。</small></div>
+            <div class="layer"><strong>远程组件制品</strong><small><code>app/build.gradle</code> 通过 <code>group:artifact:version</code> 依赖大量 AAR/JAR，它们不必出现在 settings 的 include 列表里。</small></div>
+            <div class="layer"><strong>临时本地 project</strong><small>启用源码替换时，<code>sourcecode.gradle</code> 才会动态 <code>include</code> 相邻仓库里的模块。</small></div>
+          </div>
+
+          <p>这是理解壳工程的第一个关键点：<strong>Gradle project 数量不等于最终 APK 里业务能力的数量</strong>。Maven AAR 也是编译输入，只是它已经由别的仓库构建并发布好了。</p>
+
+          <h2 id="aar">7. AAR 是什么：它怎样从组件产物变成 APK 的一部分</h2>
+
+          <blockquote class="callout"><p><strong>先纠正拼写：</strong>是 <strong>AAR</strong>，不是 arr。AAR 全称 <strong>Android Archive</strong>，是 Android Library 的发布归档。它通常是一个 ZIP 格式的构建输入，不能直接安装；APK 才是可安装的应用产物。</p></blockquote>
+
+          <div class="flow" aria-label="组件源码发布并进入 APK 的过程">
+            <div class="flow-step"><strong>组件源码</strong>Android Library project 包含 Kotlin/Java、Manifest、资源和构建脚本。</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step"><strong>发布制品</strong>构建得到 AAR，并发布 POM/<code>.module</code> 等依赖元数据。</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step"><strong>Maven 仓库</strong>按 GAV 坐标保存 AAR 与元数据。</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step"><strong>Gradle 解析</strong>选择版本和变体，下载 AAR/JAR 及传递依赖。</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step"><strong>AGP 打包</strong>分别处理 Manifest、资源、class、SO，生成 APK/AAB。</div>
+          </div>
+
+          <h3>7.1 AAR 里面通常有什么</h3>
+          <p>AAR 可以用 ZIP 工具打开，但下面是<strong>典型内容</strong>，不是每个 AAR 都必须包含的固定清单：</p>
+          <table><thead><tr><th>路径/文件</th><th>内容</th><th>进入 App 后怎样处理</th></tr></thead><tbody>
+            <tr><td><code>AndroidManifest.xml</code></td><td>库声明的组件、权限、<code>uses-feature</code> 或元数据。</td><td>参与 Manifest Merger，不是简单覆盖 app Manifest。</td></tr>
+            <tr><td><code>classes.jar</code></td><td>Java/Kotlin 编译后的 JVM class。</td><td>和 App、其他库的 class 一起交给 D8/R8，最后生成 DEX。</td></tr>
+            <tr><td><code>res/</code></td><td>layout、drawable、string、style 等 Android 资源。</td><td>由 AAPT2 编译/链接并进入最终资源表。</td></tr>
+            <tr><td><code>assets/</code></td><td>需要按原始文件方式读取的资产。</td><td>合入应用 assets，运行时通过 <code>AssetManager</code> 访问。</td></tr>
+            <tr><td><code>jni/&lt;abi&gt;/*.so</code></td><td>按 ABI 分类的原生动态库。</td><td>结合 <code>abiFilters</code>、split 和打包规则进入对应 ABI 产物。</td></tr>
+            <tr><td><code>R.txt</code>/<code>public.txt</code></td><td>资源符号或公开资源信息，是否存在取决于 AGP/发布方式。</td><td>供构建工具处理；<code>R.txt</code> 不是运行时直接加载的 <code>R</code> 类。</td></tr>
+            <tr><td><code>consumer-rules.pro</code>/<code>proguard.txt</code></td><td>库提供给最终消费者的 R8/ProGuard 保留规则。</td><td>在 App 开启压缩时并入最终程序的 shrink/optimize/obfuscate 配置。</td></tr>
+            <tr><td><code>libs/</code>、lint、Prefab 等</td><td>可选的嵌入 JAR、lint 规则或 Native 发布信息。</td><td>由对应工具链继续消费，并非所有 AAR 都有。</td></tr>
+          </tbody></table>
+
+          <p>普通 AAR 默认也不是“胖包”：它通常不会把自己依赖的所有 AAR/JAR 全部塞进归档，传递依赖主要由 POM 或 <code>.module</code> 描述，再由消费方 Gradle 继续解析。fat AAR 是额外的打包策略，容易带来重复类和版本不可见问题，不能把它当成普通 AAR 的默认行为。</p>
+
+          <h3>7.2 JAR、AAR、APK 和本地 Gradle Project 的区别</h3>
+          <table><thead><tr><th>形态</th><th>主要内容</th><th>支持 Android res/Manifest/JNI</th><th>能否直接安装</th><th>典型用途</th></tr></thead><tbody>
+            <tr><td>JAR</td><td>JVM class 和普通资源/元数据。</td><td>不能作为 Android Library 那样承载并合并 <code>res/</code>、Manifest 和 JNI 目录语义。</td><td>不能</td><td>纯 Java/Kotlin 工具库。</td></tr>
+            <tr><td>AAR</td><td>class、Android 资源、Manifest、可选 SO 和消费者规则。</td><td>支持</td><td>不能</td><td>发布 Android Library。</td></tr>
+            <tr><td>APK</td><td>DEX、最终资源、合并 Manifest、签名和所需 SO 等完整应用内容。</td><td>已经是处理后的最终结果</td><td>可以</td><td>安装、测试和分发应用。</td></tr>
+            <tr><td>本地 Gradle Project</td><td>源码、构建脚本、任务、source set 和 variant。</td><td>由该模块在本次构建中产生</td><td>通常不能；application project 最终可生成 APK</td><td>多模块源码协作和本地联调。</td></tr>
+          </tbody></table>
+          <p><code>project(':vip_comment')</code> 不是“没有压缩的 AAR”。本地 project 会以源码、任务和 variant 参与当前构建；AAR 是该 Library 某个发布变体已经生成好的归档。两种输入最终可以提供相近能力，但构建参数和依赖暴露可能不同。</p>
+
+          <h3>7.3 AAR 进入 APK 时到底发生了什么</h3>
+          <ol>
+            <li><strong>解析与展开：</strong>Gradle 先选定目标 variant 的 AAR、JAR、本地模块输出及其传递依赖，并缓存/展开归档。</li>
+            <li><strong>Manifest 合并：</strong>Manifest Merger 合并 app、直接库和传递库的 Manifest；优先级与 <code>tools:</code> 指令共同决定结果。</li>
+            <li><strong>资源编译与链接：</strong>AAPT2 处理各库资源和 app 资源，生成最终资源表；同名资源要结合 overlay 优先级判断，不是所有重名都必然报错。</li>
+            <li><strong>字节码转 DEX：</strong>D8 把 app 与依赖 class 转成 DEX；若启用代码压缩，R8 会基于整个最终程序图做 shrink、optimize 和 obfuscate。</li>
+            <li><strong>消费者规则生效：</strong>AAR 发布的 consumer ProGuard 规则传给最终 App，保护反射、序列化、路由或 JNI 需要的类成员。</li>
+            <li><strong>Native 库处理：</strong>各 AAR 的 SO 按 ABI、过滤、split 与冲突规则进入最终 APK/AAB 对应产物。</li>
+            <li><strong>打包与签名：</strong>构建工具把处理后的 DEX、资源、Manifest、assets 和 SO 组装、对齐并签名。最终 APK 通常不会原样嵌套那些 <code>.aar</code> 文件。</li>
+          </ol>
+
+          <p>因此组件化不会给 Android 系统凭空增加新的隔离边界。除非显式使用独立进程、动态特性或插件技术，普通 AAR 组件最后仍进入同一应用运行环境。这正是为什么重复类、Manifest、资源、版本和 SO 问题通常由壳工程统一暴露。</p>
+
+          <h3>7.4 引入 AAR 后常见故障，分别是哪一层出了问题</h3>
+          <table><thead><tr><th>现象</th><th>根因模型</th><th>优先检查</th></tr></thead><tbody>
+            <tr><td><code>Duplicate class</code></td><td>两条输入路径提供了同一个全限定类名，常见于本地 module 与远程 AAR 同时存在、两个坐标重复封装，或 fat AAR 内嵌依赖。</td><td>最终依赖图、<code>dependencyInsight</code>、AAR 内的 <code>classes.jar</code> 和 <code>libs/</code>。</td></tr>
+            <tr><td>资源覆盖/冲突</td><td>相同资源键出现在多个输入，或 overlay、生成资源和资源可见性不符合预期。</td><td>资源命名、依赖版本、source set 优先级和 merged resources；不要看到同名就直接下结论。</td></tr>
+            <tr><td>Manifest merge failed</td><td>同一节点或属性无法按默认合并规则确定结果。</td><td>merged manifest/report、provider authority、<code>exported</code>、权限和 <code>application</code> 属性；理解后再用 <code>tools:replace</code>。</td></tr>
+            <tr><td><code>NoSuchMethodError</code></td><td>编译时看到的方法与运行时最终装入的 class 版本不一致，是二进制兼容问题，不是普通的“方法没写”。</td><td>目标 variant 的 runtimeClasspath、版本冲突结果、force/替换规则和重复打包。</td></tr>
+            <tr><td><code>UnsatisfiedLinkError</code>/<code>dlopen failed</code></td><td>设备所需 ABI 的 SO 没进入产物、同名 SO 选错，或 SO 自己依赖的库无法加载。</td><td>设备 ABI、AAR 的 <code>jni/</code>、<code>abiFilters</code>、splits、APK 内 SO 清单及其依赖。</td></tr>
+            <tr><td>接口能编译但功能不可用</td><td>API AAR 在 classpath 中，但实现 AAR 被裁剪、未发布配套版本或运行时注册缺失。</td><td>实现坐标、依赖替换、最终 APK 内容、AutoService/路由生成物与初始化时机。</td></tr>
+          </tbody></table>
+          <p>排错时不要只问“这个 AAR 在不在”。要连续回答四个问题：<strong>最终选中了哪个版本和 variant？它带来了哪些传递依赖？Manifest、资源、class、JNI 分别怎样进入应用？错误发生在解析、编译、打包还是运行时？</strong></p>
+
+          <h2 id="assembly">8. 盐言构建期组装：从候选组件到最终依赖图</h2>
+
+          <div class="flow" aria-label="VipAndroid 构建期组件装配链">
+            <div class="flow-step"><strong>version.gradle</strong>集中记录组件和基础库版本。</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step"><strong>allComponents</strong>声明候选业务组件并循环添加 <code>api</code> 依赖。</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step"><strong>全局 exclude</strong>用 <code>VIP_APP_REMOVED_COMPONENTS</code> 裁掉盐言不需要的普通知乎组件。</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step"><strong>dependencyReplace</strong>把共用实现/接口换成 VIP 版本或渠道 no-op 版本。</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step"><strong>版本锁与门禁</strong>收敛依赖图，检查未登记三方库、TEMP 版本和 SO 完整性。</div>
+          </div>
+
+          <h3>8.1 version.gradle：统一回答“用哪个版本”</h3>
+          <p><code>version.gradle</code> 中同时存在老组件表 <code>versions.component</code>，以及 <code>foundation</code>、<code>feature</code>、<code>service</code>、<code>sharedui</code> 等新分层版本表。例如当前可见 <code>vip_comment</code>、<code>vip_growth</code>、<code>vip_manuscript</code>、<code>vip_kmaudio</code>、<code>vip_km_home</code> 等版本。</p>
+          <p>集中版本表的价值不是少写几个字符串，而是让壳工程对最终产品版本负责。组件 A 传递依赖某版本、组件 B 传递依赖另一版本时，壳可以统一收敛；代价是升级不能只看单个组件编译通过，还要验证整个产品依赖图兼容。</p>
+
+          <h3>8.2 allComponents：声明“候选组件集合”</h3>
+          <p><code>app/build.gradle</code> 当前静态列出 75 个 <code>allComponents</code> 候选项，并在 <code>dependencies</code> 中循环执行：</p>
+          <pre><code>allComponents.forEach { name -&gt;
+    api "${ZHIHU_COMPONENT_GROUP}:${name}:${versions.component[name]}"
+}</code></pre>
+          <p>该工程的构建插件允许在 application 中使用 <code>api</code>。由于 <code>:app</code> 已经是最终应用，通常没有需要消费它的上游模块，所以 API 暴露不是这里的主要设计收益；关键结果是这些坐标进入对应 configuration 的依赖解析。这里批量声明的是“候选集合”，不是最终一定保留的功能清单。</p>
+
+          <h3>8.3 VIP_APP_REMOVED_COMPONENTS：做产品减法</h3>
+          <p>盐言继承自更大的知乎主工程体系，但产品不需要完整社区能力。配置通过 <code>configurations.all</code> 对 <code>com.zhihu.android.component</code> 分组做全局 exclude，移除 <code>feed</code>、<code>search</code>、<code>community</code>、<code>profile</code>、<code>kmarket</code>、<code>premium</code>、<code>kmaudio</code> 等普通实现。</p>
+          <p>当前列表有 51 行组件名，其中 <code>avg</code> 重复，按唯一名字是 50 个；与 75 个候选集合静态相交 42 个，做集合差后剩 33 个候选项。这个 33 只是帮助理解“减法”的静态口径，<strong>不是最终 APK 的全部依赖数</strong>：壳还显式依赖 feature/service/foundation，组件也会带入传递依赖，替换规则还会改变节点。</p>
+
+          <h3>8.4 dependencyReplace：不是只删除，还要换成盐言实现</h3>
+          <p>仅排除普通组件会让调用方缺实现。因此壳工程对若干稳定契约做成对替换：</p>
+          <table><thead><tr><th>普通能力</th><th>盐言能力</th><th>为什么接口也常要换</th></tr></thead><tbody>
+            <tr><td><code>growth</code></td><td><code>vip_growth</code></td><td>VIP 版本可能扩展或调整契约，壳同时替换 <code>growth-api</code>。</td></tr>
+            <tr><td><code>comment</code></td><td><code>vip_comment</code></td><td>实现、API 和评论编辑 widget 都有对应替换。</td></tr>
+            <tr><td><code>passport_ui</code></td><td><code>vip_passport_ui</code></td><td>登录页面和 passport API 要保持配套版本。</td></tr>
+            <tr><td><code>account</code></td><td><code>vip_account</code></td><td>账号实现和 <code>account-api</code> 同步切换。</td></tr>
+            <tr><td><code>push</code></td><td><code>vip_push</code></td><td>从老 component 坐标换到新的 feature 坐标。</td></tr>
+          </tbody></table>
+          <p>这体现了组件化里一个很重要的设计：调用侧尽量面向接口，产品壳决定装哪个实现。它类似依赖倒置，但这里的“注入”有两层：构建期先选择哪套 AAR，运行时再由服务注册表找到接口实现。</p>
+
+          <h3>8.5 渠道替换：同一能力可以装真实实现或 no-op</h3>
+          <p><code>dependencyReplace</code> 还会根据 flavor 替换实现，例如预装渠道把某些 SDK 换成 no-op，Play 渠道对不兼容能力使用空实现。原理仍是构建期改变依赖图：调用代码可以依赖同一组接口，但不同产物包含不同实现。</p>
+
+          <h2 id="source-dependency">9. 本地源码替换：为什么改了组件源码，壳可以直接编译</h2>
+
+          <p>正常情况下，<code>vip_manuscript</code> 是一个 Maven 坐标，对应已发布 AAR。联调时在 <code>sourcecode.properties</code> 配置：</p>
+          <pre><code>com.zhihu.android.component:vip_manuscript=/path/to/VipManuscript/vip_manuscript</code></pre>
+
+          <p><code>gradle/sourcecode.gradle</code> 做的不是“优先读本地文件”这么简单，而是一套 Gradle 模型变换：</p>
+          <ol>
+            <li>解析坐标、源码路径和本地 project 名；</li>
+            <li>检查目标 <code>build.gradle</code> 中的 group/name 是否与坐标一致，防止替错模块；</li>
+            <li>如果旁边存在符合约定的 <code>{name}-api</code>，把 API 模块一起加入；</li>
+            <li>解析组件里声明的 <code>usingProject</code>，补上联调需要的相邻源码模块；</li>
+            <li>在 settings 阶段动态 <code>include</code> 本地 project；</li>
+            <li>在依赖配置阶段，把匹配的 Maven module 替换为 <code>project(':name')</code>；</li>
+            <li>通过 <code>dependencySubstitution</code> 继续覆盖传递依赖中的同一坐标。</li>
+          </ol>
+
+          <p>所以源码联调失败时，不要只看 Android Studio 是否打开了那个目录。要确认三件事：坐标是否一致、project 是否被 settings include、目标 configuration 里 Maven 节点是否真正被 project 节点替换。</p>
+
+          <h2 id="api-impl">10. API 与实现分离：编译依赖为什么能降低耦合</h2>
+
+          <p>以当前 <code>VipComment</code> 仓库为例，它包含 <code>comment-api</code>、<code>comment</code>、<code>comment-widget-editor</code> 和用于独立调试的 <code>app</code>。其中：</p>
+          <ul>
+            <li><code>comment-api</code> 发布为 <code>com.zhihu.android.api:comment-api</code>，包含 <code>ICommentLikeViewProvider</code> 等契约；</li>
+            <li><code>comment</code> 发布为 <code>com.zhihu.android.component:comment</code>，包含真正的评论 UI 与数据实现；</li>
+            <li><code>CommentLikeViewProviderImpl</code> 实现接口，并用 <code>@AutoService(ICommentLikeViewProvider.class)</code> 注册；</li>
+            <li>其他组件只要依赖 API，就能按接口获取能力，不需要 import <code>LikeView</code> 这个内部实现。</li>
+          </ul>
+
+          <div class="flow" aria-label="接口服务通信">
+            <div class="flow-step"><strong>调用组件</strong>只认识 API 接口。</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step"><strong>InstanceProvider</strong>按接口类型查找已注册实现。</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step"><strong>@AutoService 实现</strong>由真正业务组件提供对象或行为。</div>
+          </div>
+
+          <p>原理上，这把“编译时知道具体类”改成了“编译时只知道接口，运行时再绑定实现”。收益是实现可替换、调用方重新编译范围更小；代价是缺少实现时可能返回空值或启动后才暴露问题，所以代码里既有 <code>get</code>，也有更安全的 <code>optional</code> 用法。</p>
+
+          <h2 id="component-hierarchy">11. 盐言组件层级怎么设计：新旧体系并存，依赖方向比名字重要</h2>
+
+          <blockquote class="callout"><p><strong>先给结论：</strong>盐言不是把所有模块硬塞进一条绝对层级链，而是按职责把代码分成<strong>产品装配、业务功能、可复用服务/共享 UI、基础设施</strong>几类，再用 API 契约控制跨边界调用。当前源码能确认这些坐标分类和壳的直接依赖，但不能证明工程已经强制执行一张严格的 <code>feature → service → foundation</code> 依赖 DAG。</p></blockquote>
+
+          <h3>11.1 先看全局职责模型</h3>
+          <div class="layer-stack" aria-label="盐言组件职责层级">
+            <div class="layer"><strong>产品装配层：VipAndroid application 壳</strong><small>决定本次产品选择哪些组件、使用哪些版本、排除或替换哪些实现、启用哪个 flavor，并对最终 APK 的依赖和产物负责。</small></div>
+            <div class="layer"><strong>业务功能层：feature 与旧 business component</strong><small>承载用户可感知的完整业务能力，例如内容生产、评论、阅读、会员业务或 RN 业务入口。新旧坐标体系会同时存在。</small></div>
+            <div class="layer"><strong>跨业务复用层：service 与 sharedui</strong><small><code>service</code> 偏可复用能力或 SDK 封装，<code>sharedui</code> 偏跨业务共用界面。两者更像并列职责，不要机械理解成 service 一定高于或低于 sharedui。</small></div>
+            <div class="layer"><strong>基础设施层：foundation、library 与三方库</strong><small>提供任务调度、线程、存储、网络、日志、RN 基建等通用能力，原则上不应该反向依赖具体产品业务。</small></div>
+          </div>
+          <p><strong>API 契约不是简单的“第五层”。</strong><code>*-api</code> 更像穿过层级边界的插座：上层依赖接口，真正实现由业务组件或服务组件提供。它可以位于业务边界、服务边界或基础能力边界，关键是调用方只看到稳定契约，不直接 import 对方内部实现。</p>
+
+          <h3>11.2 旧组件体系和新组件体系为什么同时存在</h3>
+          <table><thead><tr><th>体系</th><th>当前可见分类</th><th>应该怎样理解</th></tr></thead><tbody>
+            <tr><td>旧体系</td><td><code>com.zhihu.android.component:*</code>、<code>com.zhihu.android.api:*</code>、少量 <code>component.api</code>，以及 <code>com.zhihu.android.library:*</code></td><td>大量历史业务仍按 component + API + library 的方式发布，VipAndroid 的 <code>allComponents</code> 主要装配这一体系。</td></tr>
+            <tr><td>新体系</td><td><code>feature</code>、<code>service</code>、<code>sharedui</code>、<code>foundation</code></td><td><code>version.gradle</code> 明确把它们称为“新架构组件层级”，坐标和 <code>modules.json</code> 的 layer 元数据用于版本登记与解析。</td></tr>
+            <tr><td>预留分类</td><td><code>limited</code>、<code>coreui</code></td><td>当前版本文件只看到空 Map 声明，没有对应成员，最多说明分类被预留，不能当作已经落地的实际层。</td></tr>
+          </tbody></table>
+          <p>这不是“旧体系在下面、新体系在上面”两套纵向层级，而是<strong>迁移期间并行存在的两套分类方式</strong>。例如构建规则可以把旧 component/API 坐标替换为新的 feature 坐标；同时，仍有大量旧 component 与 API 被壳直接依赖。判断一个模块承担什么职责，应看坐标、构建依赖和源码内容，而不是只看它属于新还是旧。</p>
+
+          <h3>11.3 推荐依赖方向：上层使用下层能力，跨业务只看契约</h3>
+          <div class="flow" aria-label="推荐的组件依赖方向">
+            <div class="flow-step"><strong>VipAndroid 壳</strong>选择并装配各层制品。</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step"><strong>Feature / Component</strong>组织业务流程与页面。</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step"><strong>Service / Shared UI</strong>提供复用能力与界面。</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step"><strong>Foundation / Library</strong>提供通用基础设施。</div>
+          </div>
+          <ul>
+            <li>壳工程可以直接装配业务、服务、共享 UI 和基础设施，因为它对最终产品负责；</li>
+            <li>业务功能可以依赖基础能力，也可以依赖其他业务公开的 API，但原则上不直接依赖其他业务的实现模块；</li>
+            <li>Service 应提供可复用能力或稳定契约，不应悄悄承载只服务于某个页面的完整业务流程；</li>
+            <li>Shared UI 应复用视觉和交互能力，不应因为“多个页面都用”就把业务状态机、网络流程全部搬进去；</li>
+            <li>Foundation/Library 应保持业务无关，若它反向依赖某个 Feature，就会形成倒置依赖和潜在环；</li>
+            <li><code>common</code>、<code>base</code>、<code>common-dep</code> 只是名字，聚合很多依赖并不会自动让模块成为合理的底层。</li>
+          </ul>
+
+          <h3>11.4 当前源码证明了什么，没有证明什么</h3>
+          <table><thead><tr><th>可以确认</th><th>不能直接断言</th></tr></thead><tbody>
+            <tr><td><code>version.gradle</code> 显式声明新架构的 foundation、feature、service、sharedui 等版本容器。</td><td>每一个容器都已有实际模块；当前 limited/coreui 仍只是空分类。</td></tr>
+            <tr><td><code>app/build.gradle</code> 同时直接依赖 feature、service、sharedui、foundation、library 和旧 component/API。</td><td>这些类型之间一定存在统一且强制的单向依赖顺序。</td></tr>
+            <tr><td><code>lock_versions.gradle</code> 能根据模块 layer/alias 找集中版本，并在缺少 layer 时回退旧版本表。</td><td>版本锁脚本就是架构依赖检查器，或者能禁止基础层引用业务层。</td></tr>
+            <tr><td>旧 push、zcode 等坐标存在替换到新 feature 坐标的迁移规则。</td><td>所有旧 component 都已经迁移完成，或旧 API 体系已经废弃。</td></tr>
+          </tbody></table>
+          <p>因此，这套层级首先是一套<strong>职责与依赖方向设计</strong>，其次才是坐标命名。坐标能帮助版本管理和识别模块角色，但真正判断是否分层合理，仍要查看目标 variant 的依赖图和模块源码。</p>
+
+          <h3>11.5 设计或评审一个组件时，问这六个问题</h3>
+          <ol>
+            <li>谁拥有这段完整业务流程，它应该进入 Feature/Component 还是可复用 Service？</li>
+            <li>调用方依赖的是稳定 API，还是直接 import 了另一个业务的实现类？</li>
+            <li>Foundation/Library 是否反向引用了具体业务，形成方向倒置或循环依赖？</li>
+            <li>Shared UI 里放的是可复用界面能力，还是被包装成公共代码的业务流程？</li>
+            <li><code>common</code>/<code>base</code> 是否变成无边界的依赖垃圾桶，向所有上层泄漏传递依赖？</li>
+            <li>产品壳能否在不修改调用方业务代码的情况下，裁剪、替换或降级某个实现？</li>
+          </ol>
+
+          <h2 id="communication">12. 组件打进 APK 后，运行时怎样通信</h2>
+
+          <h3>12.1 接口服务：适合“我要一个能力”</h3>
+          <p><code>AutoService + InstanceProvider</code> 适合返回对象、构建页面参数或执行明确能力。KnowledgeMarket 中 <code>KmarketFragmentInterfaceImpl</code> 实现 <code>KmarketFragmentInterface</code>；KmBase 的路由工具使用 <code>InstanceProvider.optional(KmarketFragmentInterface.class)</code> 获取它。调用方不需要知道具体 Fragment 位于哪个实现仓。</p>
+
+          <h3>12.2 路由：适合“我要打开一个目标”</h3>
+          <p>组件用路由注解注册 URL 与页面/分发器的关系，调用方用 <code>ZRouter</code> 打开 URL。VipAndroid Manifest 中的 <code>VipRouterPortalActivity</code> 对外接收 <code>zhvip://</code> scheme，注释明确它用于外部打开和组件间跳转。</p>
+          <p>路由把“目标类名”换成“协议 URL”。这能避免跨组件直接 import 页面类，但并不等于完全无契约：URL、参数名、返回结果和登录拦截规则本身就是协议，仍需要版本兼容和测试。</p>
+
+          <h3>12.3 启动任务：适合“能力要按依赖顺序初始化”</h3>
+          <p><code>ZhihuApplication.onCreate()</code> 经过隐私进程、SafeBoot 和进程判断后，把真正初始化交给 <code>ZhihuApplicationDelegate.onCreate(this)</code>。壳中的 <code>TaskManager.json</code> 再描述大量任务的 scheduler、dependsOn、finalizedBy 和 delay。</p>
+          <p>例如 <code>T_VipNetInit</code> 依赖 crash 与广告预初始化，网络完成后再触发 MQTT、PostNet 和首页预请求；账号初始化依赖网络，登录初始化又依赖账号、网络、埋点等。这本质上是一张<strong>有向依赖图</strong>，任务调度器按边约束执行顺序，而不是在 Application 里顺序写几十行 init。</p>
+
+          <h3>12.4 生命周期聚合：适合“多个组件都关心全局事件”</h3>
+          <p><code>CrossLifecycleManager.json</code> 列出账号、网络、评论、推送、RN、资源等生命周期实现。壳把全局 Activity/Application 事件汇总后分发给多个能力，避免每个组件各自侵入 Application。代价是回调数量多、顺序隐含时，排障要回到注册清单和真实调度顺序。</p>
+
+          <h2 id="versions">13. 版本冲突为什么总在壳工程爆出来</h2>
+
+          <p>假设 A 依赖 <code>common:1</code>，B 依赖 <code>common:2</code>。Gradle 必须在同一 configuration 中选一个版本。若二进制不兼容，编译可能通过，运行时却出现 <code>NoSuchMethodError</code>；若两个不同坐标含同名 class，则可能直接 duplicate class。</p>
+
+          <p>VipAndroid 有多层治理：</p>
+          <ul>
+            <li><code>lock_versions.gradle</code> 读取 <code>META-INF/modules.json</code>，把坐标 alias 映射到集中版本；</li>
+            <li><code>lock_third_versions.gradle</code> 锁定三方库版本；</li>
+            <li><code>lock_versions_for_vip.gradle</code> 对盐言暂未适配的新版本单独 force；</li>
+            <li><code>componentInsight</code> 生成 <code>app/build/componentInsight.json</code>，用来查看组件之间的依赖关系；</li>
+            <li><code>check_deps.gradle</code> 检查三方库登记、允许渠道以及生产构建中的 TEMP 版本。</li>
+          </ul>
+
+          <p>需要注意，force 不是免费的“修复冲突”。它只是替依赖图做选择；被强制升级/降级的调用方是否二进制兼容，仍需要编译、启动和关键链路验证。</p>
+
+          <h2 id="flavor">14. 组件化与多渠道：为什么同一份代码能产出很多包</h2>
+
+          <p>VipAndroid 的 <code>productFlavors</code> 包含 dev、alpha、mr、beta、market、minor，以及华为、小米、OPPO、VIVO、预装等渠道。最终 variant 是 flavor 与 buildType 的组合，例如 <code>devDebug</code> 或 <code>huaweiRelease</code>。</p>
+
+          <p>渠道差异可以来自四个层面：</p>
+          <ol>
+            <li><strong>依赖差异：</strong><code>xxxApi</code> 只给某个 flavor 加组件，或 dependencyReplace 换 no-op；</li>
+            <li><strong>源码差异：</strong><code>src/dev</code>、<code>src/beta</code>、<code>src/huawei</code> 覆盖同名类或添加渠道类；</li>
+            <li><strong>Manifest/资源差异：</strong>各 source set 的 Manifest 与资源参与合并；</li>
+            <li><strong>BuildConfig 差异：</strong>例如 INSTALLER_ID 和内部调试开关。</li>
+          </ol>
+
+          <p>因此“dev 能跑、release 崩”不能只归结为混淆。两者可能从依赖图、源码集、Manifest、SDK 初始化和 ProGuard 任一层开始不同。</p>
+
+          <h2 id="quality-gates">15. 壳工程为什么要做最后一道产物门禁</h2>
+
+          <p>单个组件仓只能证明“我自己能编译”，不能证明“所有能力组装后仍然正确”。VipAndroid 在接近最终产物的位置做统一检查：</p>
+          <ul>
+            <li><strong>三方依赖白名单：</strong>未登记或不允许进入当前 flavor 的库会触发异常；</li>
+            <li><strong>TEMP 版本检查：</strong>防止临时组件版本进入正式包；</li>
+            <li><strong>SO 对齐：</strong><code>handleSo()</code> 比较 arm64-v8a 与 armeabi-v7a 的 SO 名称，白名单外缺失会直接中断构建；</li>
+            <li><strong>资源与包体治理：</strong>资源压缩、Resource Guard、包大小分析按构建条件接入；</li>
+            <li><strong>CI 与渠道打包：</strong>Athena 配置覆盖版本发车、打包、部署和热修复流程。</li>
+          </ul>
+
+          <p>这说明壳工程的职责不是“把依赖都写进去就结束”，而是对最终交付物负责：能否解析、是否合规、架构是否齐全、各渠道是否能安装运行。</p>
+
+          <h2 id="full-flow">16. 用一条完整链把原理串起来</h2>
+
+          <ol>
+            <li>评论团队在独立仓库开发 <code>comment-api</code> 与 <code>comment</code>，发布版本化制品；</li>
+            <li>VipAndroid 在 <code>version.gradle</code> 记录 <code>vip_comment</code> 版本；</li>
+            <li><code>allComponents</code> 把 VIP 评论实现加入候选依赖；</li>
+            <li>全局配置排除普通 <code>comment</code>/<code>comment-api</code>；</li>
+            <li><code>dependencyReplace</code> 确保传递依赖里出现普通评论坐标时也切换到 VIP 版本；</li>
+            <li>Gradle 解析唯一依赖图，Android Gradle Plugin 合并评论组件的 Manifest、资源和 class；</li>
+            <li>注解处理/注册机制让 <code>@AutoService</code> 实现和路由表在运行时可发现；</li>
+            <li>Application 启动任务完成网络、账号等前置能力；</li>
+            <li>其他组件通过 API 服务或路由调用评论能力，而不是直接 new 评论内部 Fragment；</li>
+            <li>若本地联调评论源码，sourcecode 脚本把 Maven 节点替换为本地 project，其余装配流程基本不变。</li>
+          </ol>
+
+          <p>这就是“独立开发、制品交付、壳统一装配、运行时解耦”的闭环。</p>
+
+          <h2 id="tradeoffs">17. 这种组件化的收益与代价</h2>
+
+          <table><thead><tr><th>收益</th><th>对应代价</th></tr></thead><tbody>
+            <tr><td>多团队可以独立开发、发布组件</td><td>版本协同和跨仓变更成本上升，接口变更要考虑兼容窗口。</td></tr>
+            <tr><td>知乎主工程能力可被盐言复用</td><td>盐言需要维护排除、替换和特有版本锁，跟随上游升级并不自动。</td></tr>
+            <tr><td>调用方面向 API，减少实现耦合</td><td>运行时服务发现可能把缺实现问题延迟到启动或页面调用。</td></tr>
+            <tr><td>组件可用 Maven 版本稳定集成，也可切源码联调</td><td>本地 project 与线上 AAR 的构建参数、传递依赖可能漂移。</td></tr>
+            <tr><td>多 flavor 复用主体代码</td><td>variant 数量膨胀，问题可能只在特定渠道/构建类型出现。</td></tr>
+            <tr><td>壳工程统一做依赖和产物门禁</td><td>Gradle 脚本复杂，构建系统本身成为需要维护的核心代码。</td></tr>
+          </tbody></table>
+
+          <h2 id="debugging">18. 实战排障：从现象回到正确阶段</h2>
+
+          <h3>场景 A：明明加了组件，运行时却找不到类</h3>
+          <ol>
+            <li>先运行 <code>:app:dependencies</code> 或 <code>dependencyInsight</code>，确认目标坐标是否在该 variant 的 runtimeClasspath；</li>
+            <li>检查是否被 <code>VIP_APP_REMOVED_COMPONENTS</code> 或其他全局 exclude 裁掉；</li>
+            <li>检查 dependencyReplace 是否换成另一个坐标；</li>
+            <li>若类理论上存在，再看混淆、条件源码集和动态反射保留规则。</li>
+          </ol>
+
+          <h3>场景 B：本地改了组件代码，壳 APK 没变化</h3>
+          <ol>
+            <li>确认 <code>sourcecode.properties</code> 路径存在且未被注释；</li>
+            <li>确认配置坐标与组件 build.gradle 的 group/artifactId 一致；</li>
+            <li>用 <code>gradle projects</code> 看本地模块是否已 include；</li>
+            <li>用 <code>dependencyInsight</code> 确认 Maven module 已替换为 project；</li>
+            <li>检查当前构建 variant 是否走了另一个同名实现或渠道替换。</li>
+          </ol>
+
+          <h3>场景 C：接口能编译，InstanceProvider 却拿不到实现</h3>
+          <ol>
+            <li>API 在 classpath 只说明契约存在，不说明实现 AAR 一定被装进 APK；</li>
+            <li>检查实现组件是否被裁剪或替换；</li>
+            <li>检查实现类是否有正确 <code>@AutoService</code>，注解处理产物是否生成并被混淆保留；</li>
+            <li>检查调用时机是否早于服务注册/组件初始化；</li>
+            <li>非强依赖能力优先使用 <code>optional</code> 并设计降级。</li>
+          </ol>
+
+          <h3>场景 D：只在某个渠道崩溃</h3>
+          <ol>
+            <li>比较两个 variant 的依赖图，而不是只比较 Java 代码；</li>
+            <li>比较 flavor Manifest、source set 和 BuildConfig；</li>
+            <li>检查真实 SDK 是否被替换成 no-op，或反过来；</li>
+            <li>若是 Native 崩溃，核对该渠道 APK 的 ABI 与 SO 清单。</li>
+          </ol>
+
+          <h3>常用证据命令</h3>
+          <pre><code>./gradlew :app:dependencies
+./gradlew :app:dependencyInsight --dependency vip_comment --configuration devDebugRuntimeClasspath
+./gradlew :app:componentInsight
+./gradlew :app:assembleDevDebug
+./gradlew :app:processDevDebugMainManifest</code></pre>
+          <p>命令名和 configuration 会随 Gradle/AGP 版本变化，但排障思想不变：先证明依赖图，再证明合并产物，最后才看运行时调用。</p>
+
+          <h2 id="misunderstandings">19. 常见误区纠正</h2>
+
+          <ul>
+            <li><strong>误区：组件化就是多 Module。</strong> 多 Module 只是源码组织形式；盐言正式集成大量使用远程制品，默认 settings 仍只有 <code>:app</code>。</li>
+            <li><strong>误区：依赖 API 就等于有实现。</strong> API 只能保证编译契约，最终还要装入实现组件并完成运行时注册。</li>
+            <li><strong>误区：Gradle 选了最高版本就一定兼容。</strong> 版本选择只解决图上的唯一性，不保证二进制/行为兼容。</li>
+            <li><strong>误区：exclude 只是减小包体。</strong> 它也用于产品裁剪、避免重复类和强制走 VIP 实现；排错时必须把它当功能逻辑。</li>
+            <li><strong>误区：路由没有依赖。</strong> 路由降低类依赖，但 URL 与参数成为新的协议依赖。</li>
+            <li><strong>误区：源码依赖和发布 AAR 完全一样。</strong> 理想上行为一致，实际上 build variant、依赖暴露、资源和编译参数可能不同，需要回切制品再验证。</li>
+            <li><strong>误区：壳工程没有业务代码。</strong> 壳应尽量薄，但仍包含产品级 Application 适配、启动任务、网络装饰器、渠道配置和最终门禁。</li>
+          </ul>
+
+          <h2 id="interview">20. 面试时怎样把原理讲清楚</h2>
+
+          <h3>30 秒版本</h3>
+          <blockquote><p>盐言采用的是制品化组件集成。各业务仓把实现和 API 发布成 AAR，VipAndroid 作为 application 壳，通过集中版本表和组件清单形成 Gradle 依赖图，再用全局 exclude 裁掉知乎主 App 不需要的组件，用 dependencyReplace 换成 VIP 实现。构建时 Manifest、资源、字节码和 SO 合进同一 APK；运行时组件再通过路由、AutoService/InstanceProvider 和启动任务图通信。源码联调只是把 Maven 节点替换成本地 project，不是运行时动态加载。</p></blockquote>
+
+          <h3>2 分钟版本</h3>
+          <blockquote><p>我理解盐言组件化要分构建期和运行期。构建期里，VipAndroid 默认只有 app project，大量业务来自 Maven AAR。version.gradle 决定版本，allComponents 声明候选组件，VIP_APP_REMOVED_COMPONENTS 在 configuration 上做产品裁剪，dependencyReplace 把 account、comment、growth、passport 等普通实现及 API 换成盐言版本。之后版本锁、三方库白名单、TEMP 检查和 SO 对齐负责让最终依赖图可控。需要联调时，sourcecode.gradle 动态 include 本地模块，用 dependencySubstitution 把相同 Maven 坐标替换成 project。运行期里，AAR 已经合进一个 APK，跨组件调用主要靠路由和接口服务，初始化由 TaskManager 的依赖图调度。这样做的收益是团队并行、产品复用和实现可替换；代价是版本、渠道和 Gradle 规则更复杂，所以排障必须先确认 variant 的依赖图，再看运行时。</p></blockquote>
+
+          <h3>面试官可能追问</h3>
+          <h3>1. 问：为什么要拆 API 模块，直接依赖实现不行吗？</h3>
+          <p>能运行，但调用方会编译依赖具体实现，内部类调整会扩大影响面，也很难按产品替换实现。API 模块提供稳定契约，让调用方和实现分别演进；代价是接口兼容和运行时实现缺失需要治理。</p>
+
+          <h3>2. 问：api 与 implementation 的区别是什么？</h3>
+          <p>在 Android Library 中，<code>api</code> 会把依赖类型暴露给上游编译，<code>implementation</code> 尽量只在当前模块内部可见，有助于缩小编译影响。VipAndroid 是最终 application，批量使用 api 更多是历史装配策略；在普通业务 library 中应根据对外签名是否需要该类型选择。</p>
+
+          <h3>3. 问：dependencyReplace 与 InstanceProvider 的区别是什么？</h3>
+          <p>前者在 Gradle 构建期决定 APK 里放哪个制品；后者在 App 运行时按接口找到已经打进 APK 并注册好的实现。没有构建期装配，运行时服务表也不会凭空出现实现。</p>
+
+          <h3>4. 问：为什么单组件能编译，集成到壳却冲突？</h3>
+          <p>单组件只看到自己的局部依赖图；壳把所有组件的传递依赖、资源、Manifest 和 SO 合并，才会暴露跨组件版本不一致、重复类和 ABI 不齐。壳工程必须做最终集成门禁。</p>
+
+          <h3>5. 问：组件化最大的技术风险是什么？</h3>
+          <p>不是“模块太多”本身，而是边界和依赖图变得隐式：接口版本漂移、传递依赖带入旧实现、渠道规则只在特定 variant 生效、运行时注册缺失。解决手段是契约治理、依赖可视化、版本锁、产物检查和关键链路测试。</p>
+
+          <h4>补充快问：Maven 在盐言组件化里到底是什么角色？</h4>
+          <p>严谨地说，Apache Maven 是构建和依赖管理工具，Maven 仓库是制品存储与分发约定。盐言 App 不是用 Maven CLI 构建，而是由 Gradle 根据 GAV 坐标从 Maven 私服解析 AAR/JAR 和 POM，再由 Android Gradle Plugin 把这些输入加工进 APK。日常说“发 Maven”通常是省略说法，实际指把组件制品和元数据发布到 Maven 仓库。</p>
+
+          <h4>补充快问：AAR 和 APK 最本质的区别是什么？</h4>
+          <p>AAR 是 Android Library 的不可安装构建输入，可能带 class、资源、Manifest、SO 和消费者混淆规则；APK 是 App 经过依赖解析、Manifest/资源处理、DEX、打包和签名后的可安装输出。AAR 通常不会原样嵌套进 APK，而是被拆成不同类型的输入分别加工。</p>
+
+          <h4>延伸思考：如果让你改进这套体系，你会先做什么？</h4>
+          <p>先让依赖图和产品组件清单可观测：为每个正式 variant 生成并保存组件/BOM 快照，对普通实现被重新带入、VIP 接口实现缺失、TEMP 版本和 SO 差异做 CI 门禁。之后再逐步减少全局 api 和散落 force，推动组件声明明确依赖边界。</p>
+
+          <h2 id="reading">21. 源码证据与建议阅读顺序</h2>
+
+          <ol>
+            <li><a href="../../../../yyyyy-cdoe/VipAndroid/settings.gradle"><code class="code-path">yyyyy-cdoe/VipAndroid/settings.gradle</code></a>：确认默认 project 与源码替换入口；</li>
+            <li><a href="../../../../yyyyy-cdoe/VipAndroid/gradle/auto_maven_repo.gradle"><code class="code-path">yyyyy-cdoe/VipAndroid/gradle/auto_maven_repo.gradle</code></a> 与 <a href="../../../../yyyyy-cdoe/VipAndroid/build.gradle"><code class="code-path">yyyyy-cdoe/VipAndroid/build.gradle</code></a>：区分本地仓库注入、构建脚本仓库与普通工程依赖仓库；</li>
+            <li><a href="../../../../yyyyy-cdoe/VipAndroid/app/build.gradle"><code class="code-path">yyyyy-cdoe/VipAndroid/app/build.gradle</code></a>：依次看 removed、configurations、allComponents、dependencies、dependencyReplace 和 handleSo；</li>
+            <li><a href="../../../../yyyyy-cdoe/VipAndroid/version.gradle"><code class="code-path">yyyyy-cdoe/VipAndroid/version.gradle</code></a>：理解坐标版本怎样集中管理；</li>
+            <li><a href="../../../../yyyyy-cdoe/VipAndroid/META-INF/modules.json"><code class="code-path">yyyyy-cdoe/VipAndroid/META-INF/modules.json</code></a>：结合 alias、level 与 layer 理解新旧组件分类，但不要把登记标签误当成强制依赖层；</li>
+            <li><a href="../../../../yyyyy-cdoe/VipAndroid/gradle/sourcecode.gradle"><code class="code-path">yyyyy-cdoe/VipAndroid/gradle/sourcecode.gradle</code></a>：看 Maven module 怎样被本地 project 替换；</li>
+            <li><a href="../../../../yyyyy-cdoe/VipAndroid/app/gradle/lock_versions.gradle"><code class="code-path">yyyyy-cdoe/VipAndroid/app/gradle/lock_versions.gradle</code></a>：看 modules registry 和 resolutionStrategy；</li>
+            <li><a href="../../../../yyyyy-cdoe/VipAndroid/app/gradle/check_deps.gradle"><code class="code-path">yyyyy-cdoe/VipAndroid/app/gradle/check_deps.gradle</code></a>：看三方库与 TEMP 版本门禁；</li>
+            <li><a href="../../../../yyyyy-cdoe/VipAndroid/app/launch_config/TaskManager.json"><code class="code-path">yyyyy-cdoe/VipAndroid/app/launch_config/TaskManager.json</code></a>：看运行时任务依赖图；</li>
+            <li><a href="../../../../yyyyy-cdoe/VipAndroid/app/src/main/java/com/zhihu/android/app/ZhihuApplication.java"><code class="code-path">yyyyy-cdoe/VipAndroid/app/src/main/java/com/zhihu/android/app/ZhihuApplication.java</code></a>：看壳怎样把初始化交给统一 delegate；</li>
+            <li><a href="../../../../yyyyy-cdoe/VipComment/comment-api/src/main/java/com/zhihu/android/comment/interfaces/ICommentLikeViewProvider.java"><code class="code-path">yyyyy-cdoe/VipComment/comment-api/src/main/java/com/zhihu/android/comment/interfaces/ICommentLikeViewProvider.java</code></a> 与 <a href="../../../../yyyyy-cdoe/VipComment/comment/src/main/java/com/zhihu/android/module/CommentLikeViewProviderImpl.java"><code class="code-path">yyyyy-cdoe/VipComment/comment/src/main/java/com/zhihu/android/module/CommentLikeViewProviderImpl.java</code></a>：看 API/实现和 AutoService；</li>
+            <li><a href="../../../../yyyyy-cdoe/KnowledgeMarket/kmarket-api/src/main/java/com/zhihu/android/kmarket/KmarketFragmentInterface.java"><code class="code-path">yyyyy-cdoe/KnowledgeMarket/kmarket-api/src/main/java/com/zhihu/android/kmarket/KmarketFragmentInterface.java</code></a>、<a href="../../../../yyyyy-cdoe/KnowledgeMarket/kmarket/src/main/java/com/zhihu/android/module/KmarketFragmentInterfaceImpl.java"><code class="code-path">yyyyy-cdoe/KnowledgeMarket/kmarket/src/main/java/com/zhihu/android/module/KmarketFragmentInterfaceImpl.java</code></a> 与 <a href="../../../../yyyyy-cdoe/KmBase/kmbase/src/main/java/com/zhihu/android/app/base/router/KmRouterUtils.java"><code class="code-path">yyyyy-cdoe/KmBase/kmbase/src/main/java/com/zhihu/android/app/base/router/KmRouterUtils.java</code></a>：看真实跨组件接口调用。</li>
+          </ol>
+
+          <h2 id="boundary">22. 证据边界</h2>
+
+          <p>本文基于当前本地检出解释实际可见机制。可以确认的是 Gradle 清单、新旧组件坐标分类、排除/替换规则、源码替换脚本、任务配置、路由入口和代表性 API/实现。不能仅凭这些文件断言所有线上版本都使用完全相同的配置，也不能把职责分层理解成已由 Gradle 强制执行的完整依赖 DAG；本次文档任务同样没有执行依赖内网制品的完整 APK 构建。</p>
+          <p>工程内 README 仍带有旧知乎主 App 描述，因此产品身份以仓库 <code>AGENTS.md</code>、applicationId、VIP 组件配置和实际源码为准。个人负责范围、上线收益和性能指标<strong>需本人确认</strong>，并用需求、MR、commit 或监控数据佐证。</p>
+
+          <hr>
+          <p><a href="../repositories.html">← 返回仓库索引</a> · <a href="../index.html">返回资料首页</a></p>
+        </article>
+        <aside class="page-toc" aria-label="本页目录">
+          <div class="toc-title">本页目录</div>
+          <a class="toc-link level-2" href="#answer-first">先给结论</a>
+          <a class="toc-link level-2" href="#why">为什么组件化</a>
+          <a class="toc-link level-2" href="#terms">核心术语</a>
+          <a class="toc-link level-2" href="#maven">Maven 与依赖解析</a>
+          <a class="toc-link level-2" href="#three-phases">三个阶段</a>
+          <a class="toc-link level-2" href="#shell">壳工程模型</a>
+          <a class="toc-link level-2" href="#aar">AAR 与 APK</a>
+          <a class="toc-link level-2" href="#assembly">构建期组装</a>
+          <a class="toc-link level-2" href="#source-dependency">源码替换</a>
+          <a class="toc-link level-2" href="#api-impl">API 与实现</a>
+          <a class="toc-link level-2" href="#component-hierarchy">组件层级</a>
+          <a class="toc-link level-2" href="#communication">运行时通信</a>
+          <a class="toc-link level-2" href="#versions">版本治理</a>
+          <a class="toc-link level-2" href="#flavor">多渠道与变体</a>
+          <a class="toc-link level-2" href="#quality-gates">产物门禁</a>
+          <a class="toc-link level-2" href="#full-flow">完整装配链</a>
+          <a class="toc-link level-2" href="#tradeoffs">收益与代价</a>
+          <a class="toc-link level-2" href="#debugging">排障方法</a>
+          <a class="toc-link level-2" href="#misunderstandings">常见误区</a>
+          <a class="toc-link level-2" href="#interview">面试讲法</a>
+          <a class="toc-link level-2" href="#reading">源码证据</a>
+          <a class="toc-link level-2" href="#boundary">证据边界</a>
+        </aside>
+      </div>
+    </main>
+  </div>
+  <script src="../assets/search-data.js"></script>
+  <script src="../assets/docs.js"></script>
+</body>
+</html>

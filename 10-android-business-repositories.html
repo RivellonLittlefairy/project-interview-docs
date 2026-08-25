@@ -1,0 +1,558 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Android 业务仓库：基于当前工作区源码证据整理的项目面试资料">
+  <title>Android 业务与主工程仓库：源码证据化面试手册｜项目面试资料</title>
+  <link rel="stylesheet" href="assets/docs.css">
+  <script>
+    try {
+      const savedTheme = localStorage.getItem("interview-docs-theme");
+      const preferredDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      document.documentElement.dataset.theme = savedTheme || (preferredDark ? "dark" : "light");
+    } catch {}
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <header class="topbar">
+    <button class="icon-button menu-button" type="button" data-menu-toggle aria-label="打开文档导航" aria-expanded="false">☰</button>
+    <a class="brand" href="index.html"><span class="brand-mark">⌁</span><span>项目面试资料库</span></a>
+    <div class="search-shell">
+      <label class="sr-only" for="global-search">搜索所有文档</label>
+      <input id="global-search" type="search" data-search-input placeholder="搜索仓库、技术或面试题…" autocomplete="off">
+      <span class="search-shortcut">Ctrl K</span>
+      <div class="search-results" data-search-results hidden></div>
+    </div>
+    <button class="icon-button" type="button" data-theme-toggle aria-label="切换深浅主题">◐</button>
+  </header>
+  <div class="drawer-backdrop" data-drawer-backdrop hidden></div>
+  <div class="docs-layout">
+    <nav class="sidebar" data-sidebar aria-label="全站文档导航">
+      <div class="sidebar-heading">文档导航</div>
+      
+        <section class="nav-group">
+          <h2 class="nav-group-title">逐仓文档</h2>
+          <a class="nav-link" href="repositories.html">66 个仓库独立分析</a>
+        </section>
+        <section class="nav-group">
+          <h2 class="nav-group-title">开始使用</h2>
+          <a class="nav-link" href="index.html">总览与导航</a>
+<a class="nav-link" href="50-interview-project-summary.html">五条主讲项目线</a>
+<a class="nav-link" href="70-resume-and-star-stories.html">简历与 STAR</a>
+<a class="nav-link" href="60-interview-question-bank.html">70 道面试题</a>
+        </section>
+
+        <section class="nav-group">
+          <h2 class="nav-group-title">仓库分析</h2>
+          <a class="nav-link" href="00-repository-inventory.html">全量仓库盘点</a>
+<a class="nav-link active" href="10-android-business-repositories.html" aria-current="page">Android 业务仓库</a>
+<a class="nav-link" href="20-android-infrastructure-media.html">基础设施与媒体</a>
+<a class="nav-link" href="30-cross-platform-rn-web.html">RN 与 Web</a>
+<a class="nav-link" href="31-tools-samples-and-assets.html">工具、样例与资产</a>
+        </section>
+
+        <section class="nav-group">
+          <h2 class="nav-group-title">质量复核</h2>
+          <a class="nav-link" href="40-android-docs-evidence-review.html">Android 证据复核</a>
+<a class="nav-link" href="41-full-workspace-coverage-review.html">全工作区覆盖复核</a>
+        </section>
+
+        <section class="nav-group">
+          <h2 class="nav-group-title">辅助材料</h2>
+          <a class="nav-link" href="ANALYSIS-TEMPLATE.html">仓库分析模板</a>
+<a class="nav-link" href="2026-07-24-all-repositories-analysis-plan.html">原始执行计划</a>
+        </section>
+
+        <section class="nav-group">
+          <h2 class="nav-group-title">Android 专题</h2>
+          <a class="nav-link" href="android-storage-guide.html">Android 存储方案</a>
+        </section>
+      <p class="sidebar-note">离线资料 · 证据快照 2026-07-24</p>
+    </nav>
+    <main class="article-shell" id="main-content">
+      <div class="breadcrumbs"><a href="index.html">首页</a><span>/</span><span>仓库分析</span><span>/</span><span>Android 业务仓库</span></div>
+      
+      <article class="markdown-body">
+        <h1 id="android-业务与主工程仓库-源码证据化面试手册">Android 业务与主工程仓库：源码证据化面试手册</h1>
+<blockquote class="callout"><p>检查日期：2026-07-24。路径均相对 <code>C:\Users\msf\Desktop\code</code>。本章只根据当前检出源码总结，不把 README 当作唯一事实来源，也不把底层框架的作者身份归给业务接入者。</p>
+</blockquote>
+<blockquote class="callout"><p>[!IMPORTANT]
+<strong>源码事实不等于个人经历。</strong> 下文的类、函数、模块和调用链可以由当前源码验证，但不能据此推断候选人实际负责、设计或交付过这些能力。所有 STAR 仅是条件式表达模板：只有调用点、本人动作和问题背景都与真实经历一致时才可使用；其中结果 R 必须由本人补充可核验的真实指标，没有指标时应如实描述验证范围，不能虚构提升比例、故障数量或业务收益。</p>
+</blockquote>
+<h2 id="0-覆盖-结论与使用边界">0. 覆盖、结论与使用边界</h2>
+<ul>
+<li>实际覆盖 23 个仓库：<code>yyyyy-cdoe/VipAndroid</code>、<code>KnowledgeMarket</code>、<code>km_home_base</code>、<code>VipHome</code>、<code>VipProfile</code>、<code>VipGrowth</code>、<code>Premium</code>、<code>VipReader</code>、<code>VipManuscript</code>、<code>VipKmAudio</code>、<code>Kmaudio</code>、<code>KmDetailPage</code>、<code>KmBase</code>、<code>LiteKnowledgeMarket</code>、<code>VipPassport</code>、<code>Account</code>、<code>VipComment</code>、<code>Comment</code>、<code>Feed</code>、<code>km-attention</code>、<code>Vipchannelcard</code>、<code>Common</code>、<code>kmcommon</code>。</li>
+<li><code>VipPremium</code> 目录不存在；实际对应仓库是 <code>yyyyy-cdoe/Premium</code>。其余名称均存在于 <code>yyyyy-cdoe</code> 下，不在工作区一级目录。</li>
+<li>最适合主讲的证据链：主工程组件装配（VipAndroid）、冷启动与主导航（VipHome）、首页 Paging3（km_home_base）、手稿目录与互动（VipManuscript）、EPUB 阅读（VipReader）、音频播放（Kmaudio/VipKmAudio）、评论（Comment/VipComment）、推荐 Feed（Feed）、注册鉴权（VipPassport）。</li>
+<li>共同技术底座是 Java/Kotlin、AndroidX、RxJava 2、Retrofit 风格 Service、Zhihu Router/ZRouter、自研组件发现与服务接口；部分新链路使用协程、LiveData、Mavericks/DevKit MVI、Paging3。业务仓库是在这些框架上做页面、接口、状态与异常集成，不能说成“我设计了 Router、Paging3 或整套组件框架”。</li>
+<li>工程共性：组件仓通常采用“实现模块 + <code>-api</code> 模块 + <code>app</code> 示例壳”，由 <code>athena.json</code> 和 <code>deploy*.sh</code> 发布；主工程再以 Maven 版本或 <code>sourcecode.properties</code> 源码替换接入。</li>
+<li>测试总体偏弱：少数仓库有真实测试（如 <code>yyyyy-cdoe/KnowledgeMarket/sku-manuscript/src/test/java/com/zhihu/android/app/sku/manuscript/trace/ManuscriptTraceStateMachineTest.kt</code>、<code>yyyyy-cdoe/VipGrowth/growth/src/test/java/com/zhihu/android/growth/GuideNewUserTest.kt</code>、<code>yyyyy-cdoe/KmBase/kmbase/src/test/java/com/zhihu/android/kmarket/base/lifecycle/ShareableViewModelTest.kt</code>、<code>yyyyy-cdoe/VipPassport/vip_passport_ui/src/test/java/com/zhihu/android/app/util/SafetyLockTest.java</code>、<code>yyyyy-cdoe/Vipchannelcard/vipchannelcard/src/test/java/com/zhihu/android/vipchannelcard/utils/NumberFormatUtilTest.kt</code>），大量 <code>ExampleUnitTest</code> 只是模板；<code>Premium</code>、<code>KmDetailPage</code> 未发现测试文件。</li>
+</ul>
+<h2 id="1-vipandroid-vip-app-主工程与组件装配">1. VipAndroid：VIP App 主工程与组件装配</h2>
+<p><strong>定位 / 技术栈 / 模块。</strong> <code>yyyyy-cdoe/VipAndroid</code> 是 <code>com.zhihu.vip.android</code> 主壳，源码业务量不大，核心价值是把约 80 个组件组装成多渠道 App。只有 <code>:app</code> 模块；Java/Kotlin、AGP 4.2、Gradle 6.7.1、Kotlin 1.7.20、RxJava2、ZRouter、Robust、Walle、AspectJ、Tinker/VirtualAPK、RN/Hermes 等由 <code>app/build.gradle</code>、<code>version.gradle</code> 和仓库 <code>AGENTS.md</code> 共同印证。</p>
+<p><strong>关键链路。</strong></p>
+<ol>
+<li>组件装配：<code>app/build.gradle</code> 的 <code>allComponents</code> → 循环声明组件依赖 → <code>META-INF/modules.json</code> 提供组件注册信息 → App 运行时按组件服务协作。</li>
+<li>VIP 裁剪：<code>VIP_APP_REMOVED_COMPONENTS</code> 移除主 App 不需要的组件；<code>dependencyReplace</code> 把 <code>comment/account/passport_ui</code> 等替换为 VIP 变体。这是产品裁剪和依赖治理，不是普通页面代码。</li>
+<li>本地联调：<code>settings.gradle</code> 应用 <code>gradle/sourcecode.gradle</code> → 读取 <code>sourcecode.properties</code> → 把 Maven 坐标替换为相邻源码工程，并自动处理 <code>-api</code>/实现模块依赖。</li>
+<li>发布防线：<code>app/gradle/check_deps.gradle</code> 做三方依赖白名单与临时版本检查；<code>handleSo()</code> 检查 32/64 位 so 对齐；<code>componentInsight</code> 输出依赖图；<code>business_aop.gradle</code> 按 flavor 做编译期织入。</li>
+</ol>
+<p><strong>亮点、难点与风险。</strong> 亮点是多渠道、组件裁剪、版本锁定、源码联调和产物完整性形成一套交付闭环。难点是 Gradle 脚本约束很多，组件升级可能触发重复类、版本倒退、so 不对齐或渠道差异。风险是 <code>README.md</code> 明显沿用旧主 App，真实规则应以 Gradle 为准；当前可见业务测试只有 <code>yyyyy-cdoe/VipAndroid/app/third/test-bypass/java/com/zhihu/android/app/report/HiddenCompatTest.kt</code>，主壳更依赖构建验证和集成回归。</p>
+<p><strong>候选人可负责的业务集成点。</strong> 新业务组件接入、VIP 替换表维护、版本升级冲突定位、源码联调配置、多渠道构建失败排查、包体与 so 问题治理。只有本人确实做过相应工作时，才可表述为“我在既有组件/构建体系中完成接入和问题闭环”；不能说“我发明了组件框架”。</p>
+<p><strong>条件式 STAR 模板（仅限真实经历）。</strong> 如果这确实是你负责的调用点，可以按真实经历替换后说：“VIP App 需要复用主 App 能力但又必须裁掉部分组件。我在既有构建体系内维护 <code>VIP_APP_REMOVED_COMPONENTS</code> 和 <code>dependencyReplace</code> 的产品差异，通过 <code>version.gradle</code> 与源码替换机制联调业务组件，再用依赖白名单、组件图和 so 对齐检查做发布验证。”R：需本人补充真实指标或可核验的验证结果。</p>
+<p><strong>追问与回答。</strong></p>
+<ul>
+<li>问：为什么要实现模块和 <code>-api</code> 分开？答：调用方只依赖稳定契约，减少实现泄漏和编译耦合；本地联调时再把实现替换为源码。</li>
+<li>问：升级一个组件怎么控风险？答：先看版本锁与依赖图，再做源码替换联调，验证多 flavor、重复类、三方白名单和 so 完整性，最后回归关键路由。</li>
+</ul>
+<h2 id="2-knowledgemarket-知识市场聚合业务仓">2. KnowledgeMarket：知识市场聚合业务仓</h2>
+<p><strong>定位 / 技术栈 / 模块。</strong> <code>yyyyy-cdoe/KnowledgeMarket</code> 是知识市场的大型聚合组件，包含 <code>kmarket</code>/<code>kmarket-api</code>、<code>kmarket-home</code>、<code>sku-manuscript</code>、<code>audiobook</code>、<code>instabook</code>、<code>personal</code>、<code>common-dep</code> 及示例 <code>app</code>。Java/Kotlin 混合，页面形态同时包含原生 Fragment、Web/Hybrid 与旧式 Rx/LiveData。</p>
+<p><strong>关键链路。</strong></p>
+<ol>
+<li>市场首页：<code>yyyyy-cdoe/KnowledgeMarket/kmarket-home/src/main/java/com/zhihu/android/app/market/fragment/MarketParentFragment.java</code> 或 <code>yyyyy-cdoe/KnowledgeMarket/kmarket-home/src/main/java/com/zhihu/android/app/market/newhome/ui/fragment/ContentMarketHomeFragment.kt</code> 组织页面 → <code>NativeTabViewModel</code>/<code>BookCityViewModel</code> → <code>newhome/datasource/DiscoverPinDataSource.kt</code>、<code>VipPinDataSource.kt</code> → <code>NewMarketService.java</code> → 卡片列表。</li>
+<li>书架：<code>yyyyy-cdoe/KnowledgeMarket/kmarket-home/src/main/java/com/zhihu/android/app/market/shelf/Shelf2Fragment.kt</code> → <code>ShelfViewModel.kt</code> → <code>ShelfEBookDownloadViewModel.kt</code>/<code>ShelfCommonDownloadViewModel.kt</code>，把书架状态、下载状态与 UI 合并；<code>ShelfService</code>/<code>KMHomeDownloadService</code> 负责边界接口。</li>
+<li>手稿草稿页：<code>yyyyy-cdoe/KnowledgeMarket/sku-manuscript/src/main/java/com/zhihu/android/app/sku/manuscript/draftpage/VerticalDraftFragment.kt</code> → <code>VerticalDraftViewModel.kt</code>/<code>DraftViewModel.kt</code> → <code>SKUManuscriptService.kt</code>，再由 <code>DraftWorkCatalogViewModel</code>、<code>DraftRecommendCatalogViewModel</code> 组织目录切换与分页。</li>
+<li>已购与个人中心：<code>yyyyy-cdoe/KnowledgeMarket/personal/src/main/java/com/zhihu/android/app/market/fragment/MarketPurchasedParentFragment.kt</code> 分发原生/三方/Web 子页 → <code>KMPersonalService.java</code> 拉取权益、订单或证书数据。</li>
+</ol>
+<p><strong>亮点、难点与风险。</strong> 亮点是一个仓库覆盖“发现—详情—阅读/收听—书架—已购”的业务闭环，并通过 <code>kmarket-api</code> 对外暴露页面契约。难点是模块多、原生与 Hybrid 并存、Rx 与 LiveData 混用，且首页/书架存在多代实现。测试只有 <code>yyyyy-cdoe/KnowledgeMarket/sku-manuscript/src/test/java/com/zhihu/android/app/sku/manuscript/trace/ManuscriptTraceStateMachineTest.kt</code> 明显有业务含量，其余多为模板；<code>README</code> 不足以说明当前链路。</p>
+<p><strong>候选人可负责的业务集成点。</strong> 首页卡片与 AB 实验、书架下载态、已购权益、草稿目录、Service 接口对接、Router 入参与埋点。框架由公共组件提供，候选人的价值在数据转换、状态拼装、生命周期和异常兜底。</p>
+<p><strong>条件式 STAR 模板（仅限真实经历）。</strong> 如果首页、书架或详情接入确实由你负责，可以按真实经历替换后说：“我的工作范围是知识市场业务调用，不是底层框架。我在既有架构中按 <code>Fragment—ViewModel—DataSource/Service</code> 串联首页数据源、书架下载态与详情跳转，并处理登录、权益和离线状态；面对 Rx 与新状态模型并存，我重点统一状态来源并约束生命周期。”R：需本人补充真实指标或可核验的验证结果。</p>
+<p><strong>追问与回答。</strong></p>
+<ul>
+<li>问：为什么首页要拆多个 DataSource？答：推荐、喜欢、历史等接口和缓存语义不同，拆分后 ViewModel 只做场景编排，便于 AB 替换和独立降级。</li>
+<li>问：怎么避免下载态和列表态打架？答：网络列表负责内容真值，下载管理器负责本地进度，ViewModel 用业务 id 合并展示态，刷新不能覆盖正在进行的本地状态。</li>
+</ul>
+<h2 id="3-km-home-base-vip-知识首页与书架容器">3. km_home_base：VIP 知识首页与书架容器</h2>
+<p><strong>定位 / 技术栈 / 模块。</strong> <code>yyyyy-cdoe/km_home_base</code> 有 <code>km_home_base</code>、<code>km_home_base-api</code> 和示例 <code>app</code>，负责知识首页子 Tab、书架 Provider、音频页和 Hybrid 容器。核心新链路使用 DevKit/Mavericks 轻量 MVI、Paging3、协程，同时保留 RxJava 事件。</p>
+<p><strong>关键链路。</strong></p>
+<ol>
+<li>首页瀑布流：<code>discovery/HomePinTabFragment.kt</code> → <code>HomePinTabViewModel.refresh()</code> → DevKit <code>Pager.invalidate()</code> → 匿名 <code>ResponsePagingSource</code> 调接口并实现 <code>resolveNextKey</code>/<code>resolvePreKey</code>/<code>resolveValue</code> → <code>pager.flow</code> 写入 <code>PinTabState.data</code> → Fragment <code>invalidate()</code>/adapter 渲染。</li>
+<li>局部互动：Fragment 触发 <code>deleteItem()</code>/<code>likeEvent()</code> → <code>PagerMediator.remove/update</code> → 对当前 <code>PagingData</code> 做过滤或映射，避免每次互动都重新拉整页。</li>
+<li>状态与加载分工：<code>PinTabState</code> 保存 <code>PagingData</code>；刷新、追加等 <code>CombinedLoadStates</code> 仍由 adapter 监听。它是轻量 MVI，不是统一 Intent/Reducer 的严格 MVI。</li>
+<li>书架/音频容器：<code>yyyyy-cdoe/km_home_base/km_home_base-api/src/main/java/com/zhihu/android/feature/km_home_base/BookShelfFragmentProvider.kt</code> 暴露入口；<code>AudioPageContainerFragment.kt</code>/<code>CommonAudioPageFragment.kt</code> 与 <code>CommonAudioPageViewModel.kt</code> 组织音频子页；<code>BookShelfRnFragment.kt</code> 支持 RN 形态。</li>
+</ol>
+<p><strong>亮点、难点与风险。</strong> 亮点是 Paging3 与异构卡片结合，并用 <code>PagerMediator</code> 做点赞/删除的本地即时反馈；还包含 WebView 预热、首屏 banner 过滤和最后阅读位置上报。难点是 Paging generation、adapter load state、协程和 Rx 生命周期同时存在。两个测试文件都是 <code>ExampleUnitTest</code>，分页 key、刷新竞态和 mediator 变换缺少真实单测。</p>
+<p><strong>候选人可负责的业务集成点。</strong> 新卡片 ViewHolder/Diff、PagingSource 接口映射、点赞删除、下拉刷新和错误态、WebView 预热、RN/原生切换。应说“使用并扩展 DevKit 的调用点”，不说“实现了 DevKit Pager”。</p>
+<p><strong>条件式 STAR 模板（仅限真实经历）。</strong> 如果 HomePinTab 的业务接入确实由你负责，可以按真实经历替换后说：“首页是异构瀑布流，我使用现有 DevKit Pager 将接口分页映射为 <code>PagingData</code>，Fragment 负责卡片注册与渲染；点赞、删除通过 <code>PagerMediator</code> 局部变换。排障时我区分 state 数据、adapter LoadState 与 PagingSource generation，并针对旧请求回写或 loading 状态异常做验证。”R：需本人补充真实指标或可核验的验证结果。</p>
+<p><strong>追问与回答。</strong></p>
+<ul>
+<li>问：它和 MVVM 有什么差别？答：页面状态集中在不可变 <code>PinTabState</code> 并单向渲染，但业务方法仍由 Fragment 直接调用，没有统一 Intent/Reducer，所以是轻量 MVI。</li>
+<li>问：为什么 loading 不放进 State？答：Paging3 的 refresh/append/prepend 已由 <code>CombinedLoadStates</code> 表达，重复搬运容易出现两个状态源。</li>
+</ul>
+<h2 id="4-viphome-启动-首页导航与-app-级生命周期">4. VipHome：启动、首页导航与 App 级生命周期</h2>
+<p><strong>定位 / 技术栈 / 模块。</strong> <code>yyyyy-cdoe/VipHome</code> 含 <code>home</code>、<code>home-api</code> 和示例 <code>app</code>，承担 Application 启动、Launcher、MainActivity、底部导航、开屏/推广、灰度和安全启动。Java 为主、Kotlin 辅助，使用 Router、任务调度、APM、Tinker/SafeBoot、PAG 动画。</p>
+<p><strong>关键链路。</strong></p>
+<ol>
+<li>Application：<code>yyyyy-cdoe/VipHome/app/src/main/java/com/zhihu/android/app/ZhihuApplication.java</code> 的 <code>attachBaseContext()</code> → <code>ZhihuApplicationDelegate.beforeAttachBaseContext/attachBaseContext()</code> → SafeBoot、DroidTelescope、HiLeaker；<code>onCreate()</code> 再委托 <code>ZhihuApplicationDelegate.onCreate()</code> 并初始化 Slim、预装和推送。</li>
+<li>冷启动：<code>yyyyy-cdoe/VipHome/home/src/main/java/com/zhihu/android/app/ui/activity/LauncherActivity.java</code>（<code>@Router(&quot;zhihu://launcher&quot;)</code>）→ 隐私/新用户/推广判断 → <code>handleLauncherDisplay()</code>/PAG 动画 → <code>startMain()</code> → <code>MainActivity</code>；<code>LaunchTaskMonitor</code> 记录阶段耗时。</li>
+<li>主导航：<code>MainActivity.onCreate()</code>/<code>setupTab()</code> → <code>NavItemProvider</code>、<code>DynamicMenuProvider</code> 等生成 Tab → <code>onTabSelected/onTabReselected</code> 驱动业务页；Overlay Fragment 和 ZHIntent 承接跨组件页面。</li>
+<li>异常与体验：<code>SafeBoot</code>、<code>GrayScreenManager</code>、<code>SplashAdConfigManager</code>、<code>HiMemManager/HiLeakerManager</code> 分别处理启动恢复、灰屏、开屏配置和内存问题。</li>
+</ol>
+<p><strong>亮点、难点与风险。</strong> 启动链把隐私、预装、推广、动效、主页面和 APM 串在一起，且注释明确业务逻辑不要堆到 <code>MainActivity</code>。难点是冷启动时序与“开小程序后被 MainActivity 盖住”这类竞态。测试大多是模板，启动链应依靠阶段监控、冷/热启动用例和多渠道实机回归。</p>
+<p><strong>候选人可负责的业务集成点。</strong> 启动阶段任务接入、隐私前后初始化分层、VIP 启动动画、底部 Tab/红点、深链分发、启动耗时和异常恢复。</p>
+<p><strong>条件式 STAR 模板（仅限真实经历）。</strong> 如果启动业务接入确实由你负责，可以按真实经历替换后说：“我在既有 App Delegate 和任务框架边界内接入启动业务，没有把业务逻辑直接堆入 Application/MainActivity；我按隐私前、授权后和首屏后拆分任务，用 <code>LaunchTaskMonitor</code> 对齐阶段，并验证 Launcher 到 Main 的路由时序。”R：需本人补充真实指标或可核验的验证结果。</p>
+<p><strong>追问与回答。</strong></p>
+<ul>
+<li>问：为什么不能所有 SDK 都在 <code>Application.onCreate()</code> 初始化？答：会阻塞首帧，也可能违反隐私时序；应按必要性、进程和线程拆到任务图。</li>
+<li>问：怎么定位启动慢？答：先看各阶段监控，再区分主线程 CPU、IO、锁等待和跨进程，最后用 fastbuild/灰度开关验证单项影响。</li>
+</ul>
+<h2 id="5-vipprofile-个人主页-资料编辑与账号设置">5. VipProfile：个人主页、资料编辑与账号设置</h2>
+<p><strong>定位 / 技术栈 / 模块。</strong> <code>yyyyy-cdoe/VipProfile</code> 由 <code>vip_profile</code>、<code>vip_profile-api</code>、<code>app</code> 组成；对外由 <code>VipProfileFragmentProvider</code>、<code>VipRiskProvider</code> 等暴露能力。原生 Fragment、RN 容器并存；Android ViewModel + LiveData/RxJava + Repository/Retrofit Service。</p>
+<p><strong>关键链路。</strong></p>
+<ol>
+<li>我的主页：<code>fragment/VipProfileFragment.kt</code> → <code>vm/ProfileViewModel.checkRequestData()</code> → <code>requestUserInfo()</code> → <code>data/ProfileRepository.getUserInfo(useCache)</code> → <code>api/ProfileService.kt</code>，成功后 <code>replaceUserInfo()</code> 更新 <code>ProfileUiState</code>。</li>
+<li>缓存与刷新：<code>ProfileRepository.getUserInfo()</code> 可先返回缓存，再映射网络数据；ViewModel 同时请求消息数、助手卡、VIP 数据，Fragment 观察多个展示状态。</li>
+<li>资料编辑：<code>EditProfileFragment.kt</code>/<code>EditAvatarFragment.kt</code> → <code>ProfileEditViewModel.kt</code>/<code>ProfileRepository</code> → Profile Service，临时编辑信息由 <code>setTempEditedInfo()</code> 合并回主页。</li>
+<li>风控与设置：<code>AccountSafetyFragment.kt</code>、<code>PrivacyFragment.kt</code>、<code>TeenagerHomeFragment.kt</code> 对应安全、隐私与青少年模式；RN 容器提供渐进迁移入口。</li>
+</ol>
+<p><strong>亮点、难点与风险。</strong> 亮点是 API 契约、Repository 缓存和 ViewModel 状态分层比较清楚。难点是个人页多个并发请求需要部分成功展示，不能一个失败清空全部；Rx disposable 与生命周期要一致。真实测试只有 <code>yyyyy-cdoe/VipProfile/vip_profile/src/test/java/com/zhihu/android/vip_profile/utils/UpdateTest.kt</code> 较明确，主页状态合并测试不足。</p>
+<p><strong>候选人可负责的业务集成点。</strong> 用户信息卡、消息/优惠卡并发加载、资料编辑回写、RN/Native 容器切换、安全与隐私入口、错误降级。</p>
+<p><strong>条件式 STAR 模板（仅限真实经历）。</strong> 如果个人主页状态整合确实由你负责，可以按真实经历替换后说：“个人主页不是单接口页面。我在既有 MVVM 下将用户信息作为主状态，将消息数、助手卡和 VIP 卡建模为可独立失败的附加状态；Repository 支持缓存先显和网络回补，编辑完成后做局部回写。”R：需本人补充真实指标或可核验的验证结果。</p>
+<p><strong>追问与回答。</strong></p>
+<ul>
+<li>问：并行请求怎么处理失败？答：主资料失败决定整页错误态，附属卡失败只隐藏或保留缓存，并分别上报，不用 <code>zip</code> 把成功率绑死。</li>
+<li>问：RN 与原生共存的风险？答：参数协议、登录态、曝光生命周期和返回栈容易不一致，需要 Provider/Router 契约和双端埋点校验。</li>
+</ul>
+<h2 id="6-vipgrowth-新用户-引导-权益与增长任务">6. VipGrowth：新用户、引导、权益与增长任务</h2>
+<p><strong>定位 / 技术栈 / 模块。</strong> <code>yyyyy-cdoe/VipGrowth</code> 当前发布 <code>vip_growth</code>/<code>vip_growth-api</code>，源码目录仍为 <code>growth</code>/<code>growth-api</code>。涵盖新用户引导、场景恢复、推送引导、问卷、盐值、隐私与浮层任务。Kotlin/Java、ViewModel、RxJava、状态管理器、Router 和任务调度。</p>
+<p><strong>关键链路。</strong></p>
+<ol>
+<li>新用户引导：<code>yyyyy-cdoe/VipGrowth/growth/src/main/java/com/zhihu/android/growth/ui/fragment/NewUserGuideV5Fragment.kt</code> → <code>NewUserGuideV5FragmentDelegate</code> → <code>NewUserGuideV5ViewModel</code> → <code>NewUserGuideV5StateManager</code>/<code>NewUserGuideV5ForwardStateManager</code>，把页面步骤、前进条件和按钮态分开。</li>
+<li>启动接入：<code>app/launch/NewUserLaunchManager.kt</code> 在启动场景判断是否进入引导；<code>BoardingService.java</code>/<code>NewRegisterEquityService.java</code> 拉取配置和新用户权益。</li>
+<li>增长任务：<code>activitytask/FetchPushTaskManager.kt</code>、<code>CardCollectTaskManager.kt</code>、<code>growth/task/boarding/FloatViewTaskManager.kt</code> 通过任务条件、频控和生命周期决定展示。</li>
+<li>隐私链：<code>privacy/PrivacyStatusManager.kt</code> → <code>privacy/launch/PrivacyExplainActivity.kt</code>/<code>PrivacyDialogSubProcessActivity.kt</code>，隔离隐私状态和子进程场景。</li>
+</ol>
+<p><strong>亮点、难点与风险。</strong> 状态管理器避免把复杂引导塞进 Fragment；任务 Manager 有利于频控和冲突编排。难点是启动时序、实验配置、登录态和频控组合会形成很大的状态空间。<code>yyyyy-cdoe/VipGrowth/growth/src/test/java/com/zhihu/android/growth/GuideNewUserTest.kt</code> 是少数真实业务测试，但仍需补状态机表驱动和跨版本恢复测试。</p>
+<p><strong>候选人可负责的业务集成点。</strong> 新用户步骤、权益弹层、任务频控、推送/权限引导、场景恢复、隐私前后执行边界与 AB 实验。</p>
+<p><strong>条件式 STAR 模板（仅限真实经历）。</strong> 如果增长引导状态编排确实由你负责，可以按真实经历替换后说：“增长引导的难点是条件容易散落。我在既有结构中将步骤流转放在 StateManager、页面渲染留给 Fragment、接口与权益判断放入 ViewModel/Service，并统一频控和退出恢复；新增实验分支通过扩展状态与转移表达。”R：需本人补充真实指标或可核验的验证结果。</p>
+<p><strong>追问与回答。</strong></p>
+<ul>
+<li>问：引导状态机怎么测？答：按初始状态、事件、预期状态做表驱动；重点覆盖杀进程恢复、跳过、接口失败、重复曝光和实验切换。</li>
+<li>问：增长弹层冲突怎么解决？答：统一优先级、互斥组、展示窗口和冷却时间，由任务调度层仲裁，页面只消费结果。</li>
+</ul>
+<h2 id="7-premium-会员购买-权益与支付挽留">7. Premium：会员购买、权益与支付挽留</h2>
+<p><strong>定位 / 技术栈 / 模块。</strong> <code>yyyyy-cdoe/Premium</code> 是实际存在的会员仓库（没有 <code>VipPremium</code> 目录），含 <code>premium</code>、<code>premium-api</code>、<code>app</code>。它提供购买宿主 Activity、多个购买 Fragment、权益页和 <code>VipPurchaseManager</code> API；Java/Kotlin、MVVM/RxJava、Retrofit、Router，兼有 RN 购买页。</p>
+<p><strong>关键链路。</strong></p>
+<ol>
+<li>购买页：<code>VipPurchaseHostActivity.java</code>/<code>VipPurchaseSuperFragment.kt</code> → <code>viewmodel/VipPurchaseViewModel.getVipDetailRights()</code> → <code>api/PremiumService.kt</code> → 解析 VIP/EVIP/SVIP 套餐并更新页面支付方法与促销样式。</li>
+<li>支付辅助：ViewModel 的 <code>getAliPayMethodExtraInfo()</code>、<code>getCoinBanlance()</code> 拉取支付附加信息和余额；<code>VipPayMethodListSceneFragment</code>/<code>VipPayCouponDialogFragment</code> 负责选择和优惠券交互。</li>
+<li>离开挽留：<code>requestCancelDialogDataV2(skuId)</code> → 服务端挽留数据 → 倒计时/弹窗；<code>reportLeaveRetrieve()</code> 上报结果。</li>
+<li>权益入口：<code>MyVipFragment.kt</code>、<code>point/MemberPointFragment.kt</code>、<code>VipPrivilegeFragment.kt</code> 和 <code>privileges/card/VipPrivilegesCardFragment.java</code> 组织会员状态与权益卡。</li>
+</ol>
+<p><strong>亮点、难点与风险。</strong> 同一 ViewModel 统一 VIP/EVIP/SVIP 套餐、券、余额、挽留和“盐”弹窗，业务闭环完整。难点是支付幂等、Activity 重建、倒计时和弹窗状态恢复；购买页面原生/RN 并存。仓库未发现测试文件，这是支付业务的明显风险，应优先补套餐映射、金额展示、订单幂等和恢复测试。</p>
+<p><strong>候选人可负责的业务集成点。</strong> 套餐展示、优惠券/支付方式、支付结果回调、挽留弹窗、会员权益刷新、RN 降级与埋点。支付 SDK 和底层订单系统是外部能力，候选人负责端内编排和状态一致性。</p>
+<p><strong>条件式 STAR 模板（仅限真实经历）。</strong> 如果会员购买业务接入确实由你负责，可以按真实经历替换后说：“我将套餐、优惠、支付方式和结果刷新视为一组关联状态：把服务端套餐映射为统一 UI 模型，支付发起沿用订单唯一标识，回调后以服务端权益为真值刷新；Activity 重建时恢复必要的订单与弹窗状态。”R：需本人补充真实指标或可核验的验证结果。</p>
+<p><strong>追问与回答。</strong></p>
+<ul>
+<li>问：支付回调成功就能直接开权益吗？答：不能只信客户端回调，应查询服务端订单/权益，客户端回调只触发刷新。</li>
+<li>问：倒计时为什么要特别处理？答：旋转、切后台、重建会重订阅，必须保存绝对过期时间而不是剩余秒数，并在清理时释放 disposable。</li>
+</ul>
+<h2 id="8-vipreader-epub-阅读器与阅读进度">8. VipReader：EPUB 阅读器与阅读进度</h2>
+<p><strong>定位 / 技术栈 / 模块。</strong> <code>yyyyy-cdoe/VipReader</code> 含 <code>vip_reader</code>、<code>vip_reader-api</code>、<code>etconverter</code> 和示例 <code>app</code>。核心是 EPUB 准备/解析、分页、目录导航、主题字号亮度和阅读进度同步；Kotlin、ViewModel/LiveData、RxJava、用例类、本地文件与 RecyclerView。</p>
+<p><strong>关键链路。</strong></p>
+<ol>
+<li>阅读准备：<code>business/VipReaderFragment.kt</code> 创建 <code>EpubViewModel</code> → <code>BaseEpubViewModel</code> 准备 EPUB → <code>onEpubPreparing()</code>/<code>onEpubPrepared()</code> → <code>convertEBookInfo()</code> 与页信息生成 → <code>uiState</code> 驱动 RecyclerView。</li>
+<li>解析与预解析：<code>EpubViewModel.parseChapter()</code>/<code>parse()</code> 解析目标章节；滚动后 <code>preParseAround()</code> 预解析相邻页，降低翻页等待。</li>
+<li>进度同步：<code>saveProgress()</code> 记录本地进度 → <code>needSyncSectionProgress/needSyncGroupProgress</code> 做阈值判断 → <code>syncProgress()</code> 比较本地与网络 → <code>navigate2ChapterProgress/pageIndex/offset</code> 恢复位置。</li>
+<li>阅读设置与互动：<code>changeReaderTheme()</code>、字号/行距/亮度方法更新状态；<code>voteUp/cancelVote</code>、<code>clickBookShelf()</code> 对接点赞和书架。</li>
+</ol>
+<p><strong>亮点、难点与风险。</strong> 最强亮点是本地解析、相邻预加载、章节/页索引多种导航与端云进度合并。难点是 IO/解密/解析不能阻塞主线程，分页结果又必须保持章节顺序；进度冲突要避免倒退。现有四个测试全是模板，真实 EPUB、坏包、断点恢复和进度合并没有可见自动化保障。</p>
+<p><strong>候选人可负责的业务集成点。</strong> 阅读页状态、目录跳转、进度同步、主题字号、解析/预加载策略、文件落盘和错误恢复。解析引擎若来自公共库，应表述为“接入并处理业务状态”，不声称编写 EPUB 标准解析器。</p>
+<p><strong>条件式 STAR 模板（仅限真实经历）。</strong> 如果阅读器解析与进度接入确实由你负责，可以按真实经历替换后说：“阅读体验的关键在首章打开、翻页和进度一致性。我在现有解析能力上接入章节按需解析与相邻预解析，将 IO 调度到后台；进度结合章节 id、页索引和偏移保存，端云合并时处理进度倒退，页面统一观察 <code>uiState</code>。”R：需本人补充真实指标或可核验的验证结果。</p>
+<p><strong>追问与回答。</strong></p>
+<ul>
+<li>问：为什么不能只存百分比？答：内容版本、字体和排版会改变页数；章节 id + 文本偏移更稳定，页索引适合当前会话快速恢复。</li>
+<li>问：预解析怎么防内存上涨？答：限制前后窗口、取消离屏任务、缓存可复用中间结果并设置上限，内存压力时回收。</li>
+</ul>
+<h2 id="9-vipmanuscript-盐言故事阅读-目录与互动">9. VipManuscript：盐言故事阅读、目录与互动</h2>
+<p><strong>定位 / 技术栈 / 模块。</strong> <code>yyyyy-cdoe/VipManuscript</code> 含 <code>vip_manuscript</code>、<code>vip_manuscript-api</code>、<code>app</code>，覆盖手稿阅读、原生/React 页面项、目录、评论、打卡、礼物、推荐和营销。Kotlin/Java、Mavericks/DevKit MVI、Paging3、协程、RxJava、Hybrid/React 混合。</p>
+<p><strong>关键链路。</strong></p>
+<ol>
+<li>双向目录：<code>catalog/native_catalog/recommend/actor/NativeManuscriptAuthorFragment.kt</code> → <code>ManuscriptBillboardViewModel.initArgument()</code> → DevKit <code>Pager</code>/匿名 <code>ResponsePagingSource</code> → <code>resolvePreKey</code> 和 <code>resolveNextKey</code> 围绕初始章节双向加载 → <code>BillboardState.data</code> → Fragment <code>invalidate()</code>。</li>
+<li>刷新与定位：Fragment <code>requestData()</code> → ViewModel <code>refresh()</code> → <code>pager.invalidate()</code>；<code>showTargetOnSecondPosition()</code> 把目标章节放到可见位置，兼顾上下文。</li>
+<li>互动：<code>ManuscriptBillboardViewModel.voteUp/voteDown()</code> 使用 <code>viewModelScope.launch</code> 调业务接口并发事件；<code>addToShelf/removeFromShelf()</code> 使用 Rx Service 更新书架。</li>
+<li>评论/礼物：<code>comment/list/ManuscriptCommentListFragment.kt</code> → <code>ManuscriptCommentListViewModel</code> → list source/<code>service/CommentService.kt</code>；<code>gift/GiftSendFragment.kt</code> → <code>gift/service/GiftService.kt</code> → 动画播放组件。</li>
+</ol>
+<p><strong>亮点、难点与风险。</strong> 双向 Paging 从目标章节进入比普通首尾分页复杂；同仓支持原生、React、Hybrid 迁移，并把目录、阅读、评论、礼物事件串联。难点是 initial key、prepend/append 去重、主题和页面生命周期、互动的乐观更新。现有 <code>vip_manuscript/src/test</code> 仍是模板；可借鉴 <code>yyyyy-cdoe/KnowledgeMarket/sku-manuscript/src/test/java/com/zhihu/android/app/sku/manuscript/trace/ManuscriptTraceStateMachineTest.kt</code> 补真实状态测试。</p>
+<p><strong>候选人可负责的业务集成点。</strong> 目录分页和定位、原生阅读页、互动/书架、评论接入、主题、礼物动画、跨 RN/原生事件协议。</p>
+<p><strong>条件式 STAR 模板（仅限真实经历）。</strong> 如果手稿目录分页调用点确实由你负责，可以按真实经历替换后说：“手稿目录可能从任意章节进入。我基于现有 Pager 接入 prepend/append key 计算，刷新时创建新 generation，并在目标章节周围保留上下文；点赞和书架操作独立更新并准备失败回滚。”R：需本人补充真实指标或可核验的验证结果，不能直接声称已解决首开或定位问题。</p>
+<p><strong>追问与回答。</strong></p>
+<ul>
+<li>问：双向分页最容易错在哪里？答：初始页 key、首尾 null、重复章节和两个方向同时返回时的排序；要以稳定 section id 去重。</li>
+<li>问：MVI 状态里应该放弹 Toast 吗？答：持久 UI 状态放 State，一次性事件用 event/channel，避免旋转后重复消费。</li>
+</ul>
+<h2 id="10-vipkmaudio-vip-音频组件变体">10. VipKmAudio：VIP 音频组件变体</h2>
+<p><strong>定位 / 技术栈 / 模块。</strong> <code>yyyyy-cdoe/VipKmAudio</code> 发布名是 <code>vip_kmaudio</code>/<code>vip_kmaudio-api</code>，但根目录无扩展名文件 <code>vip_kmaudio</code> 的内容是 <code>kmaudio</code>，实际实现源码在 <code>kmaudio/</code>。这是 VIP 音频变体，重点是播放器、购买、弹幕、广告与 VIP 业务 Service。</p>
+<p><strong>关键链路。</strong></p>
+<ol>
+<li>播放：<code>yyyyy-cdoe/VipKmAudio/kmaudio/src/main/java/com/zhihu/android/kmaudio/player/audio/ui/AudioPlayerFragment.kt</code> → <code>AudioPlayViewModel.kt</code> → <code>data/datasource/GlobalAudioRepository.kt</code> → 播放内核/音频资源，页面观察播放、进度与错误。</li>
+<li>购买：<code>AudioSkuPurchaseFragment.kt</code>/<code>AudioPurchaseFragment.kt</code> → <code>AudioPurchaseViewModel.kt</code> → <code>VipAppBusinessService.kt</code> → 购买或权益确认 → 播放页刷新 ownership。</li>
+<li>辅助能力：<code>AudioMenuFragment</code>/<code>AudioMenuViewModel</code> 提供倍速、定时等菜单；<code>AudioBarrageInputFragment</code> 发送弹幕；<code>AudioAdFragment</code> 处理广告形态。</li>
+</ol>
+<p><strong>亮点、难点与风险。</strong> VIP 变体在复用音频能力时加入购买、广告和弹幕，业务闭环明确。难点是全局播放器状态与 Fragment 生命周期解耦、购买完成后的权限刷新、音频焦点与后台播放。四个测试都是模板；模块名通过文本路径映射，IDE/脚本若按物理目录猜模块会误判。</p>
+<p><strong>候选人可负责的业务集成点。</strong> 播放 UI/状态绑定、VIP ownership、购买回调、弹幕、菜单、广告策略和埋点。播放内核是基础能力，候选人负责业务 DataSource 与页面协作。</p>
+<p><strong>条件式 STAR 模板（仅限真实经历）。</strong> 如果 VIP 音频状态接入确实由你负责，可以按真实经历替换后说：“我将现有全局播放状态作为单一真值，Fragment 只订阅并渲染；购买完成后不直接本地放权，而是刷新 ownership 后再继续播放，并验证页面重建、后台播放与购买回跳场景。”R：需本人补充真实指标或可核验的验证结果。</p>
+<p><strong>追问与回答。</strong></p>
+<ul>
+<li>问：为什么全局 Repository 合理？答：播放跨页面、跨生命周期，状态归播放器会话而不是某个 Fragment；但订阅必须随页面解绑。</li>
+<li>问：如何处理来电/其他 App 抢音频？答：监听 AudioFocus，区分暂时丢失和永久丢失，暂停/duck 后同步 UI，恢复也要校验用户是否主动暂停。</li>
+</ul>
+<h2 id="11-kmaudio-通用知识音频播放器">11. Kmaudio：通用知识音频播放器</h2>
+<p><strong>定位 / 技术栈 / 模块。</strong> <code>yyyyy-cdoe/Kmaudio</code> 有 <code>kmaudio</code>、<code>kmaudio-api</code> 和 <code>app</code>，是较通用的播放器与业务数据适配层。核心是 <code>KMPlayerFragment</code>、DataSource、播放列表、目录、资源鉴权和多 SKU 类型。</p>
+<p><strong>关键链路。</strong></p>
+<ol>
+<li>入口：<code>player/ui/fragment/KMPlayerFragment.buildIntent(type,id,trackId,autoPlay)</code> 生成 ZHIntent → <code>loadPlayer(args)</code> → 选择业务 DataSource → <code>onNewDataSource()</code>/<code>attachVMs()</code> → 渲染播放器。</li>
+<li>资源：<code>player/engine/ResourceService.requestResource()</code> 调 <code>/promus/audios/info</code> 获取可播放资源；业务基础数据由 <code>datasource/BusinessService</code> 的 <code>getPlayerBasicData/getPlayerSections/getAudioInfo</code> 等接口提供。</li>
+<li>播放列表/目录：<code>PlayListFragment</code> 读取 <code>KMPlayer.globalPlayListDataSource</code>；<code>PlayCatalogFragment</code> 监听播放回调，在 <code>onUpdatePosition/onStartPlay/onComplete</code> 中更新当前章节。</li>
+<li>权益与下载：<code>KMPlayerFragment.checkOwnershipOfLocalAudio()</code> 校验本地音频权限，<code>updateDownloadMenu()</code> 决定下载入口；无权益走 <code>noOwnerShipDialog()</code> 或购买。</li>
+</ol>
+<p><strong>亮点、难点与风险。</strong> 一套播放器适配直播、合辑、听书、盐选等多业务类型，Resource Service 与 Business Service 分离，便于统一鉴权。难点是新 Intent 切歌、全局列表、目录和页面 VM 的一致性，以及下架/无权益/本地文件场景。测试仍全为模板；<code>KMPlayerFragment</code> 体量大，存在职责集中风险。</p>
+<p><strong>候选人可负责的业务集成点。</strong> 新 SKU DataSource、资源/详情/目录接口映射、播放列表、下载与 ownership、分享、ZA 页面埋点、下架错误处理。</p>
+<p><strong>条件式 STAR 模板（仅限真实经历）。</strong> 如果多 SKU 播放器适配确实由你负责，可以按真实经历替换后说：“播放器需要支持多种内容，我在既有架构中把类型差异放入业务 DataSource：资源接口获取可播地址，业务接口提供详情和目录；新 Intent 到来时先解绑旧 VM 再挂载新 DataSource，并覆盖下架、试听和本地权限场景。”R：需本人补充真实指标或可核验的验证结果。</p>
+<p><strong>追问与回答。</strong></p>
+<ul>
+<li>问：资源接口和业务接口为什么分开？答：播放 URL/鉴权生命周期与商品详情、目录生命周期不同，分开后能独立刷新和统一安全策略。</li>
+<li>问：怎么防止旧请求覆盖新歌曲？答：为每次 load 建立 generation/token，切换时取消旧请求，回调前校验当前业务 id。</li>
+</ul>
+<h2 id="12-kmdetailpage-知识商品详情与音频-hybrid">12. KmDetailPage：知识商品详情与音频 Hybrid</h2>
+<p><strong>定位 / 技术栈 / 模块。</strong> <code>yyyyy-cdoe/KmDetailPage</code> 有 <code>km_detail_page</code>、<code>km_detail_page-api</code>、<code>live</code>、<code>subscribe</code> 和示例 <code>app</code>。承担音频/图文等 SKU 详情、底部购买、分享、评论和 WebView/原生混合。</p>
+<p><strong>关键链路。</strong></p>
+<ol>
+<li>详情入口：<code>next/AudioDetailFragment.buildIntent(businessId,businessType,extraBundle)</code> → <code>onViewCreated()</code> → 创建 Header/Bottom/ViewModel → <code>addWebView()</code> 加载 Hybrid 正文。</li>
+<li>Header：<code>next/vm/SkuAudioHeaderViewModel.getData()</code> → Service/DataSource → <code>Resource&lt;UIData&gt;</code> 同时通过 LiveData/Rx 暴露 → 原生 Header 更新书架、封面和进度。</li>
+<li>播放桥接：<code>SkuAudioHybridViewModel.observeWalkman()</code> 监听播放器的 <code>onPrepare/onStartPlay/onUpdatePosition/onPause/onComplete/onError</code> → <code>AudioDetailFragment.postAudioChangeEventToWeb()</code> → Hybrid 页面同步状态。</li>
+<li>购买/互动：<code>BottomV3Service.getPurchaseModelForNewPaidColumn()</code> 拉取底栏购买模型；<code>observeCommentEvent()</code> 把评论变化发给 Hybrid；<code>ShareService.getIBDetailShare()</code> 获取分享数据。</li>
+</ol>
+<p><strong>亮点、难点与风险。</strong> 原生 Header/Bottom 与 Hybrid 内容协同，播放器事件桥接完整。难点是 WebView 就绪时序、重复订阅、Fragment 销毁后的 JS 回调和商品/播放器 id 对齐。仓库未发现测试文件，Bridge 协议、错误态和生命周期应是补测重点。</p>
+<p><strong>候选人可负责的业务集成点。</strong> 详情 Header、购买底栏、Hybrid Bridge、播放器同步、评论/分享、AppBar 联动和下架/弱网兜底。</p>
+<p><strong>条件式 STAR 模板（仅限真实经历）。</strong> 如果音频详情 Hybrid 桥接确实由你负责，可以按真实经历替换后说：“音频详情采用原生壳加 Hybrid 内容。我将播放器状态接入 <code>SkuAudioHybridViewModel</code>，由 Fragment 在 WebView ready 后按协议发送；页面销毁时解绑播放器与 WebView，切换商品时校验 businessId，以防旧音频事件进入新详情。”R：需本人补充真实指标或可核验的验证结果。</p>
+<p><strong>追问与回答。</strong></p>
+<ul>
+<li>问：Bridge 消息丢失怎么办？答：WebView 未 ready 时缓存最新快照，ready 后先全量同步，再传增量事件；协议带版本和业务 id。</li>
+<li>问：为什么 Header 不全放 H5？答：原生能更稳定承接播放器、滚动联动和首屏，但代价是两端状态协议必须严格。</li>
+</ul>
+<h2 id="13-kmbase-知识业务-ui-购买-目录与通用能力集合">13. KmBase：知识业务 UI、购买、目录与通用能力集合</h2>
+<p><strong>定位 / 技术栈 / 模块。</strong> <code>yyyyy-cdoe/KmBase</code> 是知识业务的基础组件集合，不是单一页面：<code>kmbase</code>、<code>kmarket-ui</code>、<code>sku-bottombar</code>、<code>sku-detailview</code>、<code>sku-gift</code>、<code>sku-progress</code>、<code>sku-rating</code>、<code>member-point</code>、<code>km-video-base</code>。Java/Kotlin、RxJava/LiveData、Service、Presenter/ViewModel 和大量可复用 View。</p>
+<p><strong>关键链路。</strong></p>
+<ol>
+<li>目录：<code>yyyyy-cdoe/KmBase/kmbase/src/main/java/com/zhihu/android/kmarket/base/catalog/KMCatalogView.kt</code> → <code>KMCatalogViewModel.kt</code>/<code>EbookCatalogViewModel.kt</code> → <code>CatalogService.kt</code>，承接目录拉取、定位与订阅。</li>
+<li>加书架：业务页调用 <code>AddShelfViewModel.kt</code> → <code>CollectService.kt</code>/<code>app/market/shelf/ShelfService.kt</code> → 更新 <code>CatalogSubscribeView</code> 或按钮状态。</li>
+<li>购买底栏：<code>yyyyy-cdoe/KmBase/sku-bottombar/src/main/java/com/zhihu/android/app/sku/bottombar/ui/widget/control/PurchaseWidgetManager.kt</code> 根据 <code>SKUService.kt</code> 返回的模型装配按钮；<code>CountDownManager.kt</code> 驱动限时状态；按钮最终路由到购买组件。</li>
+<li>评价/礼物/进度：<code>MarketRatingFragment</code> → <code>MarketRatingViewModel</code> → <code>RatingService</code>；<code>UnifyGiftFragment</code> → <code>SKUGiftService</code>；<code>SkuProgressManager</code> → <code>SkuProgressService</code> 上报学习进度。</li>
+</ol>
+<p><strong>亮点、难点与风险。</strong> 亮点是把跨 SKU 的目录、书架、购买、评价、礼物和进度沉淀为独立模块，业务详情页按需组合。难点是这些模块处在多仓公共边界，数据模型或路由变化影响面大；<code>settings.gradle</code> 中 <code>kmarket-ui</code>、<code>sku-progress</code> 有重复 include，虽然 Gradle 通常去重，仍说明工程脚本需要清理。<code>yyyyy-cdoe/KmBase/kmbase/src/test/java/com/zhihu/android/kmarket/base/lifecycle/ShareableViewModelTest.kt</code> 有真实生命周期测试，但多数子模块仍是模板测试。</p>
+<p><strong>候选人可负责的业务集成点。</strong> 在现有基础组件上新增 SKU 适配、底栏样式、目录/书架状态、进度上报、评价和礼物业务；同时维护向后兼容的数据契约。</p>
+<p><strong>条件式 STAR 模板（仅限真实经历）。</strong> 如果 KmBase 公共能力接入确实由你负责，可以按真实经历替换后说：“我将多个详情页重复的目录、书架和购买底栏接入 KmBase 现有能力，业务侧提供 SKU 类型与模型转换；公共接口改动保留默认值并考虑版本兼容，再用示例 app 覆盖多种 SKU。”R：需本人补充真实指标或可核验的验证结果。</p>
+<p><strong>追问与回答。</strong></p>
+<ul>
+<li>问：什么逻辑该下沉 KmBase？答：至少被多个 SKU 使用、业务语义稳定、可以由清晰接口表达；单活动强耦合逻辑不应过早下沉。</li>
+<li>问：公共组件怎么演进？答：API 模块保持兼容，新增能力优先扩展而非破坏，调用方灰度迁移后再删除旧接口。</li>
+</ul>
+<h2 id="14-liteknowledgemarket-轻量知识市场变体">14. LiteKnowledgeMarket：轻量知识市场变体</h2>
+<p><strong>定位 / 技术栈 / 模块。</strong> <code>yyyyy-cdoe/LiteKnowledgeMarket</code> 是知识市场轻量变体。<code>settings.gradle</code> 声明 <code>lite_kmarket</code>/<code>lite_kmarket-api</code>，根目录无扩展名文件将它们分别映射到 <code>./kmarket</code> 与 <code>./kmarket-api/</code>；同时仍包含 <code>kmarket-home</code>、<code>sku-manuscript</code>、<code>audiobook</code>、<code>instabook</code>、<code>personal</code>。<code>athena.json</code> 发布 <code>lite_kmarket</code> 10.20.0.5。</p>
+<p><strong>关键链路。</strong></p>
+<ol>
+<li>轻量入口：调用方依赖发布坐标 <code>lite_kmarket-api</code>，构建时映射到物理 <code>kmarket-api</code>；实现模块同理映射到 <code>kmarket</code>。这属于产品变体与发布层，不是复制两套源码。</li>
+<li>首页：<code>yyyyy-cdoe/LiteKnowledgeMarket/kmarket-home/src/main/java/com/zhihu/android/app/market/newhome/ui/fragment/ContentMarketHomeFragment.kt</code>/<code>MarketHomeMultiTabFragment.kt</code> → <code>BookCityViewModel</code>/<code>VipPinViewModel</code> → <code>DiscoverPinDataSource</code>/<code>VipPinDataSource</code> → <code>NewMarketService.java</code>。</li>
+<li>书架/草稿：<code>Shelf2Fragment</code> → <code>ShelfViewModel</code>/下载 ViewModel；<code>VerticalDraftFragment</code> → <code>DraftViewModel</code>/<code>SKUManuscriptService</code>，与大知识市场保持主要业务一致。</li>
+<li>个人/已购：<code>yyyyy-cdoe/LiteKnowledgeMarket/personal/src/main/java/com/zhihu/android/app/market/fragment/MarketPurchasedParentFragment.kt</code> → Native/Web/ThirdParty 子页 → <code>KMPersonalService.java</code>。</li>
+</ol>
+<p><strong>亮点、难点与风险。</strong> 亮点是通过模块别名实现轻量产品发布，同时复用核心业务源码。难点是“发布模块名、Gradle 项目名、物理目录名”三者不同，排依赖或 CI 问题时容易找错。测试中只有少量旧测试，其余为模板；还要防止轻量包误带不需要的资源和三方 SDK。</p>
+<p><strong>候选人可负责的业务集成点。</strong> 轻量包裁剪、依赖与资源瘦身、知识首页/书架复用、路由能力差异、CI 发布别名和多产品回归。</p>
+<p><strong>条件式 STAR 模板（仅限真实经历）。</strong> 如果轻量版模块或裁剪工作确实由你负责，可以按真实经历替换后说：“轻量版不是简单复制工程。我在既有模块映射机制下保持独立发布坐标并复用源码，再按产品要求处理入口、依赖与资源；排障时同时核对 <code>settings.gradle</code>、无扩展名映射文件和 <code>athena.json</code>。”R：需本人补充真实指标或可核验的验证结果。</p>
+<p><strong>追问与回答。</strong></p>
+<ul>
+<li>问：源码复用与产品隔离怎么平衡？答：稳定业务逻辑共享，产品差异通过 API 契约、资源覆盖和依赖注入表达；避免在共享代码里到处判断包名。</li>
+<li>问：怎么验证真的“轻”？答：对比 APK/AAB 资源、dex、so、依赖图和启动任务，而不只看下载大小。</li>
+</ul>
+<h2 id="15-vippassport-登录-注册-token-与第三方绑定">15. VipPassport：登录、注册、Token 与第三方绑定</h2>
+<p><strong>定位 / 技术栈 / 模块。</strong> <code>yyyyy-cdoe/VipPassport</code> 含纯业务 <code>vip_passport</code>、UI <code>vip_passport_ui</code>、对外契约 <code>vip_passport-api</code> 和 <code>sample</code>。Java/Kotlin、ViewModel/LiveData、Repository、RxJava/Retrofit，覆盖手机号、运营商、微信/QQ/微博、验证码和 Token。</p>
+<p><strong>关键链路。</strong></p>
+<ol>
+<li>注册：<code>yyyyy-cdoe/VipPassport/vip_passport_ui/src/main/java/com/zhihu/android/app/modules/passport/register/view/RegisterFragment.kt</code> 的 <code>validateRegisterInfo()</code>/<code>dispatchRegister()</code> → <code>RegisterViewModel.validateRegisterInfo()/register()</code> → <code>RegisterRepository.kt</code> → <code>yyyyy-cdoe/VipPassport/vip_passport/src/main/java/com/zhihu/android/app/modules/passport/register/model/AccountRegisterService.kt</code> → 返回 Token。</li>
+<li>验证码与预处理：Fragment <code>captcha()</code>/<code>preprocessRegisterInfo()</code> → ViewModel <code>preprocess()</code>/<code>checkCaptcha()</code> → Repository → 根据风控结果展示图片验证码或继续注册。</li>
+<li>社交绑定：微信回调产生 CommonToken → <code>RegisterFragment.checkBindSocial()/bindSocial()</code> → ViewModel <code>bindSocialAccount()</code> → <code>AccountBindService.bindSocialAccount()</code>，Authorization 由 <code>PassportConfigs.getAuthorizationHeader(token)</code> 生成。</li>
+<li>Token：<code>yyyyy-cdoe/VipPassport/vip_passport/src/main/java/com/zhihu/android/app/token/TokenManager.kt</code> → <code>TokenRepository.kt</code> 管理持久化和刷新；UI 层的 <code>LoginManager.java</code>/<code>DealLoginPresenter.java</code> 负责流程编排。</li>
+</ol>
+<p><strong>亮点、难点与风险。</strong> 注册流程对多来源表单做统一建模（<code>createWxAppForm/createOperatorForm/createPhoneForm/createSocialForm</code>），并在成功后继续头像上传和社交绑定。难点是 Token 安全、验证码/风控分支、三方回调和 Activity 重建。测试相对较多，包含 <code>SafetyLockTest.java</code>、<code>ZhihuEmailsProviderTest.java</code>，但关键 Token 刷新和多分支端到端仍需重点验证。</p>
+<p><strong>候选人可负责的业务集成点。</strong> 登录/注册 UI、表单和验证码、三方 SDK 回调、Token 接入、头像上传、绑定流程、Grafana/分析上报。底层加密或服务端 OAuth 不是端内业务代码。</p>
+<p><strong>条件式 STAR 模板（仅限真实经历）。</strong> 如果注册流程业务接入确实由你负责，可以按真实经历替换后说：“注册流程同时支持手机号、运营商和社交账号。我使用现有 RegisterModel 将不同来源转换为表单，先接入服务端预处理与验证码判断，再执行注册；头像上传和社交绑定作为后置步骤设计可恢复路径，并在关键节点接入耗时和失败上报。”R：需本人补充真实指标或可核验的验证结果。</p>
+<p><strong>追问与回答。</strong></p>
+<ul>
+<li>问：Token 放哪里？答：使用项目已有安全存储，不写日志、不放普通明文 SP；刷新要串行化并处理多请求同时 401。</li>
+<li>问：注册成功但绑定失败怎么办？答：账号已创建是主事实，绑定作为可重试后置步骤，保留必要上下文并明确反馈，不能重复注册。</li>
+</ul>
+<h2 id="16-account-账号状态-认证-安全与隐私">16. Account：账号状态、认证、安全与隐私</h2>
+<p><strong>定位 / 技术栈 / 模块。</strong> <code>yyyyy-cdoe/Account</code> 含 <code>account</code>、<code>account-api</code>、<code>app</code>，偏登录后的账号基础设施与安全场景：<code>AccountManager</code>、认证/解锁、实名、账号数据修复、隐私权、退出登录和免流。Java 为主、Kotlin 辅助，RxJava/Retrofit、Router、第三方活体/证件识别。</p>
+<p><strong>关键链路。</strong></p>
+<ol>
+<li>认证入口：<code>ui/activity/AccountActionActivity.java</code>/<code>AuthActivity.java</code> → <code>AuthFragment.kt</code>、<code>InputSmsCodeFragment.java</code>、<code>MotionLiveResultFragment.java</code> 等按风险结果跳转 → <code>AccountService</code>/<code>OauthService</code>。</li>
+<li>账号状态：<code>app/accounts/AccountManager.java</code> 管理当前账号 → <code>DataStoreManager.java</code> 落盘 → 登录/退出事件通知其他组件；<code>LogoutService.java</code> 对接服务端退出。</li>
+<li>实名/活体：<code>account/realname/RealNameManager.kt</code> → <code>IDCardRecoFragment</code>/Megvii <code>FaceIdManager.kt</code> → 认证结果回到 Auth 页面。</li>
+<li>隐私权：<code>app/accounts/privacy/PrivacyRightsManager.kt</code> → <code>PrivacyRightsService.kt</code>，处理数据导出/注销等敏感操作；<code>guard/model/DataFixService.kt</code> 承接账号数据修复。</li>
+</ol>
+<p><strong>亮点、难点与风险。</strong> 账号组件把当前用户真值、风控页面和敏感操作集中管理。难点是多进程账号一致性、敏感信息保护、第三方活体回调、退出后的全局清理。测试包含 <code>RouterUrlTest</code>、<code>ScreenNameResolverTest</code> 等集成辅助测试，但核心认证状态机仍缺少明确业务测试。</p>
+<p><strong>候选人可负责的业务集成点。</strong> 登录后账号态监听、认证/解锁页面、实名 SDK 适配、退出清理、隐私权入口、路由与异常恢复。</p>
+<p><strong>条件式 STAR 模板（仅限真实经历）。</strong> 如果账号态或认证业务接入确实由你负责，可以按真实经历替换后说：“账号态是跨组件基础状态。我在既有 AccountManager 上接入业务，以持久化账号和服务端校验为真值并通过事件通知页面；退出场景按项目既定顺序处理 Token 与用户态数据。认证流程将短信、证件和活体作为可组合步骤，第三方 SDK 结果仍需服务端确认。”R：需本人补充真实指标或可核验的验证结果。</p>
+<p><strong>追问与回答。</strong></p>
+<ul>
+<li>问：为什么退出顺序重要？答：先停止新请求和刷新 Token，再清身份与业务缓存；否则后台任务可能用旧身份重新写入数据。</li>
+<li>问：多进程账号态怎么同步？答：通过项目已有跨进程机制或受控 Provider，状态带版本；各进程恢复时重新读取，不依赖进程内单例。</li>
+</ul>
+<h2 id="17-vipcomment-vip-评论实现">17. VipComment：VIP 评论实现</h2>
+<p><strong>定位 / 技术栈 / 模块。</strong> <code>yyyyy-cdoe/VipComment</code> 含 <code>comment</code>、<code>comment-api</code>、<code>comment-widget-editor</code> 和 <code>app</code>，是 VIP 主工程替换标准评论组件的实现。Kotlin/Java、ViewModel/LiveData、Repository/RxJava、Retrofit、RecyclerView 多类型 Holder。</p>
+<p><strong>关键链路。</strong></p>
+<ol>
+<li>根评论：<code>comment_for_v7/view/CommentListFragment.kt</code> → <code>CommentViewModel.getRootCommentList()</code> → <code>RootCommentListRepository.processDataForResponse()</code> → <code>api/CommentService.getRootCommentList()</code> → <code>commentList</code> LiveData → Fragment/Holder 渲染。</li>
+<li>子评论/锚点/翻页：ViewModel 的 <code>getChildCommentList/getAnchorCommentList/getNextCommentList</code> → 对应 Repository → Service 的 child/anchor 或动态 next URL。</li>
+<li>互动：页面事件 → <code>PutLikeRepository/DeleteLikeRepository</code>、<code>DeleteRepository</code>、<code>ApproveRepository</code> 等 → <code>CommentService</code> 的 PUT/DELETE → 局部更新 CommentBean。</li>
+<li>发布：编辑器先取 <code>getCommentEditorConfig()</code> → <code>sendCommentV5()</code> → 发送事件让列表插入/刷新；VIP API 仍保留权限、主题、资源等 Provider 契约。</li>
+</ol>
+<p><strong>亮点、难点与风险。</strong> Repository 按操作拆分，评论类型、折叠、审核中、作者置顶等场景覆盖完整；<code>CommentApmUtils</code>、<code>CommentOnlineLog</code>、Grafana 承接可观测性。难点是列表局部更新、锚点定位、乐观互动回滚和多入口资源模型。测试只有 editor 模板用例，核心列表/互动缺少自动化。</p>
+<p><strong>候选人可负责的业务集成点。</strong> 评论列表/编辑器、资源类型适配、点赞删除置顶、锚点分页、主题权限、性能与错误上报。</p>
+<p><strong>条件式 STAR 模板（仅限真实经历）。</strong> 如果 VIP 评论列表或互动确实由你负责，可以按真实经历替换后说：“评论页包含根评论、子评论、折叠和锚点列表。我沿用 ViewModel—Repository—Service 分层，将请求结果映射为 CommentListResponse；互动按 commentId 做局部状态处理并准备失败回滚，首屏、翻页和失败原因分别上报。”R：需本人补充真实指标或可核验的验证结果。</p>
+<p><strong>追问与回答。</strong></p>
+<ul>
+<li>问：为什么每个动作一个 Repository？答：隔离接口、错误和 disposable，便于复用；代价是类多，需要统一基类避免重复。</li>
+<li>问：如何保证局部更新正确？答：以稳定 commentId 定位，更新不可变副本；列表 generation 或资源 id 变化时丢弃旧回调。</li>
+</ul>
+<h2 id="18-comment-标准评论组件与新能力演进">18. Comment：标准评论组件与新能力演进</h2>
+<p><strong>定位 / 技术栈 / 模块。</strong> <code>yyyyy-cdoe/Comment</code> 与 VipComment 模块结构相同，但能力更广，增加 RN 评论容器、短内容插件、草稿、分段评论、AI 预制评论和 URL 解析等，是标准组件演进线。</p>
+<p><strong>关键链路。</strong></p>
+<ol>
+<li>基础列表仍是 <code>CommentListFragment</code> → <code>CommentViewModel</code> → 根/子/锚点 Repository → <code>CommentService</code>，与 VIP 版保持契约相近。</li>
+<li>新互动接口：标准版 <code>CommentService</code> 对点赞使用 <code>/reaction/comments/{comment_id}/like</code>，并增加 segment config/send、<code>getAIPrefabComment()</code>、<code>parseUrl()</code>，说明服务协议已演进。</li>
+<li>RN/插件：<code>rncomment/OneRNCommentContainerFragment.kt</code>/<code>OneRNCommentFragment.kt</code> 承接 RN 页面；<code>shortcontainer/CommentListPluginProvider.kt</code> 和 <code>CommentStrategyManager.kt</code> 为短内容场景选择评论策略。</li>
+<li>草稿：<code>comment/draft/CommentDraftRepository.kt</code> 与 <code>CommentDraftManager.kt</code> 保存编辑状态，页面重建或切换入口时恢复。</li>
+</ol>
+<p><strong>亮点、难点与风险。</strong> 标准版体现 Native/RN 双栈和多场景协议扩展；风险是它与 VipComment 已出现 API 差异，合并或替换时不能只比较类名。测试只有 <code>yyyyy-cdoe/Comment/comment-widget-editor/src/test/java/com/zhihu/android/comment/editor/ExampleUnitTest.kt</code>，新增 segment/AI/RN 协议缺少可见验证。</p>
+<p><strong>候选人可负责的业务集成点。</strong> 标准评论新接口、分段/AI 评论、草稿、RN 容器、短内容插件，以及把必要能力有选择地移植到 VIP 变体。</p>
+<p><strong>条件式 STAR 模板（仅限真实经历）。</strong> 如果标准版与 VIP 评论差异治理确实由你负责，可以按真实经历替换后说：“我先对齐 <code>comment-api</code> 契约和 Service 端点，再按产品需要评估 segment、草稿或 RN 能力的迁移；通过资源 id、协议版本与开关隔离新旧链路，而不是直接复制整仓实现。”R：需本人补充真实指标或可核验的验证结果。</p>
+<p><strong>追问与回答。</strong></p>
+<ul>
+<li>问：两个相似仓库怎么防长期分叉？答：尽量共享 API/模型和可复用核心，产品差异放策略或 Provider；定期做协议 diff 和契约测试。</li>
+<li>问：RN 评论怎么降级？答：路由层保留 Native Provider，RN 加载/协议失败时回退，并确保草稿和埋点语义一致。</li>
+</ul>
+<h2 id="19-feed-首页推荐流与多卡片编排">19. Feed：首页推荐流与多卡片编排</h2>
+<p><strong>定位 / 技术栈 / 模块。</strong> <code>yyyyy-cdoe/Feed</code> 含 <code>feed</code>、<code>feed-api</code>、示例 <code>app</code>，源码规模约千个 Java/Kotlin 文件，覆盖推荐流、关注、热榜、城市、广告/SDUI、负反馈、AI/Zhida 和社交 Tab。RxJava、ViewModel、Repository/DataSource、BasePaging、SugarAdapter/Delegate、Router 和大量监控。</p>
+<p><strong>关键链路。</strong></p>
+<ol>
+<li>推荐流：<code>ui2/feed/FeedFragment.kt</code> → <code>FeedViewModel.kt</code> → <code>ui2/feed/repo/FeedRepository.kt</code> → <code>FeedRemoteDataSource</code>/<code>FeedLocalDataSource</code>/<code>FeedPreloadDataSource</code> → <code>FeedService.getFeeds/getFeedsPost()</code> → WrappedData → Fragment <code>updateUI()</code>。</li>
+<li>缓存与降级：Repository 在本地、预加载和远端间编排；<code>DowngradeFeedService.getFeeds/getERDownGradeFeeds()</code> 提供降级；Fragment 在刷新/加载更多中分别处理缓存和错误。</li>
+<li>UI Delegate：<code>BasePagingFragmentWithDelegates</code> 从 Provider 获取多个 delegate，注册异构卡片、分发页面生命周期并记录 delegate 耗时；FeedFragment 只承担宿主和列表状态。</li>
+<li>Tab/城市：<code>FeedService.getTopTabs2/postTabs</code> + <code>TabsRepository</code> 管理推荐 Tab；<code>FeedCityListViewModel.fetchCityList/searchCity/saveCity</code> → <code>app/feed/repository/FeedRepository</code>，以 sealed-like <code>UiState</code> 驱动城市页面。</li>
+</ol>
+<p><strong>亮点、难点与风险。</strong> 远端/本地/预加载/降级完整，Delegate 适合复杂异构卡片；<code>FeedMonitor.reportDuration</code>、<code>FeedOnlineLogManager</code> 和 ZA 提供请求、渲染、曝光观测。难点是刷新 generation、预加载命中、广告位置、视频生命周期和大量 delegate 的性能。测试几乎只有模板，和仓库复杂度不匹配。</p>
+<p><strong>候选人可负责的业务集成点。</strong> Feed 接口与缓存编排、卡片 delegate、下拉/翻页、Tab、负反馈、内联视频、监控和 AB。BasePaging、Adapter/Delegate 是既有框架，候选人负责业务实现与治理。</p>
+<p><strong>条件式 STAR 模板（仅限真实经历）。</strong> 如果推荐流数据编排或卡片接入确实由你负责，可以按真实经历替换后说：“推荐流需要兼顾首屏与实时性。我在既有 Repository 中接入预加载/本地缓存与远端数据，并按 generation 控制替换和降级；异构卡片通过 delegate 注册，监控拆分请求、数据处理和首卡渲染阶段。”R：需本人补充真实指标或可核验的验证结果。</p>
+<p><strong>追问与回答。</strong></p>
+<ul>
+<li>问：缓存数据和网络数据怎么避免闪烁？答：稳定 id 做 Diff，网络与缓存属于同一 generation；内容相同不替换，用户已滚动时避免强制回顶。</li>
+<li>问：Delegate 太多会怎样？答：初始化和生命周期广播有成本；按支持组件懒加载，并用现有耗时日志找慢 delegate。</li>
+</ul>
+<h2 id="20-km-attention-书城分类-关注与搜索">20. km-attention：书城分类、关注与搜索</h2>
+<p><strong>定位 / 技术栈 / 模块。</strong> <code>yyyyy-cdoe/km-attention</code> 含 <code>attention</code>、<code>attention-api</code>、<code>app</code>，覆盖书城/书架关注页、搜索、分类、短篇/长篇/广播剧/迷你剧、历史。Kotlin 为主、ViewModel、RxJava/Retrofit、Provider/Router。</p>
+<p><strong>关键链路。</strong></p>
+<ol>
+<li>容器：<code>AttentionContainerFragment.kt</code> → <code>AttentionContainerViewModel.kt</code> → <code>AttentionService.kt</code> 拉 Tab/内容 → 根据类型创建 <code>PinTabFragment</code>、<code>LongStoryFragment</code>、<code>RadioDramaFragment</code> 等。</li>
+<li>搜索：<code>SearchFragment</code>/<code>SearchAssociationFragment</code> → <code>SearchViewModel</code> → 联想接口；提交后 <code>SearchResultFragment</code> → <code>SearchResultViewModel</code> → 分页结果或 <code>SearchResultHybridFragment</code>。</li>
+<li>分类：<code>classify/NewClassifyContentFragment.kt</code>/<code>AllCategorySceneFragment.kt</code> → <code>BookCityViewModel</code>/<code>EbookClassifyViewModel</code> → <code>ClassifyService.kt</code>。</li>
+<li>书架关注：<code>attention-api/BookShelfAttentionProvider.kt</code> 暴露入口；<code>BookShelfAttentionFragment</code> 和 <code>LearningHistoryManager</code> 结合关注数据与学习历史。</li>
+</ol>
+<p><strong>亮点、难点与风险。</strong> 同一容器用 ViewModel 和 Provider 适配多内容类型，利于产品快速扩展。难点是搜索联想请求竞态、分类分页、Native/Hybrid 跳转和历史/关注态同步。测试均为模板，搜索 debounce/cancel 和分页状态应补测。</p>
+<p><strong>候选人可负责的业务集成点。</strong> 新内容 Tab、搜索联想/结果、分类筛选、关注态、学习历史、Hybrid 路由与曝光。</p>
+<p><strong>条件式 STAR 模板（仅限真实经历）。</strong> 如果书城容器或搜索接入确实由你负责，可以按真实经历替换后说：“书城包含多种内容类型，我让容器消费服务端 Tab 模型，具体类型由 Fragment/ViewModel 适配；搜索联想使用 debounce 和 latest-query 校验，关注与历史按 businessId 合并到卡片并局部刷新。”R：需本人补充真实指标或可核验的验证结果。</p>
+<p><strong>追问与回答。</strong></p>
+<ul>
+<li>问：联想搜索为什么要取消旧请求？答：响应顺序不保证，不取消或不校验 query 会出现输入新词却展示旧结果。</li>
+<li>问：服务端下发未知 Tab 怎么办？答：白名单映射，未知类型忽略并上报，不让反射或空 Fragment 直接崩溃。</li>
+</ul>
+<h2 id="21-vipchannelcard-vip-频道卡片与服务端驱动-ui">21. Vipchannelcard：VIP 频道卡片与服务端驱动 UI</h2>
+<p><strong>定位 / 技术栈 / 模块。</strong> <code>yyyyy-cdoe/Vipchannelcard</code> 含 <code>vipchannelcard</code>、<code>vipchannelcard-api</code>、<code>app</code>，提供频道卡片渲染、全屏/统一弹窗 Provider、关注能力和服务入口。Kotlin/Java、Service、卡片 View/ViewHolder、Router/Provider。</p>
+<p><strong>关键链路。</strong></p>
+<ol>
+<li>卡片服务：调用方通过 API 模块获得 <code>service/VipChannelCardService.kt</code>/<code>ServiceManager.kt</code> → 根据服务端模块类型选择对应卡片实现并绑定数据。</li>
+<li>关注：卡片点击关注 → <code>ContentFollowService.kt</code> 调关注/取消关注接口 → 卡片局部刷新并发事件同步其他页面。</li>
+<li>弹窗：业务卡片触发 <code>dialog/VipUnifyDialogProvider.kt</code> 或 <code>VipFullScreenDialogProvider.kt</code> → Provider 创建统一/全屏形态 → Router 打开目标内容。</li>
+</ol>
+<p><strong>亮点、难点与风险。</strong> 卡片服务和弹窗 Provider 将调用方与具体 UI 解耦；测试质量在组件仓里相对突出，包含 <code>NumberFormatUtilTest.kt</code>、<code>ImgCardContainerViewTest.kt</code> 等多项真实测试。难点是服务端数据的容错、图片尺寸、卡片复用污染和关注状态跨卡同步。</p>
+<p><strong>候选人可负责的业务集成点。</strong> 新卡片样式、服务端字段兼容、关注、弹窗、路由、Diff/复用与单元测试。卡片框架本身若来自公共层，应表述为“实现业务卡片协议”。</p>
+<p><strong>条件式 STAR 模板（仅限真实经历）。</strong> 如果频道卡片业务实现确实由你负责，可以按真实经历替换后说：“频道卡片由服务端配置，我针对未知类型、缺字段和异常图片设计默认降级；卡片复用时重置状态并按稳定 id 做 Diff，关注请求处理局部反馈与失败回滚，并通过事件同步相同内容卡片。”R：需本人补充真实指标或可核验的验证结果；仅在本人实际补过对应测试时再声称测试贡献。</p>
+<p><strong>追问与回答。</strong></p>
+<ul>
+<li>问：服务端驱动 UI 最大风险？答：协议兼容和不可控组合；客户端必须版本化、白名单、默认值和监控。</li>
+<li>问：RecyclerView 卡片串状态怎么排？答：检查 bind 是否覆盖所有状态、listener 是否重复、异步图片/请求是否校验 item id。</li>
+</ul>
+<h2 id="22-common-跨业务公共页面与服务">22. Common：跨业务公共页面与服务</h2>
+<p><strong>定位 / 技术栈 / 模块。</strong> <code>yyyyy-cdoe/Common</code> 含 <code>common</code>、<code>common-api</code>、<code>app</code>，提供用户/搜索/二维码/联系人/图片上传/最后阅读等跨业务 Service，以及通用用户列表、卸载确认、Action Portal。Java 为主、Kotlin 辅助，Retrofit/RxJava、Router、权限管理。</p>
+<p><strong>关键链路。</strong></p>
+<ol>
+<li>用户列表：<code>ui/fragment/common/SimpleUserListFragment.java</code> → <code>api/service2/UserService.java</code> → 分页用户数据 → 通用列表渲染。</li>
+<li>图片上传：调用方 → <code>ImageUploadService.java</code> → 上传结果 → 资料/内容组件继续提交业务对象。</li>
+<li>联系人：<code>ContactPermissionManager.java</code> 处理权限与引导 → <code>ContactService.java</code> 上传/匹配联系人 → Feed/关系链消费结果。</li>
+<li>路由门户：<code>ui/activity/ActionPortalActivity.java</code> 解析 Action/Intent → 转交 Router 目标，作为外部入口的受控边界；<code>UninstallActivity</code>/<code>UnInstallConfirmFragment</code> 承接卸载反馈。</li>
+</ol>
+<p><strong>亮点、难点与风险。</strong> 将真正跨业务的 Service 与页面放在公共组件，减少重复。难点是权限、隐私和外部 Intent 安全；公共模块容易不断膨胀成“杂物间”。测试包含 Router URL/ScreenName 测试，但主要业务测试仍少。</p>
+<p><strong>候选人可负责的业务集成点。</strong> 通用用户列表、上传、联系人权限、二维码、外部 Action 路由和公共 API 契约。</p>
+<p><strong>条件式 STAR 模板（仅限真实经历）。</strong> 如果联系人或外部路由接入确实由你负责，可以按真实经历替换后说：“公共模块接入需要能力通用、接口稳定。我将联系人权限与业务请求分开，在用户授权后读取并按最小化原则处理；外部 Action 先校验 scheme、host 与参数，再交给 Router。”R：需本人补充真实指标或可核验的验证结果。</p>
+<p><strong>追问与回答。</strong></p>
+<ul>
+<li>问：怎么防 Common 变大杂烩？答：按领域设准入规则和 owner；只被单业务使用的代码留在业务仓，成熟后再下沉。</li>
+<li>问：外部路由要校验什么？答：来源、scheme/host 白名单、参数类型/长度、登录和权限要求，避免任意组件启动。</li>
+</ul>
+<h2 id="23-kmcommon-知识业务旧基础层与预加载">23. kmcommon：知识业务旧基础层与预加载</h2>
+<p><strong>定位 / 技术栈 / 模块。</strong> <code>yyyyy-cdoe/kmcommon</code> 只有 <code>kmcommon</code> 与示例 <code>app</code>，沉淀知识市场早期 Base MVVM/MVP、分页 RecyclerView、容器错误/骨架、预加载、互斥、上报和 Host Activity。Java/Kotlin 混合，LiveData/RxJava，架构代际明显。</p>
+<p><strong>关键链路。</strong></p>
+<ol>
+<li>列表基类：业务 ViewModel 继承 <code>base/mvvm/recyclerView/PagingRecyclerViewModel.java</code> 或 <code>StatePagingRecyclerViewModel.java</code> → 请求分页 → 状态交给 <code>SwipeRecyclerViewModel</code>/容器 → UI 渲染刷新、空、错和加载更多。</li>
+<li>生命周期状态：<code>kmarket/base/lifecycle/BaseViewModel.kt</code>/<code>LifecycleViewModel.kt</code> → <code>Resource.kt</code> 表达 loading/success/error → Fragment 观察；<code>ShareableViewModel.kt</code> 支持跨页面共享。</li>
+<li>容器：<code>container/BaseContainerFragment.kt</code> 通过 <code>IErrorViewProvider</code>、<code>ISkeletonViewProvider</code> 注入错误和骨架，统一页面壳。</li>
+<li>预加载：<code>kmarket/preload/PreloadManager.kt</code> → <code>PreloadService.kt</code> → <code>PreloadDataManager.kt</code> 缓存结果，业务首开优先消费；<code>MutexManager.kt</code> 仲裁冲突业务。</li>
+</ol>
+<p><strong>亮点、难点与风险。</strong> 为旧业务提供了较完整的基础页面能力，<code>LiveDataKtxTest.kt</code>、<code>FragmentKtxTest.kt</code> 有真实扩展测试。风险是 MVP、旧 MVVM、新 AndroidX ViewModel/MVI 多代并存，业务若继续继承过深会难以迁移；预加载缓存也要明确用户和过期边界。</p>
+<p><strong>候选人可负责的业务集成点。</strong> 维护旧页面、接入统一错误/骨架、分页和预加载，并逐步把业务从深继承迁到组合式 ViewModel/Repository。</p>
+<p><strong>条件式 STAR 模板（仅限真实经历）。</strong> 如果 kmcommon 旧链路维护或迁移确实由你负责，可以按真实经历替换后说：“旧知识业务依赖 kmcommon 的分页和容器基类。我先保持状态与错误兼容，再将新增业务逻辑放在可组合 Repository，避免继续增加基类层级；预加载按用户、业务 key 和 TTL 隔离，并允许网络结果校正。”R：需本人补充真实指标或可核验的验证结果。</p>
+<p><strong>追问与回答。</strong></p>
+<ul>
+<li>问：旧基类要不要一次重写？答：不建议。先补契约测试和观测，按页面抽 Repository/状态模型，用适配器渐进迁移。</li>
+<li>问：预加载最危险的问题？答：跨账号脏数据、过期数据、重复请求和启动资源争抢；key、TTL、取消和命中监控都要有。</li>
+</ul>
+<h2 id="24-横向工程判断-面试时如何把-23-个仓库讲成一个项目">24. 横向工程判断：面试时如何把 23 个仓库讲成一个项目</h2>
+<h3 id="24-1-一张业务地图">24.1 一张业务地图</h3>
+<p><code>VipAndroid</code> 负责构建装配，<code>VipHome</code> 负责启动与主导航；<code>km_home_base</code>/<code>KnowledgeMarket</code>/<code>LiteKnowledgeMarket</code>/<code>km-attention</code> 构成发现、书城、书架；<code>KmDetailPage</code>/<code>KmBase</code> 承接详情、购买底栏和通用 SKU 能力；<code>VipManuscript</code>/<code>VipReader</code>/<code>Kmaudio</code>/<code>VipKmAudio</code> 承接阅读与收听；<code>Premium</code> 负责会员交易；<code>VipComment</code>/<code>Comment</code>、<code>VipProfile</code>、<code>VipPassport</code>/<code>Account</code>、<code>Feed</code> 分别提供互动、个人页、账号和推荐；<code>Common</code>/<code>kmcommon</code> 是跨业务基础层。</p>
+<h3 id="24-2-推荐的三条主讲线">24.2 推荐的三条主讲线</h3>
+<ol>
+<li><strong>首页与内容消费闭环：</strong> <code>HomePinTabFragment</code> → MVI/Paging3 → 卡片路由 → <code>AudioDetailFragment</code>/<code>VipManuscriptFragment</code> → 阅读/播放 → 进度/书架。</li>
+<li><strong>会员转化闭环：</strong> 内容无权益 → <code>Premium</code> 套餐/优惠/支付 → 服务端权益刷新 → 返回阅读/播放 → ownership 再校验。</li>
+<li><strong>组件交付闭环：</strong> 业务仓“实现 + API”发布 → <code>VipAndroid</code> 版本与替换表装配 → <code>sourcecode.properties</code> 联调 → 多渠道、依赖、so 和启动回归。</li>
+</ol>
+<h3 id="24-3-可观测性与性能的统一回答">24.3 可观测性与性能的统一回答</h3>
+<ul>
+<li>请求层：记录接口、错误码、业务 id、刷新/翻页类型，严禁记录 Token 和隐私字段。</li>
+<li>页面层：首屏、首卡/首章/首帧、WebView ready、播放器 prepare、支付结果各有独立耗时。</li>
+<li>列表层：Paging generation、缓存/预加载命中、delegate/ViewHolder 渲染耗时、掉帧和内存。</li>
+<li>稳定性：启动用 <code>LaunchTaskMonitor</code>/SafeBoot，Feed 有 <code>FeedMonitor</code>/OnlineLog，评论有 APM/Grafana，业务埋点用 ZA；不要只说“打了埋点”，要说明指标如何定位问题。</li>
+</ul>
+<h3 id="24-4-当前最值得主动指出的风险">24.4 当前最值得主动指出的风险</h3>
+<ol>
+<li>测试与复杂度不匹配：支付、详情 Hybrid、播放器、阅读进度和双向分页缺少真实业务测试。</li>
+<li>多代架构并存：MVP、旧 MVVM、LiveData/Rx、协程、MVI/Paging3、RN/Hybrid 同时存在，容易出现多个状态源和生命周期泄漏。</li>
+<li>变体分叉：<code>Comment</code>/<code>VipComment</code>、<code>Kmaudio</code>/<code>VipKmAudio</code>、<code>KnowledgeMarket</code>/<code>LiteKnowledgeMarket</code> 协议逐渐不同，需要契约 diff 和兼容策略。</li>
+<li>模块映射不直观：VipKmAudio、LiteKnowledgeMarket 用无扩展名文件把发布名映射到物理目录，CI、IDE 与人工排查都可能误判。</li>
+<li>README 普遍模板化或过时；架构判断必须同时核对 <code>settings.gradle</code>、<code>athena.json</code>、源码入口和主工程调用。</li>
+</ol>
+<h2 id="25-条件式一分钟项目总述">25. 条件式一分钟项目总述</h2>
+<p>以下只是一份表达骨架。候选人应删掉未亲自参与的链路，并把“我”的动作替换为本人可举证的真实工作：</p>
+<p>“这是一个组件化的 VIP 内容 Android App。主工程 <code>VipAndroid</code> 负责组件版本、VIP 替换、多渠道和构建治理，<code>VipHome</code> 负责启动与主导航；业务按 API/实现模块拆成首页、书城、详情、手稿、阅读器、音频、会员、评论、账号等组件。如果这些调用点确实属于我的工作范围，我可以重点说明业务接入：例如在现有 DevKit MVI/Paging3 上接入首页异构流和 mediator 局部更新，或将内容详情连接到手稿阅读、音频播放与会员权益刷新。工程侧可说明实际参与过的源码替换联调、路由契约、生命周期处理、监控或多渠道验证。我不会把 Router、Paging3 或整个框架说成自己设计的，只讲本人在既有框架内实际完成并能由代码、记录或同事验证的工作。”结果 R：需本人补充真实指标或可核验的验证范围。</p>
+
+      </article>
+      
+    <nav class="page-pager" aria-label="文档翻页">
+      <a href="00-repository-inventory.html"><small>← 上一篇</small><span>全量仓库盘点</span></a>
+      <a class="next" href="20-android-infrastructure-media.html"><small>下一篇 →</small><span>基础设施与媒体</span></a>
+    </nav>
+      <footer class="article-footer">
+        本站由 Markdown 源文档离线生成。涉及个人职责、动作和结果的内容，请只使用本人可核验的部分。
+      </footer>
+    </main>
+    <aside class="page-toc" aria-label="本页目录">
+      <div class="toc-heading">本页目录</div>
+      <a class="toc-link level-2" href="#0-覆盖-结论与使用边界">0. 覆盖、结论与使用边界</a>
+<a class="toc-link level-2" href="#1-vipandroid-vip-app-主工程与组件装配">1. VipAndroid：VIP App 主工程与组件装配</a>
+<a class="toc-link level-2" href="#2-knowledgemarket-知识市场聚合业务仓">2. KnowledgeMarket：知识市场聚合业务仓</a>
+<a class="toc-link level-2" href="#3-km-home-base-vip-知识首页与书架容器">3. km_home_base：VIP 知识首页与书架容器</a>
+<a class="toc-link level-2" href="#4-viphome-启动-首页导航与-app-级生命周期">4. VipHome：启动、首页导航与 App 级生命周期</a>
+<a class="toc-link level-2" href="#5-vipprofile-个人主页-资料编辑与账号设置">5. VipProfile：个人主页、资料编辑与账号设置</a>
+<a class="toc-link level-2" href="#6-vipgrowth-新用户-引导-权益与增长任务">6. VipGrowth：新用户、引导、权益与增长任务</a>
+<a class="toc-link level-2" href="#7-premium-会员购买-权益与支付挽留">7. Premium：会员购买、权益与支付挽留</a>
+<a class="toc-link level-2" href="#8-vipreader-epub-阅读器与阅读进度">8. VipReader：EPUB 阅读器与阅读进度</a>
+<a class="toc-link level-2" href="#9-vipmanuscript-盐言故事阅读-目录与互动">9. VipManuscript：盐言故事阅读、目录与互动</a>
+<a class="toc-link level-2" href="#10-vipkmaudio-vip-音频组件变体">10. VipKmAudio：VIP 音频组件变体</a>
+<a class="toc-link level-2" href="#11-kmaudio-通用知识音频播放器">11. Kmaudio：通用知识音频播放器</a>
+<a class="toc-link level-2" href="#12-kmdetailpage-知识商品详情与音频-hybrid">12. KmDetailPage：知识商品详情与音频 Hybrid</a>
+<a class="toc-link level-2" href="#13-kmbase-知识业务-ui-购买-目录与通用能力集合">13. KmBase：知识业务 UI、购买、目录与通用能力集合</a>
+<a class="toc-link level-2" href="#14-liteknowledgemarket-轻量知识市场变体">14. LiteKnowledgeMarket：轻量知识市场变体</a>
+<a class="toc-link level-2" href="#15-vippassport-登录-注册-token-与第三方绑定">15. VipPassport：登录、注册、Token 与第三方绑定</a>
+<a class="toc-link level-2" href="#16-account-账号状态-认证-安全与隐私">16. Account：账号状态、认证、安全与隐私</a>
+<a class="toc-link level-2" href="#17-vipcomment-vip-评论实现">17. VipComment：VIP 评论实现</a>
+<a class="toc-link level-2" href="#18-comment-标准评论组件与新能力演进">18. Comment：标准评论组件与新能力演进</a>
+<a class="toc-link level-2" href="#19-feed-首页推荐流与多卡片编排">19. Feed：首页推荐流与多卡片编排</a>
+<a class="toc-link level-2" href="#20-km-attention-书城分类-关注与搜索">20. km-attention：书城分类、关注与搜索</a>
+<a class="toc-link level-2" href="#21-vipchannelcard-vip-频道卡片与服务端驱动-ui">21. Vipchannelcard：VIP 频道卡片与服务端驱动 UI</a>
+<a class="toc-link level-2" href="#22-common-跨业务公共页面与服务">22. Common：跨业务公共页面与服务</a>
+<a class="toc-link level-2" href="#23-kmcommon-知识业务旧基础层与预加载">23. kmcommon：知识业务旧基础层与预加载</a>
+<a class="toc-link level-2" href="#24-横向工程判断-面试时如何把-23-个仓库讲成一个项目">24. 横向工程判断：面试时如何把 23 个仓库讲成一个项目</a>
+<a class="toc-link level-3" href="#24-1-一张业务地图">24.1 一张业务地图</a>
+<a class="toc-link level-3" href="#24-2-推荐的三条主讲线">24.2 推荐的三条主讲线</a>
+<a class="toc-link level-3" href="#24-3-可观测性与性能的统一回答">24.3 可观测性与性能的统一回答</a>
+<a class="toc-link level-3" href="#24-4-当前最值得主动指出的风险">24.4 当前最值得主动指出的风险</a>
+<a class="toc-link level-2" href="#25-条件式一分钟项目总述">25. 条件式一分钟项目总述</a>
+      <a class="back-to-top" href="#">↑ 返回顶部</a>
+    </aside>
+  </div>
+  <script src="assets/search-data.js"></script>
+  <script src="assets/docs.js"></script>
+</body>
+</html>

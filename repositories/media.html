@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Media Android 业务仓库源码证据、调用链与面试讲法">
+  <title>Media｜Android 业务仓库分析</title>
+  <link rel="stylesheet" href="../assets/docs.css">
+  <script>try{const t=localStorage.getItem("interview-docs-theme");document.documentElement.dataset.theme=t||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light")}catch{}</script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <header class="topbar">
+    <button class="icon-button menu-button" type="button" data-menu-toggle aria-label="打开文档导航" aria-expanded="false">☰</button>
+    <a class="brand" href="../index.html"><span class="brand-mark">⌁</span><span>项目面试资料库</span></a>
+    <div class="search-shell"><label class="sr-only" for="global-search">搜索文档</label><input id="global-search" type="search" data-search-input placeholder="搜索仓库、技术或面试题…" autocomplete="off"><div class="search-results" data-search-results hidden></div></div>
+    <button class="icon-button" type="button" data-theme-toggle aria-label="切换深浅主题">◐</button>
+  </header>
+  <div class="drawer-backdrop" data-drawer-backdrop hidden></div>
+  <div class="docs-layout">
+    <nav class="sidebar" data-sidebar aria-label="文档导航">
+      <div class="sidebar-heading">仓库文档</div>
+      <section class="nav-group">
+        <h2 class="nav-group-title">返回</h2>
+        <a class="nav-link" href="../repositories.html">全部仓库</a>
+        <a class="nav-link" href="../index.html">资料首页</a>
+        <a class="nav-link" href="../10-android-business-repositories.html">业务仓聚合分析</a>
+      </section>
+      <p class="sidebar-note">离线源码证据 · 2026-07-25</p>
+    </nav>
+    <main class="article-shell" id="main-content">
+    <div class="breadcrumbs"><a href="../index.html">首页</a><span>/</span><a href="../repositories.html">仓库索引</a><span>/</span><span>Media</span></div>
+    <div class="article-grid">
+      <article class="markdown-body">
+        <h1 id="media">Media：统一视频/音频播放交互与 Tornado 插件编排平台</h1>
+        <blockquote class="callout"><p>基于当前本地检出与真实源码路径整理。源码只能证明仓库中存在这些实现；所有个人职责、主导范围、上线结果和收益均为<strong>需本人确认</strong>，不得把团队框架、三方内核或上游仓库归为本人原创，也不在没有数据源时编造性能指标。</p></blockquote>
+
+        <h2 id="position">1. 仓库定位与面试边界</h2>
+        <p><code>yyyyy-cdoe/Media</code> 的当前定位是<strong>统一视频/音频播放交互与 Tornado 插件编排平台</strong>。主要技术形态为 Kotlin/Java、注解处理、事件化插件、播放器池、预加载与会话监控。</p>
+        <p>面试应聚焦业务入口、状态编排、生命周期、异常兜底和组件集成。可以讲“我如何使用既有能力完成业务调用与排障”，但“本人实现/主导”的范围一律<strong>需本人确认</strong>，且应有 MR、commit、需求、评审或上线记录佐证。</p>
+
+        <h2 id="checkout">2. 当前检出、规模、构建入口、测试与 CI</h2>
+        <table><thead><tr><th>项目</th><th>当前证据</th></tr></thead><tbody>
+          <tr><td>分支</td><td><code>develop</code></td></tr>
+          <tr><td>最后提交</td><td><code>1d4fd468ee</code> · 2026-05-06 · Athena2.0 change version 10.96.0.2 to 10.97.0.0</td></tr>
+          <tr><td>规模</td><td>1579 个 Git 跟踪文件；1126 个 Java/Kotlin 源码文件（当前扫描口径）</td></tr>
+          <tr><td>构建入口</td><td><code>app/build.gradle</code>、<code>build.gradle</code>、<code>gradlew</code>、<code>player/build.gradle</code>、<code>player-api/build.gradle</code>、<code>settings.gradle</code>、<code>tornado-annotation/build.gradle</code>、<code>tornado-apt-processor/build.gradle</code>、<code>version.gradle</code></td></tr>
+          <tr><td>CI</td><td><code>.gitlab-ci.yml</code>、<code>Jenkinsfile</code></td></tr>
+          <tr><td>测试判断</td><td>识别到 10 个测试文件（扫描结果最多展示 10 个），其中至少 8 个文件名指向具体业务/工具场景；仍需阅读断言后才能评价覆盖质量。</td></tr>
+        </tbody></table>
+        <p>建议的静态构建检查入口是 <code>./gradlew projects</code>、<code>./gradlew tasks</code> 和目标模块的 <code>test</code>/<code>lint</code>；当前文档未执行全量构建，内网制品、旧 Gradle/AGP、NDK 或渠道凭据可能是环境限制，不能把“未执行”写成“构建失败”。</p>
+
+        <h2 id="structure">3. 模块与目录结构</h2>
+        <p>Gradle settings 可识别模块：<code>:tornado-annotation</code>、<code>:tornado-apt-processor</code>、<code>:player</code>、<code>:app</code>。</p>
+        <p>主要物理目录：<code>app/</code>、<code>player/</code>、<code>player-api/</code>、<code>tornado-annotation/</code>、<code>tornado-apt-processor/</code>。</p>
+        <p>从命名可见实现模块与 API/示例模块的分层；调用方应优先依赖稳定 API，示例 <code>app</code> 只用于独立调试，不能误当成线上宿主入口。</p>
+
+        <h2 id="entry">4. 真实入口</h2>
+        <p>Manifest 抽样入口如下；其中 <code>app</code> 下的 Activity/Application 可能只是 demo 或宿主壳，业务集成仍需回到 API、Provider、Router 或实现类。</p>
+        <ul><li><code>app/src/main/AndroidManifest.xml :: application .App</code></li><li><code>app/src/main/AndroidManifest.xml :: activity .alpha.AlphaVideoViewActivity</code></li><li><code>app/src/main/AndroidManifest.xml :: activity .audio.AudioTestActivity</code></li><li><code>app/src/main/AndroidManifest.xml :: activity .cover.UnifiedCoverActivity</code></li><li><code>app/src/main/AndroidManifest.xml :: activity .MainActivity</code></li><li><code>app/src/main/AndroidManifest.xml :: activity .feed.ScaffoldFeedActivity</code></li></ul>
+        <p>源码阅读建议从 <a href="../../../../yyyyy-cdoe/Media/player-api/src/main/java/com/zhihu/android/api/interfaces/tornado/event/TornadoGroup_player.java"><code>yyyyy-cdoe/Media/player-api/src/main/java/com/zhihu/android/api/interfaces/tornado/event/TornadoGroup_player.java</code></a>、<a href="../../../../yyyyy-cdoe/Media/tornado-apt-processor/src/main/java/com/zhihu/android/tornado_apt_processor/TornadoActionMethodProcessor.java"><code>yyyyy-cdoe/Media/tornado-apt-processor/src/main/java/com/zhihu/android/tornado_apt_processor/TornadoActionMethodProcessor.java</code></a>、<a href="../../../../yyyyy-cdoe/Media/player/src/main/java/com/zhihu/android/video/player2/widget/ZHPluginVideoView.java"><code>yyyyy-cdoe/Media/player/src/main/java/com/zhihu/android/video/player2/widget/ZHPluginVideoView.java</code></a> 开始，再沿调用与依赖反向确认谁创建入口、谁持有状态、谁执行 IO。</p>
+
+                        <h2 id="chain">5. 关键调用链与边界</h2>
+        <h3>源码直接链路：Tornado 事件协议</h3>
+        <ol>
+          <li>调用方调用 TornadoGroup_player.play/pause 等默认方法</li>
+          <li>默认方法构造 TEvent2 并调用 sendTEvent2</li>
+          <li>EventGroup.sendTEvent2 直接委托给 delegate</li>
+        </ol>
+        <p><strong>边界说明：</strong>后续由具体 delegate/插件处理；没有证据时不把某个 ZHPluginVideoView 方法硬接为所有事件的固定下一跳。</p>
+        <h3>独立编译期机制：事件代码生成</h3>
+        <ol>
+          <li>TornadoActionMethodProcessor 扫描 TornadoActionMethod2</li>
+          <li>Processor 通过 Writer 生成 action/group map</li>
+        </ol>
+        <p><strong>边界说明：</strong>生成发生在编译期，不在每次 play 的运行时事件链中。</p>
+        <h3>独立播放 View 路径</h3>
+        <ol>
+          <li>ZHPluginVideoView.playVideo 校验 URL、投屏和窗口状态</li>
+          <li>playVideoInternal 处理插件前置逻辑</li>
+          <li>再调用父类播放实现</li>
+        </ol>
+        <p><strong>边界说明：</strong>PlayerPool 按 DataSource 创建播放器是底层复用机制，与 APT 生成链不是同一条箭头。</p>
+<h2 id="tradeoff">6. 技术亮点与取舍</h2>
+        <h3>亮点</h3><p>控制栏、弹幕、埋点和清晰度按协议组合，播放器不再依赖巨型继承树。</p>
+        <h3>取舍</h3><p>插件组合灵活且便于复用，但生成代码调试、事件顺序和复杂状态一致性更难。</p>
+        <p>面试时不要把“使用了某框架”本身当亮点。更有价值的是说清楚为什么这样划分状态与生命周期、失败如何降级、版本/协议如何兼容，以及出现竞态时如何用真实调用链定位。</p>
+
+                        <h2 id="risk">7. 仓库专属风险与排查顺序</h2>
+        <p>下面的顺序按本仓真实状态 owner、服务与生命周期组织；前一步没有证据时，不跳到渲染层猜测。</p>
+        <ol>
+          <li><strong>第 1 步。</strong>事件无响应先记录 TornadoGroup_player 生成的 event key 和参数，再看 delegate 是否收到。</li>
+          <li><strong>第 2 步。</strong>action 找不到时对照 TornadoActionMethodProcessor 生成物和模块名，区分编译期缺图与运行时无订阅。</li>
+          <li><strong>第 3 步。</strong>直接 View 播放失败从 ZHPluginVideoView.playVideo 的 URL、投屏、浮窗分支进入 playVideoInternal。</li>
+          <li><strong>第 4 步。</strong>播放器实例异常时再检查 PlayerPool 的 DataSource 和工厂选择，不把 UI 插件顺序当成实例创建证据。</li>
+        </ol>
+        <h2 id="talk">8. 可直接复述的讲法</h2>
+        <h3>30 秒版本</h3>
+        <blockquote><p>Media 有三个层次：TornadoGroup_player 在运行时把方法转成 TEvent2 并交给 delegate；TornadoActionMethodProcessor 在编译期生成 action map；ZHPluginVideoView 则有自己的 playVideo → playVideoInternal 路径。三者协作，但不能画成每次播放必经的一条直线。 个人参与范围<strong>需本人确认</strong>。</p></blockquote>
+        <h3>2 分钟版本</h3>
+        <blockquote><p>Tornado 协议让调用方以 play、pause 这样的类型化方法发事件，生成的默认方法实际构造 TEvent2，经 EventGroup.sendTEvent2 委托给 delegate。注解处理器只在编译期扫描 TornadoActionMethod2 并生成 action/group map。具体视频 View 又有 ZHPluginVideoView.playVideo 到 playVideoInternal 的直接路径，PlayerPool 负责底层实例选择。组合式插件扩展性强，但事件 key、生成物、插件顺序和播放器状态跨层，必须分层观测。 若要把其中某个调用点写成个人成果，仍需本人确认并提供可核验记录。</p></blockquote>
+        <h2 id="qa">9. 仓库专属追问与回答</h2>
+        <h3>1. 问：APT Processor 会在用户点播放时运行吗？</h3><p><strong>答：</strong>不会，它在编译期生成映射；运行时消费生成结果。</p>
+        <h3>2. 问：TornadoGroup_player.play 实际做了什么？</h3><p><strong>答：</strong>它构造 key 为 play 的 TEvent2，并通过 sendTEvent2 交给 delegate。</p>
+        <h3>3. 问：为什么不能把 ZHPluginVideoView 写成所有 Tornado 事件的下一跳？</h3><p><strong>答：</strong>协议允许多个 delegate/插件处理，当前证据不足以证明所有事件固定进入这个 View。</p>
+        <h3>4. 问：怎样定位事件存在但无人处理？</h3><p><strong>答：</strong>先看生成 map 是否含 key，再看 delegate/插件注册和生命周期，最后检查处理方法返回。</p>
+        <h3>5. 问：面试中怎样说明自己在这个仓库里的贡献边界？</h3><p><strong>答：</strong>只陈述自己能用需求单、MR、commit 或评审记录证明的 media 调用点；公共框架、团队装配体系和历史代码不据为己有。无法核验的个人动作、结果和指标统一标为“需本人确认”。</p>
+<h2 id="evidence">10. 源码证据</h2>
+        <p>以下路径均在当前工作区真实存在；它们证明实现与工程结构，不自动证明个人贡献。</p>
+        <ul><li><a href="../../../../yyyyy-cdoe/Media/player-api/src/main/java/com/zhihu/android/api/interfaces/tornado/event/TornadoGroup_player.java"><code>yyyyy-cdoe/Media/player-api/src/main/java/com/zhihu/android/api/interfaces/tornado/event/TornadoGroup_player.java</code></a></li><li><a href="../../../../yyyyy-cdoe/Media/tornado-apt-processor/src/main/java/com/zhihu/android/tornado_apt_processor/TornadoActionMethodProcessor.java"><code>yyyyy-cdoe/Media/tornado-apt-processor/src/main/java/com/zhihu/android/tornado_apt_processor/TornadoActionMethodProcessor.java</code></a></li><li><a href="../../../../yyyyy-cdoe/Media/player/src/main/java/com/zhihu/android/video/player2/widget/ZHPluginVideoView.java"><code>yyyyy-cdoe/Media/player/src/main/java/com/zhihu/android/video/player2/widget/ZHPluginVideoView.java</code></a></li><li><a href="../../../../yyyyy-cdoe/Media/player/src/main/java/com/zhihu/android/tornado/p/PlayerPool.kt"><code>yyyyy-cdoe/Media/player/src/main/java/com/zhihu/android/tornado/p/PlayerPool.kt</code></a></li><li><a href="../../../../yyyyy-cdoe/Media/player/src/main/java/com/zhihu/android/video/player2/ZHVideoPreloadManager.java"><code>yyyyy-cdoe/Media/player/src/main/java/com/zhihu/android/video/player2/ZHVideoPreloadManager.java</code></a></li><li><a href="../../../../yyyyy-cdoe/Media/app/src/main/java/com/zhihu/android/media/app/ad/AdEngagementPlugin.kt"><code>yyyyy-cdoe/Media/app/src/main/java/com/zhihu/android/media/app/ad/AdEngagementPlugin.kt</code></a></li><li><a href="../../../../yyyyy-cdoe/Media/app/src/main/java/com/zhihu/android/media/app/ad/AdPostRollPlugin.kt"><code>yyyyy-cdoe/Media/app/src/main/java/com/zhihu/android/media/app/ad/AdPostRollPlugin.kt</code></a></li></ul>
+        <p>补充工程证据：<a href="../../../../yyyyy-cdoe/Media/app/build.gradle"><code>yyyyy-cdoe/Media/app/build.gradle</code></a>、<a href="../../../../yyyyy-cdoe/Media/build.gradle"><code>yyyyy-cdoe/Media/build.gradle</code></a>、<a href="../../../../yyyyy-cdoe/Media/gradlew"><code>yyyyy-cdoe/Media/gradlew</code></a>、<a href="../../../../yyyyy-cdoe/Media/player/build.gradle"><code>yyyyy-cdoe/Media/player/build.gradle</code></a>、<a href="../../../../yyyyy-cdoe/Media/player-api/build.gradle"><code>yyyyy-cdoe/Media/player-api/build.gradle</code></a>、<a href="../../../../yyyyy-cdoe/Media/settings.gradle"><code>yyyyy-cdoe/Media/settings.gradle</code></a>。</p>
+
+        <hr>
+        <p><a href="../repositories.html">← 返回仓库索引</a> · <a href="../index.html">返回资料首页</a></p>
+      </article>
+      <aside class="page-toc" aria-label="本页目录"><div class="toc-title">本页目录</div><a class="toc-link level-2" href="#position">仓库定位与面试边界</a><a class="toc-link level-2" href="#checkout">当前检出与工程健康</a><a class="toc-link level-2" href="#structure">模块与目录结构</a><a class="toc-link level-2" href="#entry">真实入口</a><a class="toc-link level-2" href="#chain">关键调用链</a><a class="toc-link level-2" href="#tradeoff">技术亮点与取舍</a><a class="toc-link level-2" href="#risk">风险、缺口与排查顺序</a><a class="toc-link level-2" href="#talk">可直接复述</a><a class="toc-link level-2" href="#qa">追问与回答</a><a class="toc-link level-2" href="#evidence">源码证据</a></aside>
+    </div>
+    </main>
+  </div>
+  <script src="../assets/search-data.js"></script>
+  <script src="../assets/docs.js"></script>
+</body>
+</html>

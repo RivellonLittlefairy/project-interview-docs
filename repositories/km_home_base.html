@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="km_home_base Android 业务仓库源码证据、调用链与面试讲法">
+  <title>km_home_base｜Android 业务仓库分析</title>
+  <link rel="stylesheet" href="../assets/docs.css">
+  <script>try{const t=localStorage.getItem("interview-docs-theme");document.documentElement.dataset.theme=t||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light")}catch{}</script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <header class="topbar">
+    <button class="icon-button menu-button" type="button" data-menu-toggle aria-label="打开文档导航" aria-expanded="false">☰</button>
+    <a class="brand" href="../index.html"><span class="brand-mark">⌁</span><span>项目面试资料库</span></a>
+    <div class="search-shell"><label class="sr-only" for="global-search">搜索文档</label><input id="global-search" type="search" data-search-input placeholder="搜索仓库、技术或面试题…" autocomplete="off"><div class="search-results" data-search-results hidden></div></div>
+    <button class="icon-button" type="button" data-theme-toggle aria-label="切换深浅主题">◐</button>
+  </header>
+  <div class="drawer-backdrop" data-drawer-backdrop hidden></div>
+  <div class="docs-layout">
+    <nav class="sidebar" data-sidebar aria-label="文档导航">
+      <div class="sidebar-heading">仓库文档</div>
+      <section class="nav-group">
+        <h2 class="nav-group-title">返回</h2>
+        <a class="nav-link" href="../repositories.html">全部仓库</a>
+        <a class="nav-link" href="../index.html">资料首页</a>
+        <a class="nav-link" href="../10-android-business-repositories.html">业务仓聚合分析</a>
+      </section>
+      <p class="sidebar-note">离线源码证据 · 2026-07-25</p>
+    </nav>
+    <main class="article-shell" id="main-content">
+    <div class="breadcrumbs"><a href="../index.html">首页</a><span>/</span><a href="../repositories.html">仓库索引</a><span>/</span><span>km_home_base</span></div>
+    <div class="article-grid">
+      <article class="markdown-body">
+        <h1 id="km_home_base">km_home_base：知识首页子 Tab、书架与音频容器业务组件</h1>
+        <blockquote class="callout"><p>基于当前本地检出与真实源码路径整理。源码只能证明仓库中存在这些实现；所有个人职责、主导范围、上线结果和收益均为<strong>需本人确认</strong>，不得把团队框架、三方内核或上游仓库归为本人原创，也不在没有数据源时编造性能指标。</p></blockquote>
+
+        <h2 id="position">1. 仓库定位与面试边界</h2>
+        <p><code>yyyyy-cdoe/km_home_base</code> 的当前定位是<strong>知识首页子 Tab、书架与音频容器业务组件</strong>。主要技术形态为 Kotlin/Java、DevKit/Mavericks 轻量 MVI、Paging3、协程与 RxJava。</p>
+        <p>面试应聚焦业务入口、状态编排、生命周期、异常兜底和组件集成。可以讲“我如何使用既有能力完成业务调用与排障”，但“本人实现/主导”的范围一律<strong>需本人确认</strong>，且应有 MR、commit、需求、评审或上线记录佐证。</p>
+
+        <h2 id="checkout">2. 当前检出、规模、构建入口、测试与 CI</h2>
+        <table><thead><tr><th>项目</th><th>当前证据</th></tr></thead><tbody>
+          <tr><td>分支</td><td><code>feat_time_reward</code></td></tr>
+          <tr><td>最后提交</td><td><code>17a8fc74</code> · 2026-06-03 · 改下写法，确保日夜间切换变色</td></tr>
+          <tr><td>规模</td><td>407 个 Git 跟踪文件；234 个 Java/Kotlin 源码文件（当前扫描口径）</td></tr>
+          <tr><td>构建入口</td><td><code>app/build.gradle</code>、<code>build.gradle</code>、<code>gradlew</code>、<code>km_home_base/build.gradle</code>、<code>km_home_base-api/build.gradle</code>、<code>settings.gradle</code>、<code>version.gradle</code></td></tr>
+          <tr><td>CI</td><td><code>.gitlab-ci.yml</code></td></tr>
+          <tr><td>测试判断</td><td>识别到 2 个测试文件，但文件名均偏 Example/模板；只能证明测试目录存在，不能证明核心链路已被保护。</td></tr>
+        </tbody></table>
+        <p>建议的静态构建检查入口是 <code>./gradlew projects</code>、<code>./gradlew tasks</code> 和目标模块的 <code>test</code>/<code>lint</code>；当前文档未执行全量构建，内网制品、旧 Gradle/AGP、NDK 或渠道凭据可能是环境限制，不能把“未执行”写成“构建失败”。</p>
+
+        <h2 id="structure">3. 模块与目录结构</h2>
+        <p>Gradle settings 可识别模块：<code>:app</code>、<code>:km_home_base</code>、<code>:km_home_base-api</code>。</p>
+        <p>主要物理目录：<code>app/</code>、<code>km_home_base/</code>、<code>km_home_base-api/</code>。</p>
+        <p>从命名可见实现模块与 API/示例模块的分层；调用方应优先依赖稳定 API，示例 <code>app</code> 只用于独立调试，不能误当成线上宿主入口。</p>
+
+        <h2 id="entry">4. 真实入口</h2>
+        <p>Manifest 抽样入口如下；其中 <code>app</code> 下的 Activity/Application 可能只是 demo 或宿主壳，业务集成仍需回到 API、Provider、Router 或实现类。</p>
+        <ul><li><code>app/src/main/AndroidManifest.xml :: application com.zhihu.android.feature.km_home_base.app.App</code></li><li><code>app/src/main/AndroidManifest.xml :: activity com.zhihu.android.feature.km_home_base.app.MainActivity</code></li><li><code>km_home_base/src/main/AndroidManifest.xml :: activity .discovery.PopHostActivity</code></li></ul>
+        <p>源码阅读建议从 <a href="../../../../yyyyy-cdoe/km_home_base/km_home_base/src/main/java/com/zhihu/android/feature/km_home_base/discovery/HomePinTabFragment.kt"><code>yyyyy-cdoe/km_home_base/km_home_base/src/main/java/com/zhihu/android/feature/km_home_base/discovery/HomePinTabFragment.kt</code></a>、<a href="../../../../yyyyy-cdoe/km_home_base/km_home_base/src/main/java/com/zhihu/android/feature/km_home_base/discovery/HomePinTabViewModel.kt"><code>yyyyy-cdoe/km_home_base/km_home_base/src/main/java/com/zhihu/android/feature/km_home_base/discovery/HomePinTabViewModel.kt</code></a>、<a href="../../../../yyyyy-cdoe/km_home_base/km_home_base-api/src/main/java/com/zhihu/android/feature/km_home_base/BookShelfFragmentProvider.kt"><code>yyyyy-cdoe/km_home_base/km_home_base-api/src/main/java/com/zhihu/android/feature/km_home_base/BookShelfFragmentProvider.kt</code></a> 开始，再沿调用与依赖反向确认谁创建入口、谁持有状态、谁执行 IO。</p>
+
+                        <h2 id="chain">5. 关键调用链与边界</h2>
+        <h3>源码直接链路：Pin Tab 分页</h3>
+        <ol>
+          <li>HomePinTabFragment 调用 HomePinTabViewModel.refresh</li>
+          <li>refresh 通过 pager.invalidate 使当前 PagingSource 失效</li>
+          <li>新 ResponsePagingSource 执行 onRefresh/onLoadMore 并解析业务卡片</li>
+          <li>pager.flow 写入 PinTabState.data</li>
+          <li>Fragment 通过 collectFrom 收集后交给 SuperAdapter</li>
+        </ol>
+        <p><strong>边界说明：</strong>PinTabState.data 是 PagingData；CombinedLoadStates 由 adapter 监听，不被复制进 State。</p>
+        <h3>相邻局部更新机制</h3>
+        <ol>
+          <li>PagerMediator 记录删除或替换</li>
+          <li>PagingData 通过 filter/map 生成可见结果</li>
+        </ol>
+        <p><strong>边界说明：</strong>它服务于卡片删除和点赞等局部变化，不是每次 refresh 的必经网络步骤。</p>
+<h2 id="tradeoff">6. 技术亮点与取舍</h2>
+        <h3>亮点</h3><p>PagingData 放不可变 State，点赞/删除由 PagerMediator 局部变换，而加载态仍由 adapter 的 CombinedLoadStates 持有。</p>
+        <h3>取舍</h3><p>单向渲染降低状态散落，但协程、Rx、Paging generation 与 adapter load state 同时存在，调试需分层。</p>
+        <p>面试时不要把“使用了某框架”本身当亮点。更有价值的是说清楚为什么这样划分状态与生命周期、失败如何降级、版本/协议如何兼容，以及出现竞态时如何用真实调用链定位。</p>
+
+                        <h2 id="risk">7. 仓库专属风险与排查顺序</h2>
+        <p>下面的顺序按本仓真实状态 owner、服务与生命周期组织；前一步没有证据时，不跳到渲染层猜测。</p>
+        <ol>
+          <li><strong>第 1 步。</strong>刷新无效先确认 HomePinTabFragment 是否调用了正确 ViewModel 的 refresh。</li>
+          <li><strong>第 2 步。</strong>检查 pager.invalidate 后是否创建新的 PagingSource，并记录 onRefresh/onLoadMore 与分页 key。</li>
+          <li><strong>第 3 步。</strong>有数据但 UI 不动时看 PinTabState.data 的 collectFrom 及 SuperAdapter 类型注册。</li>
+          <li><strong>第 4 步。</strong>加载状态异常从 adapter.addLoadStateListener 检查 CombinedLoadStates，不要去 PinTabState 里找不存在的字段。</li>
+        </ol>
+        <h2 id="talk">8. 可直接复述的讲法</h2>
+        <h3>30 秒版本</h3>
+        <blockquote><p>km_home_base 的核心是轻量 Mavericks MVI 加 Paging3：Fragment 调 refresh，ViewModel 让 pager.invalidate，新 PagingSource 拉数据，PagingData 写入 PinTabState.data，再由 collectFrom 交给 SuperAdapter。加载状态仍归 adapter，不是所有状态都塞进 MvxState。 个人参与范围<strong>需本人确认</strong>。</p></blockquote>
+        <h3>2 分钟版本</h3>
+        <blockquote><p>HomePinTab 是最完整的例子。HomePinTabFragment 直接调用 ViewModel.refresh，pager.invalidate 触发新一代 PagingSource；ResponsePagingSource 将 refresh/append/prepend 转成页面结果，pager.flow 写入 PinTabState.data，Fragment 用 collectFrom 交给 SuperAdapter。删除和点赞由 PagerMediator 做 filter/map 局部变换。优点是分页和 UI 状态流清楚，代价是 adapter 的 CombinedLoadStates 与 MvxState 分属两个 owner，调试时必须同时观察。 若要把其中某个调用点写成个人成果，仍需本人确认并提供可核验记录。</p></blockquote>
+        <h2 id="qa">9. 仓库专属追问与回答</h2>
+        <h3>1. 问：PinTabState.data 是普通 List 吗？</h3><p><strong>答：</strong>不是，它持有 PagingData&lt;BaseModulesListItemData&gt;，不能按普通列表原地修改。</p>
+        <h3>2. 问：为什么 refresh 要 invalidate Pager？</h3><p><strong>答：</strong>invalidate 会废弃当前 PagingSource，并让 Pager 创建新的数据源代次重新执行 onRefresh。</p>
+        <h3>3. 问：CombinedLoadStates 为什么不进 State？</h3><p><strong>答：</strong>当前实现由 adapter.addLoadStateListener 持有刷新、追加和前置状态，State 主要承载 PagingData。</p>
+        <h3>4. 问：PagerMediator 解决什么问题？</h3><p><strong>答：</strong>它用 PagingData filter/map 表达删除和替换，避免每个局部交互都重新请求整页。</p>
+        <h3>5. 问：面试中怎样说明自己在这个仓库里的贡献边界？</h3><p><strong>答：</strong>只陈述自己能用需求单、MR、commit 或评审记录证明的 km_home_base 调用点；公共框架、团队装配体系和历史代码不据为己有。无法核验的个人动作、结果和指标统一标为“需本人确认”。</p>
+<h2 id="evidence">10. 源码证据</h2>
+        <p>以下路径均在当前工作区真实存在；它们证明实现与工程结构，不自动证明个人贡献。</p>
+        <ul><li><a href="../../../../yyyyy-cdoe/km_home_base/km_home_base/src/main/java/com/zhihu/android/feature/km_home_base/discovery/HomePinTabFragment.kt"><code>yyyyy-cdoe/km_home_base/km_home_base/src/main/java/com/zhihu/android/feature/km_home_base/discovery/HomePinTabFragment.kt</code></a></li><li><a href="../../../../yyyyy-cdoe/km_home_base/km_home_base/src/main/java/com/zhihu/android/feature/km_home_base/discovery/HomePinTabViewModel.kt"><code>yyyyy-cdoe/km_home_base/km_home_base/src/main/java/com/zhihu/android/feature/km_home_base/discovery/HomePinTabViewModel.kt</code></a></li><li><a href="../../../../yyyyy-cdoe/km_home_base/km_home_base-api/src/main/java/com/zhihu/android/feature/km_home_base/BookShelfFragmentProvider.kt"><code>yyyyy-cdoe/km_home_base/km_home_base-api/src/main/java/com/zhihu/android/feature/km_home_base/BookShelfFragmentProvider.kt</code></a></li><li><a href="../../../../yyyyy-cdoe/km_home_base/km_home_base/src/main/java/com/zhihu/android/feature/km_home_base/audio/CommonAudioPageViewModel.kt"><code>yyyyy-cdoe/km_home_base/km_home_base/src/main/java/com/zhihu/android/feature/km_home_base/audio/CommonAudioPageViewModel.kt</code></a></li><li><a href="../../../../yyyyy-cdoe/km_home_base/app/src/main/java/com/zhihu/android/feature/km_home_base/app/App.java"><code>yyyyy-cdoe/km_home_base/app/src/main/java/com/zhihu/android/feature/km_home_base/app/App.java</code></a></li><li><a href="../../../../yyyyy-cdoe/km_home_base/app/src/main/java/com/zhihu/android/feature/km_home_base/app/MainActivity.java"><code>yyyyy-cdoe/km_home_base/app/src/main/java/com/zhihu/android/feature/km_home_base/app/MainActivity.java</code></a></li><li><a href="../../../../yyyyy-cdoe/km_home_base/km_home_base/src/main/java/com/zhihu/android/feature/km_home_base/audio/AudioPageContainerFragment.kt"><code>yyyyy-cdoe/km_home_base/km_home_base/src/main/java/com/zhihu/android/feature/km_home_base/audio/AudioPageContainerFragment.kt</code></a></li></ul>
+        <p>补充工程证据：<a href="../../../../yyyyy-cdoe/km_home_base/app/build.gradle"><code>yyyyy-cdoe/km_home_base/app/build.gradle</code></a>、<a href="../../../../yyyyy-cdoe/km_home_base/build.gradle"><code>yyyyy-cdoe/km_home_base/build.gradle</code></a>、<a href="../../../../yyyyy-cdoe/km_home_base/gradlew"><code>yyyyy-cdoe/km_home_base/gradlew</code></a>、<a href="../../../../yyyyy-cdoe/km_home_base/km_home_base/build.gradle"><code>yyyyy-cdoe/km_home_base/km_home_base/build.gradle</code></a>、<a href="../../../../yyyyy-cdoe/km_home_base/km_home_base-api/build.gradle"><code>yyyyy-cdoe/km_home_base/km_home_base-api/build.gradle</code></a>、<a href="../../../../yyyyy-cdoe/km_home_base/settings.gradle"><code>yyyyy-cdoe/km_home_base/settings.gradle</code></a>。</p>
+
+        <hr>
+        <p><a href="../repositories.html">← 返回仓库索引</a> · <a href="../index.html">返回资料首页</a></p>
+      </article>
+      <aside class="page-toc" aria-label="本页目录"><div class="toc-title">本页目录</div><a class="toc-link level-2" href="#position">仓库定位与面试边界</a><a class="toc-link level-2" href="#checkout">当前检出与工程健康</a><a class="toc-link level-2" href="#structure">模块与目录结构</a><a class="toc-link level-2" href="#entry">真实入口</a><a class="toc-link level-2" href="#chain">关键调用链</a><a class="toc-link level-2" href="#tradeoff">技术亮点与取舍</a><a class="toc-link level-2" href="#risk">风险、缺口与排查顺序</a><a class="toc-link level-2" href="#talk">可直接复述</a><a class="toc-link level-2" href="#qa">追问与回答</a><a class="toc-link level-2" href="#evidence">源码证据</a></aside>
+    </div>
+    </main>
+  </div>
+  <script src="../assets/search-data.js"></script>
+  <script src="../assets/docs.js"></script>
+</body>
+</html>

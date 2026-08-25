@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Account Android 业务仓库源码证据、调用链与面试讲法">
+  <title>Account｜Android 业务仓库分析</title>
+  <link rel="stylesheet" href="../assets/docs.css">
+  <script>try{const t=localStorage.getItem("interview-docs-theme");document.documentElement.dataset.theme=t||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light")}catch{}</script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <header class="topbar">
+    <button class="icon-button menu-button" type="button" data-menu-toggle aria-label="打开文档导航" aria-expanded="false">☰</button>
+    <a class="brand" href="../index.html"><span class="brand-mark">⌁</span><span>项目面试资料库</span></a>
+    <div class="search-shell"><label class="sr-only" for="global-search">搜索文档</label><input id="global-search" type="search" data-search-input placeholder="搜索仓库、技术或面试题…" autocomplete="off"><div class="search-results" data-search-results hidden></div></div>
+    <button class="icon-button" type="button" data-theme-toggle aria-label="切换深浅主题">◐</button>
+  </header>
+  <div class="drawer-backdrop" data-drawer-backdrop hidden></div>
+  <div class="docs-layout">
+    <nav class="sidebar" data-sidebar aria-label="文档导航">
+      <div class="sidebar-heading">仓库文档</div>
+      <section class="nav-group">
+        <h2 class="nav-group-title">返回</h2>
+        <a class="nav-link" href="../repositories.html">全部仓库</a>
+        <a class="nav-link" href="../index.html">资料首页</a>
+        <a class="nav-link" href="../10-android-business-repositories.html">业务仓聚合分析</a>
+      </section>
+      <p class="sidebar-note">离线源码证据 · 2026-07-25</p>
+    </nav>
+    <main class="article-shell" id="main-content">
+    <div class="breadcrumbs"><a href="../index.html">首页</a><span>/</span><a href="../repositories.html">仓库索引</a><span>/</span><span>Account</span></div>
+    <div class="article-grid">
+      <article class="markdown-body">
+        <h1 id="account">Account：账号状态、认证、安全与隐私业务组件</h1>
+        <blockquote class="callout"><p>基于当前本地检出与真实源码路径整理。源码只能证明仓库中存在这些实现；所有个人职责、主导范围、上线结果和收益均为<strong>需本人确认</strong>，不得把团队框架、三方内核或上游仓库归为本人原创，也不在没有数据源时编造性能指标。</p></blockquote>
+
+        <h2 id="position">1. 仓库定位与面试边界</h2>
+        <p><code>yyyyy-cdoe/Account</code> 的当前定位是<strong>账号状态、认证、安全与隐私业务组件</strong>。主要技术形态为 Java/Kotlin、RxJava/Retrofit、Router、账号持久化与实名 SDK 适配。</p>
+        <p>面试应聚焦业务入口、状态编排、生命周期、异常兜底和组件集成。可以讲“我如何使用既有能力完成业务调用与排障”，但“本人实现/主导”的范围一律<strong>需本人确认</strong>，且应有 MR、commit、需求、评审或上线记录佐证。</p>
+
+        <h2 id="checkout">2. 当前检出、规模、构建入口、测试与 CI</h2>
+        <table><thead><tr><th>项目</th><th>当前证据</th></tr></thead><tbody>
+          <tr><td>分支</td><td><code>detached</code></td></tr>
+          <tr><td>最后提交</td><td><code>01f2ab4b4a</code> · 2022-12-20 · Athena2.0 update version：8.47.0.1 --&gt; 8.47.0.2</td></tr>
+          <tr><td>规模</td><td>426 个 Git 跟踪文件；298 个 Java/Kotlin 源码文件（当前扫描口径）</td></tr>
+          <tr><td>构建入口</td><td><code>account/build.gradle</code>、<code>account-api/build.gradle</code>、<code>app/build.gradle</code>、<code>build.gradle</code>、<code>gradlew</code>、<code>settings.gradle</code>、<code>version.gradle</code></td></tr>
+          <tr><td>CI</td><td><code>.gitlab-ci.yml</code>、<code>Jenkinsfile</code></td></tr>
+          <tr><td>测试判断</td><td>识别到 10 个测试文件（扫描结果最多展示 10 个），其中至少 9 个文件名指向具体业务/工具场景；仍需阅读断言后才能评价覆盖质量。</td></tr>
+        </tbody></table>
+        <p>建议的静态构建检查入口是 <code>./gradlew projects</code>、<code>./gradlew tasks</code> 和目标模块的 <code>test</code>/<code>lint</code>；当前文档未执行全量构建，内网制品、旧 Gradle/AGP、NDK 或渠道凭据可能是环境限制，不能把“未执行”写成“构建失败”。</p>
+
+        <h2 id="structure">3. 模块与目录结构</h2>
+        <p>Gradle settings 可识别模块：<code>:miitmdid</code>、<code>:account</code>、<code>:passport</code>、<code>:operator</code>、<code>:cloudid</code>。</p>
+        <p>主要物理目录：<code>account/</code>、<code>account-api/</code>、<code>app/</code>。</p>
+        <p>从命名可见实现模块与 API/示例模块的分层；调用方应优先依赖稳定 API，示例 <code>app</code> 只用于独立调试，不能误当成线上宿主入口。</p>
+
+        <h2 id="entry">4. 真实入口</h2>
+        <p>Manifest 抽样入口如下；其中 <code>app</code> 下的 Activity/Application 可能只是 demo 或宿主壳，业务集成仍需回到 API、Provider、Router 或实现类。</p>
+        <ul><li><code>account/src/main/AndroidManifest.xml :: activity com.zhihu.android.wxapi.WXEntryActivity</code></li><li><code>account/src/main/AndroidManifest.xml :: activity com.zhihu.explore.wxapi.WXEntryActivity</code></li><li><code>account/src/main/AndroidManifest.xml :: activity com.tencent.tauth.AuthActivity</code></li><li><code>account/src/main/AndroidManifest.xml :: activity com.tencent.connect.common.AssistActivity</code></li><li><code>account/src/main/AndroidManifest.xml :: activity com.zhihu.matisse.ui.MatisseActivity</code></li><li><code>account/src/main/AndroidManifest.xml :: activity com.zhihu.android.app.ui.activity.AccountActionActivity</code></li><li><code>account/src/main/AndroidManifest.xml :: activity com.zhihu.android.app.ui.activity.AuthActivity</code></li></ul>
+        <p>源码阅读建议从 <a href="../../../../yyyyy-cdoe/Account/account/src/main/java/com/zhihu/android/app/ui/activity/AuthActivity.java"><code>yyyyy-cdoe/Account/account/src/main/java/com/zhihu/android/app/ui/activity/AuthActivity.java</code></a>、<a href="../../../../yyyyy-cdoe/Account/account/src/main/java/com/zhihu/android/app/ui/fragment/account/AuthFragment.kt"><code>yyyyy-cdoe/Account/account/src/main/java/com/zhihu/android/app/ui/fragment/account/AuthFragment.kt</code></a>、<a href="../../../../yyyyy-cdoe/Account/account/src/main/java/com/zhihu/android/app/accounts/AccountManager.java"><code>yyyyy-cdoe/Account/account/src/main/java/com/zhihu/android/app/accounts/AccountManager.java</code></a> 开始，再沿调用与依赖反向确认谁创建入口、谁持有状态、谁执行 IO。</p>
+
+                        <h2 id="chain">5. 关键调用链与边界</h2>
+        <h3>源码直接链路：认证路由分支</h3>
+        <ol>
+          <li>AuthActivity.login 先检查 AccountManager 中是否已有正式账号</li>
+          <li>已有正式账号时，AuthActivity 把 AuthFragment 封装进 ZHIntent，交给 SocialOauthActivity 启动后结束自身</li>
+          <li>未登录或游客态时，AuthActivity 改走 LoginInterface.login</li>
+          <li>AuthFragment 通过 AttachedActivity 声明关联 SocialOauthActivity，再按认证场景组织具体交互</li>
+        </ol>
+        <p><strong>边界说明：</strong>AuthActivity 是认证分发入口，不是 AuthFragment 的直接宿主；当前检出只证明它把 Fragment 描述交给 SocialOauthActivity，具体宿主装配逻辑需到对应基础能力继续核对。</p>
+        <h3>源码直接链路：账号状态持久化</h3>
+        <ol>
+          <li>AccountManager 持有账号会话入口</li>
+          <li>AccountManager 调用 DataStoreManager 读写持久化状态</li>
+          <li>状态变化再由订阅方更新 UI</li>
+        </ol>
+        <p><strong>边界说明：</strong>账号持久化与 AuthActivity 的认证分发是相邻架构，不应拼成一次必然发生的端到端请求。</p>
+<h2 id="tradeoff">6. 技术亮点与取舍</h2>
+        <h3>亮点</h3><p>把账号真值、敏感认证和退出清理收在统一边界内，业务页面不直接散落账号存储逻辑。</p>
+        <h3>取舍</h3><p>集中管理提升一致性，但多进程同步、第三方活体回调和退出顺序都扩大了状态空间。</p>
+        <p>面试时不要把“使用了某框架”本身当亮点。更有价值的是说清楚为什么这样划分状态与生命周期、失败如何降级、版本/协议如何兼容，以及出现竞态时如何用真实调用链定位。</p>
+
+                        <h2 id="risk">7. 仓库专属风险与排查顺序</h2>
+        <p>下面的顺序按本仓真实状态 owner、服务与生命周期组织；前一步没有证据时，不跳到渲染层猜测。</p>
+        <ol>
+          <li><strong>第 1 步。</strong>先在 AuthActivity.login 核对账号分支：正式账号应创建携带 AuthFragment ZHIntent 的 SocialOauthActivity Intent，其他状态应进入 LoginInterface.login。</li>
+          <li><strong>第 2 步。</strong>进入认证页后再检查 SocialOauthActivity 的装配结果与 AuthFragment 当前步骤、账号身份和生命周期，不能把分发 Activity 当宿主排查。</li>
+          <li><strong>第 3 步。</strong>登录成功但重启丢失时，直接对照 AccountManager 写入与 DataStoreManager 落盘结果。</li>
+          <li><strong>第 4 步。</strong>账号已更新但页面未刷新时，检查状态通知的订阅时机，而不是先改 View 展示。</li>
+        </ol>
+        <h2 id="talk">8. 可直接复述的讲法</h2>
+        <h3>30 秒版本</h3>
+        <blockquote><p>Account 不是一个单纯的登录页集合。我会分两条真实链讲：AuthActivity 按账号状态把认证交给 SocialOauthActivity/AuthFragment 或 LoginInterface；AccountManager 通过 DataStoreManager 维护可持久化的账号真值。两条链职责相邻但不是一次调用，排障也分别看路由分支和状态落盘。 个人参与范围<strong>需本人确认</strong>。</p></blockquote>
+        <h3>2 分钟版本</h3>
+        <blockquote><p>阅读 Account 时，我先把认证分发、页面宿主和账号真值拆开。AuthActivity.login 根据 AccountManager 状态选择两条路：正式账号时把 AuthFragment 的 ZHIntent 交给 SocialOauthActivity 并结束自身，其他状态调用 LoginInterface.login；因此 AuthActivity 是分发者而不是 Fragment 宿主。AccountManager 到 DataStoreManager 才是账号状态的持久化链，适合定位登录后状态丢失。这样的划分避免把认证 UI、网络步骤和全局会话硬画成一条不存在的流水线。取舍是全局账号状态复用方便，但路由恢复顺序和多进程可见性更难保证。 若要把其中某个调用点写成个人成果，仍需本人确认并提供可核验记录。</p></blockquote>
+        <h2 id="qa">9. 仓库专属追问与回答</h2>
+        <h3>1. 问：AuthActivity 是 AuthFragment 的直接宿主吗？</h3><p><strong>答：</strong>不是。已有正式账号时它只把 AuthFragment 封装成 ZHIntent 交给 SocialOauthActivity 并结束自身；另一分支进入 LoginInterface.login。</p>
+        <h3>2. 问：登录成功但冷启动又变成未登录，先看哪里？</h3><p><strong>答：</strong>先看 AccountManager 的内存状态是否正确，再看 DataStoreManager 是否真正落盘以及冷启动读取是否早于页面判断。</p>
+        <h3>3. 问：旋转屏幕后认证步骤重复，怎样定位？</h3><p><strong>答：</strong>先确认 AuthActivity 是否只分发一次，再核对 SocialOauthActivity 的恢复与 AuthFragment 当前步骤 owner，避免宿主恢复后又重复装配。</p>
+        <h3>4. 问：Account 最小补测是什么？</h3><p><strong>答：</strong>用假 DataStoreManager 验证账号写入、清除和恢复；再覆盖 AuthActivity 两个账号分支，并用宿主/Fragment 恢复测试保护认证场景不重复装配。</p>
+        <h3>5. 问：面试中怎样说明自己在这个仓库里的贡献边界？</h3><p><strong>答：</strong>只陈述自己能用需求单、MR、commit 或评审记录证明的 account 调用点；公共框架、团队装配体系和历史代码不据为己有。无法核验的个人动作、结果和指标统一标为“需本人确认”。</p>
+<h2 id="evidence">10. 源码证据</h2>
+        <p>以下路径均在当前工作区真实存在；它们证明实现与工程结构，不自动证明个人贡献。</p>
+        <ul><li><a href="../../../../yyyyy-cdoe/Account/account/src/main/java/com/zhihu/android/app/ui/activity/AuthActivity.java"><code>yyyyy-cdoe/Account/account/src/main/java/com/zhihu/android/app/ui/activity/AuthActivity.java</code></a></li><li><a href="../../../../yyyyy-cdoe/Account/account/src/main/java/com/zhihu/android/app/ui/fragment/account/AuthFragment.kt"><code>yyyyy-cdoe/Account/account/src/main/java/com/zhihu/android/app/ui/fragment/account/AuthFragment.kt</code></a></li><li><a href="../../../../yyyyy-cdoe/Account/account-api/src/main/java/com/zhihu/android/account/LoginInterface.java"><code>yyyyy-cdoe/Account/account-api/src/main/java/com/zhihu/android/account/LoginInterface.java</code></a></li><li><a href="../../../../yyyyy-cdoe/Account/account/src/main/java/com/zhihu/android/app/accounts/AccountManager.java"><code>yyyyy-cdoe/Account/account/src/main/java/com/zhihu/android/app/accounts/AccountManager.java</code></a></li><li><a href="../../../../yyyyy-cdoe/Account/account/src/main/java/com/zhihu/android/app/accounts/DataStoreManager.java"><code>yyyyy-cdoe/Account/account/src/main/java/com/zhihu/android/app/accounts/DataStoreManager.java</code></a></li><li><a href="../../../../yyyyy-cdoe/Account/account/src/main/java/com/zhihu/android/api/service2/AccountService.java"><code>yyyyy-cdoe/Account/account/src/main/java/com/zhihu/android/api/service2/AccountService.java</code></a></li><li><a href="../../../../yyyyy-cdoe/Account/account/src/main/java/com/megvii/meglive/FaceIdCallback.kt"><code>yyyyy-cdoe/Account/account/src/main/java/com/megvii/meglive/FaceIdCallback.kt</code></a></li><li><a href="../../../../yyyyy-cdoe/Account/account/src/main/java/com/megvii/meglive/FaceIdFiles.kt"><code>yyyyy-cdoe/Account/account/src/main/java/com/megvii/meglive/FaceIdFiles.kt</code></a></li></ul>
+        <p>补充工程证据：<a href="../../../../yyyyy-cdoe/Account/account/build.gradle"><code>yyyyy-cdoe/Account/account/build.gradle</code></a>、<a href="../../../../yyyyy-cdoe/Account/account-api/build.gradle"><code>yyyyy-cdoe/Account/account-api/build.gradle</code></a>、<a href="../../../../yyyyy-cdoe/Account/app/build.gradle"><code>yyyyy-cdoe/Account/app/build.gradle</code></a>、<a href="../../../../yyyyy-cdoe/Account/build.gradle"><code>yyyyy-cdoe/Account/build.gradle</code></a>、<a href="../../../../yyyyy-cdoe/Account/gradlew"><code>yyyyy-cdoe/Account/gradlew</code></a>、<a href="../../../../yyyyy-cdoe/Account/settings.gradle"><code>yyyyy-cdoe/Account/settings.gradle</code></a>。</p>
+
+        <hr>
+        <p><a href="../repositories.html">← 返回仓库索引</a> · <a href="../index.html">返回资料首页</a></p>
+      </article>
+      <aside class="page-toc" aria-label="本页目录"><div class="toc-title">本页目录</div><a class="toc-link level-2" href="#position">仓库定位与面试边界</a><a class="toc-link level-2" href="#checkout">当前检出与工程健康</a><a class="toc-link level-2" href="#structure">模块与目录结构</a><a class="toc-link level-2" href="#entry">真实入口</a><a class="toc-link level-2" href="#chain">关键调用链</a><a class="toc-link level-2" href="#tradeoff">技术亮点与取舍</a><a class="toc-link level-2" href="#risk">风险、缺口与排查顺序</a><a class="toc-link level-2" href="#talk">可直接复述</a><a class="toc-link level-2" href="#qa">追问与回答</a><a class="toc-link level-2" href="#evidence">源码证据</a></aside>
+    </div>
+    </main>
+  </div>
+  <script src="../assets/search-data.js"></script>
+  <script src="../assets/docs.js"></script>
+</body>
+</html>

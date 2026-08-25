@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>html-anything：本地 Agent 驱动的 HTML 编辑器</title>
+  <link rel="stylesheet" href="../assets/docs.css">
+  <script defer src="../assets/search-data.js"></script>
+  <script defer src="../assets/docs.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <header class="topbar">
+    <button class="icon-button menu-button" type="button" data-menu-toggle aria-label="打开文档导航" aria-expanded="false">☰</button>
+    <a class="brand" href="../index.html"><span class="brand-mark">⌁</span><span>项目面试资料库</span></a>
+    <div class="search-shell">
+      <label class="sr-only" for="global-search">搜索所有文档</label>
+      <input id="global-search" type="search" data-search-input placeholder="搜索仓库、技术或面试题…" autocomplete="off">
+      <span class="search-shortcut">Ctrl K</span>
+      <div class="search-results" data-search-results hidden></div>
+    </div>
+    <button class="icon-button" type="button" data-theme-toggle aria-label="切换深浅主题">◐</button>
+  </header>
+  <div class="drawer-backdrop" data-drawer-backdrop hidden></div>
+  <div class="docs-layout">
+    <nav class="sidebar" data-sidebar aria-label="全站文档导航">
+      <div class="sidebar-heading">文档导航</div>
+      <section class="nav-group">
+        <h2 class="nav-group-title">逐仓文档</h2>
+        <a class="nav-link active" href="../repositories.html">仓库独立分析</a>
+      </section>
+      <section class="nav-group">
+        <h2 class="nav-group-title">开始使用</h2>
+        <a class="nav-link" href="../index.html">总览与导航</a>
+      </section>
+      <section class="nav-group">
+        <h2 class="nav-group-title">来源分析</h2>
+        <a class="nav-link" href="../00-repository-inventory.html">全量仓库盘点</a>
+        <a class="nav-link" href="../30-cross-platform-rn-web.html">RN 与 Web</a>
+        <a class="nav-link" href="../31-tools-samples-and-assets.html">工具、样例与资产</a>
+      </section>
+      <p class="sidebar-note">离线资料 · 源码证据快照</p>
+    </nav>
+    <main class="article-shell" id="main-content">
+      <div class="breadcrumbs"><a href="../index.html">首页</a><span>/</span><a href="../repositories.html">仓库索引</a><span>/</span><span>html-anything</span></div>
+      <article class="markdown-body">
+      <h1>html-anything：本地 Agent 驱动的 HTML 编辑器</h1>
+      <p><strong>定位标签：</strong>公开 Web 工程 / 贡献归属需本人确认</p>
+      <nav class="toc" aria-label="本页目录">
+        <strong>本页目录</strong>
+        <ol>
+          <li><a href="#identity">定位与归属边界</a></li>
+          <li><a href="#checkout">检出与构建信息</a></li>
+          <li><a href="#structure">结构与核心入口</a></li>
+          <li><a href="#workflow">关键工作流</a></li>
+          <li><a href="#tradeoffs">亮点与取舍</a></li>
+          <li><a href="#risks">风险、测试与排查</a></li>
+          <li><a href="#pitch">面试讲法</a></li>
+          <li><a href="#questions">追问与回答</a></li>
+          <li><a href="#evidence">源码证据</a></li>
+        </ol>
+      </nav>
+      <section id="identity"><h2>定位与归属边界</h2><ul><li>本地优先的 agentic HTML 编辑器：浏览器提交内容，Next.js 服务端调用本机已登录的 coding-agent CLI，再流式返回 HTML。</li><li>仓库 README 指向公开社区与多个上游项目；不能仅凭本地 checkout 把全仓成果归为个人。个人实现、评审或维护范围均<strong>需本人确认</strong>并由 commit/PR 支撑。</li><li>安全边界是“单机可信用户 + loopback API”，不是可直接无认证暴露公网的 SaaS。</li></ul></section>
+      <section id="checkout"><h2>检出与构建信息</h2><ul><li>库存记录：分支 <code>main</code>，提交 <code>aea7498</code>（2026-07-05），TypeScript/TSX，中型规模。</li><li>pnpm workspace 实际包含 <code>next</code>、<code>e2e</code>、<code>cli</code>；根包不代理子包命令。</li><li>入口：<code>pnpm install</code>，再运行 <code>pnpm -F @html-anything/next dev</code>；CI 使用 Node 24。已记录 guard、Next/e2e typecheck 和 Playwright 用例发现通过；Node 20 下 Vitest 启动兼容错误，不等于业务测试失败。</li></ul></section>
+      <section id="structure"><h2>结构与核心入口</h2><ul><li><code>next/src/app/api/convert/route.ts</code>：加载 skill、组装 prompt、把 Agent 事件包装为 SSE。</li><li><code>next/src/lib/agents/{detect,argv,invoke}.ts</code>：CLI 检测、参数/协议适配、子进程调用。</li><li><code>next/src/lib/use-convert.ts</code> 与 <code>store.ts</code>：按 task 管理并发、取消和增量 HTML。</li><li><code>next/src/components/preview-pane.tsx</code>：约 320ms 防抖刷新 iframe；<code>middleware.ts</code> 保护全部 API Host。</li></ul></section>
+      <section id="workflow"><h2>关键工作流</h2><ol><li>用户发起转换 → <code>useConvert.run(taskId)</code> 创建 AbortController → POST <code>/api/convert</code>。</li><li>服务端加载模板，<code>invokeAgent()</code> spawn 本机 CLI；不同 stdout 协议被归一为 delta/html/meta/error/done。</li><li>SSE 增量进入 Zustand 的 task 状态，预览约 320ms 一次更新 <code>srcDoc</code>；结束时立即提交最终值。</li><li>取消从 fetch signal 传播到服务端，再到 child <code>SIGTERM</code>；同一 task 重跑先取消旧请求，不同 task 可并发。</li></ol></section>
+      <section id="tradeoffs"><h2>亮点与取舍</h2><ul><li>亮点：薄 adapter 隔离 CLI 差异；SSE 适合当前单向流；task 级 controller 形成端到端取消。</li><li>亮点：Host allowlist 对准 DNS rebinding 与本地高权限 API；skill 安装包含 tar 预检、大小限制、拒绝链接、原子替换与回滚。</li><li>取舍：预览防抖降低 iframe 重载成本，但 320ms 是经验值，仍需性能数据；外部 CLI 协议升级会让 adapter 漂移。</li></ul></section>
+      <section id="risks"><h2>风险、测试与排查</h2><ul><li>P0：主预览同时启用 <code>allow-scripts allow-same-origin</code>，不能宣称对不可信 HTML 强隔离；优先独立 origin 或移除 same-origin。</li><li>P0：API 能指定 cwd/bin 并启动本机 CLI，不可无认证暴露公网；远程化需认证、租户隔离、沙箱执行器、队列、配额和审计。</li><li>P1：error 或非零 exit 仍可能最终显示 done；应把退出码、错误事件和 HTML 完整性纳入状态机。</li><li>排查顺序：Host/middleware → Agent 检测与实际协议支持 → argv/stdout parser → SSE 网络流 → task 日志/退出码 → iframe 控制台。</li></ul></section>
+      <section id="pitch">
+        <h2>面试讲法</h2>
+        <h3>30 秒版本</h3><blockquote><p>这是一个本地 Agent 驱动的 HTML 编辑器：Next API 调用本机 CLI，把多种 stdout 归一成 SSE，前端按 task 增量写入并防抖预览。最值得讲的是 adapter、端到端取消和 Host 防 DNS rebinding；最大风险是 iframe 同时开放 scripts 与 same-origin。个人贡献范围需本人确认。</p></blockquote>
+        <h3>2 分钟版本</h3><blockquote><p>我会先把边界讲清：它不是前端直接调用云模型，而是复用本机 CLI 登录态。检测层扫描 PATH，argv/parser adapter 收敛不同协议，convert route 负责 skill 与 SSE，前端用 taskId 隔离状态和 AbortController。取消链从浏览器一直传到子进程 SIGTERM。安全上，middleware 保护全部本地 API，skill 安装也按供应链输入预检；但 iframe 隔离声明过强、错误退出仍可能落成 done、cli package 的门禁弱于 next/e2e。若说“我负责”，只说能由本人 commit/PR 证明的 adapter、状态或安全范围。</p></blockquote>
+      </section>
+      <section id="questions"><h2>追问与回答</h2>
+    <details open>
+      <summary>问题1：为什么用 SSE 而不是 WebSocket？</summary>
+      <p>当前核心是服务端向浏览器单向输出，普通 POST 与 AbortSignal 已覆盖输入和取消；需要双向工具确认或多路会话时再考虑 WebSocket。</p>
+    </details>
+    <details>
+      <summary>问题2：如何保证多个任务互不干扰？</summary>
+      <p>controller 和 Zustand 写操作都按 taskId 管理；同一 task 重跑取消旧 run，finally 还校验 controller 身份，避免旧请求清掉新请求。</p>
+    </details>
+    <details>
+      <summary>问题3：检测到 CLI 就算支持吗？</summary>
+      <p>不算。还必须有 prompt 传输、stdout parser、取消和退出语义；源码里存在 detection-only 协议。</p>
+    </details>
+    <details>
+      <summary>问题4：Host allowlist 能解决所有安全问题吗？</summary>
+      <p>不能。它防 DNS rebinding，不替代身份认证、Agent 文件/网络沙箱，也不解决生成 HTML 的 iframe 权限。</p>
+    </details>
+    <details>
+      <summary>问题5：退出码怎样映射 UI？</summary>
+      <p>至少区分 cancelled、failed、done、done-with-warning；非零退出或 error 进入 failed，只有成功且 HTML 最小校验通过才更新 baseline。</p>
+    </details></section>
+      <section id="evidence">
+        <h2>源码证据</h2>
+        
+        <ol><li><code>html-anything/pnpm-workspace.yaml</code></li><li><code>html-anything/next/src/lib/agents/invoke.ts</code></li><li><code>html-anything/next/src/app/api/convert/route.ts</code></li><li><code>html-anything/next/src/lib/use-convert.ts</code></li><li><code>html-anything/next/src/middleware.ts</code></li><li><code>html-anything/e2e/ui/host-validation.spec.ts</code></li></ol>
+        <p>证据口径：路径来自当前工作区源码与权威库存；个人贡献仍需本人确认，未由路径本身推断。</p>
+      </section>
+      <p><a href="../repositories.html">返回仓库索引</a> · <a href="../index.html">返回文档首页</a></p>
+      </article>
+    </main>
+  </div>
+</body>
+</html>

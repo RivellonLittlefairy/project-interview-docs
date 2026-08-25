@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="VipGrowth Android 业务仓库源码证据、调用链与面试讲法">
+  <title>VipGrowth｜Android 业务仓库分析</title>
+  <link rel="stylesheet" href="../assets/docs.css">
+  <script>try{const t=localStorage.getItem("interview-docs-theme");document.documentElement.dataset.theme=t||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light")}catch{}</script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <header class="topbar">
+    <button class="icon-button menu-button" type="button" data-menu-toggle aria-label="打开文档导航" aria-expanded="false">☰</button>
+    <a class="brand" href="../index.html"><span class="brand-mark">⌁</span><span>项目面试资料库</span></a>
+    <div class="search-shell"><label class="sr-only" for="global-search">搜索文档</label><input id="global-search" type="search" data-search-input placeholder="搜索仓库、技术或面试题…" autocomplete="off"><div class="search-results" data-search-results hidden></div></div>
+    <button class="icon-button" type="button" data-theme-toggle aria-label="切换深浅主题">◐</button>
+  </header>
+  <div class="drawer-backdrop" data-drawer-backdrop hidden></div>
+  <div class="docs-layout">
+    <nav class="sidebar" data-sidebar aria-label="文档导航">
+      <div class="sidebar-heading">仓库文档</div>
+      <section class="nav-group">
+        <h2 class="nav-group-title">返回</h2>
+        <a class="nav-link" href="../repositories.html">全部仓库</a>
+        <a class="nav-link" href="../index.html">资料首页</a>
+        <a class="nav-link" href="../10-android-business-repositories.html">业务仓聚合分析</a>
+      </section>
+      <p class="sidebar-note">离线源码证据 · 2026-07-25</p>
+    </nav>
+    <main class="article-shell" id="main-content">
+    <div class="breadcrumbs"><a href="../index.html">首页</a><span>/</span><a href="../repositories.html">仓库索引</a><span>/</span><span>VipGrowth</span></div>
+    <div class="article-grid">
+      <article class="markdown-body">
+        <h1 id="vipgrowth">VipGrowth：新用户引导、权益、增长任务与隐私流程组件</h1>
+        <blockquote class="callout"><p>基于当前本地检出与真实源码路径整理。源码只能证明仓库中存在这些实现；所有个人职责、主导范围、上线结果和收益均为<strong>需本人确认</strong>，不得把团队框架、三方内核或上游仓库归为本人原创，也不在没有数据源时编造性能指标。</p></blockquote>
+
+        <h2 id="position">1. 仓库定位与面试边界</h2>
+        <p><code>yyyyy-cdoe/VipGrowth</code> 的当前定位是<strong>新用户引导、权益、增长任务与隐私流程组件</strong>。主要技术形态为 Kotlin/Java、ViewModel、状态管理器、RxJava、Router 与启动任务调度。</p>
+        <p>面试应聚焦业务入口、状态编排、生命周期、异常兜底和组件集成。可以讲“我如何使用既有能力完成业务调用与排障”，但“本人实现/主导”的范围一律<strong>需本人确认</strong>，且应有 MR、commit、需求、评审或上线记录佐证。</p>
+
+        <h2 id="checkout">2. 当前检出、规模、构建入口、测试与 CI</h2>
+        <table><thead><tr><th>项目</th><th>当前证据</th></tr></thead><tbody>
+          <tr><td>分支</td><td><code>feat_login_post</code></td></tr>
+          <tr><td>最后提交</td><td><code>62a816a1</code> · 2026-02-02 · 登录后置</td></tr>
+          <tr><td>规模</td><td>618 个 Git 跟踪文件；350 个 Java/Kotlin 源码文件（当前扫描口径）</td></tr>
+          <tr><td>构建入口</td><td><code>app/build.gradle</code>、<code>build.gradle</code>、<code>gradlew</code>、<code>growth/build.gradle</code>、<code>growth-api/build.gradle</code>、<code>settings.gradle</code>、<code>version.gradle</code></td></tr>
+          <tr><td>CI</td><td><code>.gitlab-ci.yml</code></td></tr>
+          <tr><td>测试判断</td><td>识别到 7 个测试文件（扫描结果最多展示 10 个），其中至少 1 个文件名指向具体业务/工具场景；仍需阅读断言后才能评价覆盖质量。</td></tr>
+        </tbody></table>
+        <p>建议的静态构建检查入口是 <code>./gradlew projects</code>、<code>./gradlew tasks</code> 和目标模块的 <code>test</code>/<code>lint</code>；当前文档未执行全量构建，内网制品、旧 Gradle/AGP、NDK 或渠道凭据可能是环境限制，不能把“未执行”写成“构建失败”。</p>
+
+        <h2 id="structure">3. 模块与目录结构</h2>
+        <p>Gradle settings 可识别模块：<code>:app</code>。</p>
+        <p>主要物理目录：<code>app/</code>、<code>growth/</code>、<code>growth-api/</code>。</p>
+        <p>该仓的 settings 以单宿主或动态映射为主，真实业务能力可能通过组件制品或物理子目录装配，不能仅按 include 数量判断复杂度。</p>
+
+        <h2 id="entry">4. 真实入口</h2>
+        <p>Manifest 抽样入口如下；其中 <code>app</code> 下的 Activity/Application 可能只是 demo 或宿主壳，业务集成仍需回到 API、Provider、Router 或实现类。</p>
+        <ul><li><code>app/src/main/AndroidManifest.xml :: application .App</code></li><li><code>app/src/main/AndroidManifest.xml :: activity .MainActivity</code></li><li><code>growth/src/main/AndroidManifest.xml :: activity com.zhihu.android.app.ui.TreatyHostActivity</code></li><li><code>growth/src/main/AndroidManifest.xml :: activity .privacy.launch.PrivacyDialogActivity</code></li><li><code>growth/src/main/AndroidManifest.xml :: activity .privacy.launch.PrivacyDialogSubProcessActivity</code></li><li><code>growth/src/main/AndroidManifest.xml :: activity .privacy.launch.PrivacyProtocolActivity</code></li></ul>
+        <p>源码阅读建议从 <a href="../../../../yyyyy-cdoe/VipGrowth/growth/src/main/java/com/zhihu/android/growth/ui/fragment/NewUserGuideV5Fragment.kt"><code>yyyyy-cdoe/VipGrowth/growth/src/main/java/com/zhihu/android/growth/ui/fragment/NewUserGuideV5Fragment.kt</code></a>、<a href="../../../../yyyyy-cdoe/VipGrowth/growth/src/main/java/com/zhihu/android/growth/viewmodel/NewUserGuideV5ViewModel.kt"><code>yyyyy-cdoe/VipGrowth/growth/src/main/java/com/zhihu/android/growth/viewmodel/NewUserGuideV5ViewModel.kt</code></a>、<a href="../../../../yyyyy-cdoe/VipGrowth/growth/src/main/java/com/zhihu/android/growth/delegate/NewUserGuideV5StateManager.kt"><code>yyyyy-cdoe/VipGrowth/growth/src/main/java/com/zhihu/android/growth/delegate/NewUserGuideV5StateManager.kt</code></a> 开始，再沿调用与依赖反向确认谁创建入口、谁持有状态、谁执行 IO。</p>
+
+                        <h2 id="chain">5. 关键调用链与边界</h2>
+        <h3>源码直接链路：新用户引导 UI</h3>
+        <ol>
+          <li>NewUserGuideV5Fragment 创建 NewUserGuideV5FragmentDelegate</li>
+          <li>Delegate 协调 NewUserGuideV5ViewModel</li>
+          <li>ViewModel 使用 NewUserGuideV5StateManager 计算步骤和状态</li>
+          <li>Fragment 按状态渲染并处理用户动作</li>
+        </ol>
+        <p><strong>边界说明：</strong>这是引导页内部的直接状态链。</p>
+        <h3>相邻独立关注点</h3>
+        <ol>
+          <li>NewUserLaunchManager 判断是否进入某类新用户场景</li>
+          <li>BoardingService 提供部分配置或接口能力</li>
+        </ol>
+        <p><strong>边界说明：</strong>启动判定和网络配置与引导 UI 有关，但不是 Fragment → StateManager 每次状态变化的必经节点。</p>
+<h2 id="tradeoff">6. 技术亮点与取舍</h2>
+        <h3>亮点</h3><p>复杂引导的步骤转移从 Fragment 中抽到 StateManager，增长弹层由任务条件和频控编排。</p>
+        <h3>取舍</h3><p>状态显式后更可测，但实验、登录、隐私、恢复和频控组合形成很大的状态空间。</p>
+        <p>面试时不要把“使用了某框架”本身当亮点。更有价值的是说清楚为什么这样划分状态与生命周期、失败如何降级、版本/协议如何兼容，以及出现竞态时如何用真实调用链定位。</p>
+
+                        <h2 id="risk">7. 仓库专属风险与排查顺序</h2>
+        <p>下面的顺序按本仓真实状态 owner、服务与生命周期组织；前一步没有证据时，不跳到渲染层猜测。</p>
+        <ol>
+          <li><strong>第 1 步。</strong>未进入引导先查 NewUserLaunchManager 的场景、频控和账号条件。</li>
+          <li><strong>第 2 步。</strong>进入后卡步骤从 FragmentDelegate、ViewModel 到 StateManager 检查当前 step 与前进条件。</li>
+          <li><strong>第 3 步。</strong>配置缺失时再看 BoardingService 响应，不把网络问题当成状态机必然错误。</li>
+          <li><strong>第 4 步。</strong>重建后重复引导要核对已完成标记、saved state 和 StateManager 初始化输入。</li>
+        </ol>
+        <h2 id="talk">8. 可直接复述的讲法</h2>
+        <h3>30 秒版本</h3>
+        <blockquote><p>VipGrowth 的引导页内部链是 NewUserGuideV5Fragment → FragmentDelegate → ViewModel → NewUserGuideV5StateManager。NewUserLaunchManager 负责入口判定，BoardingService 是配置能力，两者是相邻关注点，不应塞进每次步骤切换。 个人参与范围<strong>需本人确认</strong>。</p></blockquote>
+        <h3>2 分钟版本</h3>
+        <blockquote><p>新用户引导包含入口和页面两层。是否进入场景由 NewUserLaunchManager 等条件决定；真正进入后，NewUserGuideV5Fragment 把交互交给 Delegate，Delegate 协调 ViewModel，由 NewUserGuideV5StateManager 计算当前步骤。BoardingService 只在需要配置时参与。状态机使步骤可控，但频控、账号变化和页面重建会改变初始化条件，所以必须把入口决策和页内状态分开记录。 若要把其中某个调用点写成个人成果，仍需本人确认并提供可核验记录。</p></blockquote>
+        <h2 id="qa">9. 仓库专属追问与回答</h2>
+        <h3>1. 问：StateManager 的职责是什么？</h3><p><strong>答：</strong>计算引导步骤、前进条件和页内状态，不负责决定应用是否启动这个页面。</p>
+        <h3>2. 问：为什么 NewUserLaunchManager 不在页内直接链？</h3><p><strong>答：</strong>它处理入口/场景判断，页面已经创建后的每次状态变化不必经过它。</p>
+        <h3>3. 问：引导重复出现怎么查？</h3><p><strong>答：</strong>检查完成标记、频控、账号状态和页面重建后的初始化输入是否一致。</p>
+        <h3>4. 问：怎样测试步骤状态机？</h3><p><strong>答：</strong>对 StateManager 输入做表驱动测试，再用少量 Fragment 测试验证 Delegate 绑定和恢复。</p>
+        <h3>5. 问：面试中怎样说明自己在这个仓库里的贡献边界？</h3><p><strong>答：</strong>只陈述自己能用需求单、MR、commit 或评审记录证明的 vipgrowth 调用点；公共框架、团队装配体系和历史代码不据为己有。无法核验的个人动作、结果和指标统一标为“需本人确认”。</p>
+<h2 id="evidence">10. 源码证据</h2>
+        <p>以下路径均在当前工作区真实存在；它们证明实现与工程结构，不自动证明个人贡献。</p>
+        <ul><li><a href="../../../../yyyyy-cdoe/VipGrowth/growth/src/main/java/com/zhihu/android/growth/ui/fragment/NewUserGuideV5Fragment.kt"><code>yyyyy-cdoe/VipGrowth/growth/src/main/java/com/zhihu/android/growth/ui/fragment/NewUserGuideV5Fragment.kt</code></a></li><li><a href="../../../../yyyyy-cdoe/VipGrowth/growth/src/main/java/com/zhihu/android/growth/viewmodel/NewUserGuideV5ViewModel.kt"><code>yyyyy-cdoe/VipGrowth/growth/src/main/java/com/zhihu/android/growth/viewmodel/NewUserGuideV5ViewModel.kt</code></a></li><li><a href="../../../../yyyyy-cdoe/VipGrowth/growth/src/main/java/com/zhihu/android/growth/delegate/NewUserGuideV5StateManager.kt"><code>yyyyy-cdoe/VipGrowth/growth/src/main/java/com/zhihu/android/growth/delegate/NewUserGuideV5StateManager.kt</code></a></li><li><a href="../../../../yyyyy-cdoe/VipGrowth/growth/src/main/java/com/zhihu/android/app/launch/NewUserLaunchManager.kt"><code>yyyyy-cdoe/VipGrowth/growth/src/main/java/com/zhihu/android/app/launch/NewUserLaunchManager.kt</code></a></li><li><a href="../../../../yyyyy-cdoe/VipGrowth/growth/src/main/java/com/zhihu/android/api/service2/BoardingService.java"><code>yyyyy-cdoe/VipGrowth/growth/src/main/java/com/zhihu/android/api/service2/BoardingService.java</code></a></li><li><a href="../../../../yyyyy-cdoe/VipGrowth/app/src/main/java/com/zhihu/android/growth/app/App.java"><code>yyyyy-cdoe/VipGrowth/app/src/main/java/com/zhihu/android/growth/app/App.java</code></a></li><li><a href="../../../../yyyyy-cdoe/VipGrowth/app/src/main/java/com/zhihu/android/growth/app/ConfigCreator.java"><code>yyyyy-cdoe/VipGrowth/app/src/main/java/com/zhihu/android/growth/app/ConfigCreator.java</code></a></li></ul>
+        <p>补充工程证据：<a href="../../../../yyyyy-cdoe/VipGrowth/app/build.gradle"><code>yyyyy-cdoe/VipGrowth/app/build.gradle</code></a>、<a href="../../../../yyyyy-cdoe/VipGrowth/build.gradle"><code>yyyyy-cdoe/VipGrowth/build.gradle</code></a>、<a href="../../../../yyyyy-cdoe/VipGrowth/gradlew"><code>yyyyy-cdoe/VipGrowth/gradlew</code></a>、<a href="../../../../yyyyy-cdoe/VipGrowth/growth/build.gradle"><code>yyyyy-cdoe/VipGrowth/growth/build.gradle</code></a>、<a href="../../../../yyyyy-cdoe/VipGrowth/growth-api/build.gradle"><code>yyyyy-cdoe/VipGrowth/growth-api/build.gradle</code></a>、<a href="../../../../yyyyy-cdoe/VipGrowth/settings.gradle"><code>yyyyy-cdoe/VipGrowth/settings.gradle</code></a>。</p>
+
+        <hr>
+        <p><a href="../repositories.html">← 返回仓库索引</a> · <a href="../index.html">返回资料首页</a></p>
+      </article>
+      <aside class="page-toc" aria-label="本页目录"><div class="toc-title">本页目录</div><a class="toc-link level-2" href="#position">仓库定位与面试边界</a><a class="toc-link level-2" href="#checkout">当前检出与工程健康</a><a class="toc-link level-2" href="#structure">模块与目录结构</a><a class="toc-link level-2" href="#entry">真实入口</a><a class="toc-link level-2" href="#chain">关键调用链</a><a class="toc-link level-2" href="#tradeoff">技术亮点与取舍</a><a class="toc-link level-2" href="#risk">风险、缺口与排查顺序</a><a class="toc-link level-2" href="#talk">可直接复述</a><a class="toc-link level-2" href="#qa">追问与回答</a><a class="toc-link level-2" href="#evidence">源码证据</a></aside>
+    </div>
+    </main>
+  </div>
+  <script src="../assets/search-data.js"></script>
+  <script src="../assets/docs.js"></script>
+</body>
+</html>

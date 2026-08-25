@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="VipPassport Android 业务仓库源码证据、调用链与面试讲法">
+  <title>VipPassport｜Android 业务仓库分析</title>
+  <link rel="stylesheet" href="../assets/docs.css">
+  <script>try{const t=localStorage.getItem("interview-docs-theme");document.documentElement.dataset.theme=t||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light")}catch{}</script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <header class="topbar">
+    <button class="icon-button menu-button" type="button" data-menu-toggle aria-label="打开文档导航" aria-expanded="false">☰</button>
+    <a class="brand" href="../index.html"><span class="brand-mark">⌁</span><span>项目面试资料库</span></a>
+    <div class="search-shell"><label class="sr-only" for="global-search">搜索文档</label><input id="global-search" type="search" data-search-input placeholder="搜索仓库、技术或面试题…" autocomplete="off"><div class="search-results" data-search-results hidden></div></div>
+    <button class="icon-button" type="button" data-theme-toggle aria-label="切换深浅主题">◐</button>
+  </header>
+  <div class="drawer-backdrop" data-drawer-backdrop hidden></div>
+  <div class="docs-layout">
+    <nav class="sidebar" data-sidebar aria-label="文档导航">
+      <div class="sidebar-heading">仓库文档</div>
+      <section class="nav-group">
+        <h2 class="nav-group-title">返回</h2>
+        <a class="nav-link" href="../repositories.html">全部仓库</a>
+        <a class="nav-link" href="../index.html">资料首页</a>
+        <a class="nav-link" href="../10-android-business-repositories.html">业务仓聚合分析</a>
+      </section>
+      <p class="sidebar-note">离线源码证据 · 2026-07-25</p>
+    </nav>
+    <main class="article-shell" id="main-content">
+    <div class="breadcrumbs"><a href="../index.html">首页</a><span>/</span><a href="../repositories.html">仓库索引</a><span>/</span><span>VipPassport</span></div>
+    <div class="article-grid">
+      <article class="markdown-body">
+        <h1 id="vippassport">VipPassport：登录注册、验证码、第三方绑定与 Token 管理组件</h1>
+        <blockquote class="callout"><p>基于当前本地检出与真实源码路径整理。源码只能证明仓库中存在这些实现；所有个人职责、主导范围、上线结果和收益均为<strong>需本人确认</strong>，不得把团队框架、三方内核或上游仓库归为本人原创，也不在没有数据源时编造性能指标。</p></blockquote>
+
+        <h2 id="position">1. 仓库定位与面试边界</h2>
+        <p><code>yyyyy-cdoe/VipPassport</code> 的当前定位是<strong>登录注册、验证码、第三方绑定与 Token 管理组件</strong>。主要技术形态为 Kotlin/Java、ViewModel/LiveData、Repository、RxJava/Retrofit 与第三方登录 SDK。</p>
+        <p>面试应聚焦业务入口、状态编排、生命周期、异常兜底和组件集成。可以讲“我如何使用既有能力完成业务调用与排障”，但“本人实现/主导”的范围一律<strong>需本人确认</strong>，且应有 MR、commit、需求、评审或上线记录佐证。</p>
+
+        <h2 id="checkout">2. 当前检出、规模、构建入口、测试与 CI</h2>
+        <table><thead><tr><th>项目</th><th>当前证据</th></tr></thead><tbody>
+          <tr><td>分支</td><td><code>feat-add-login-method</code></td></tr>
+          <tr><td>最后提交</td><td><code>391ebfa</code> · 2025-10-22 · fixbug</td></tr>
+          <tr><td>规模</td><td>425 个 Git 跟踪文件；248 个 Java/Kotlin 源码文件（当前扫描口径）</td></tr>
+          <tr><td>构建入口</td><td><code>build.gradle</code>、<code>gradlew</code>、<code>sample/build.gradle</code>、<code>settings.gradle</code>、<code>version.gradle</code>、<code>vip_passport/build.gradle</code>、<code>vip_passport-api/build.gradle</code>、<code>vip_passport_ui/build.gradle</code></td></tr>
+          <tr><td>CI</td><td><code>.gitlab-ci.yml</code></td></tr>
+          <tr><td>测试判断</td><td>识别到 10 个测试文件（扫描结果最多展示 10 个），其中至少 6 个文件名指向具体业务/工具场景；仍需阅读断言后才能评价覆盖质量。</td></tr>
+        </tbody></table>
+        <p>建议的静态构建检查入口是 <code>./gradlew projects</code>、<code>./gradlew tasks</code> 和目标模块的 <code>test</code>/<code>lint</code>；当前文档未执行全量构建，内网制品、旧 Gradle/AGP、NDK 或渠道凭据可能是环境限制，不能把“未执行”写成“构建失败”。</p>
+
+        <h2 id="structure">3. 模块与目录结构</h2>
+        <p>Gradle settings 可识别模块：<code>:vip_passport</code>、<code>:picture</code>、<code>:operator</code>、<code>:operator-telecom</code>。</p>
+        <p>主要物理目录：<code>sample/</code>、<code>vip_passport/</code>、<code>vip_passport-api/</code>、<code>vip_passport_ui/</code>。</p>
+        <p>从命名可见实现模块与 API/示例模块的分层；调用方应优先依赖稳定 API，示例 <code>app</code> 只用于独立调试，不能误当成线上宿主入口。</p>
+
+        <h2 id="entry">4. 真实入口</h2>
+        <p>Manifest 抽样入口如下；其中 <code>app</code> 下的 Activity/Application 可能只是 demo 或宿主壳，业务集成仍需回到 API、Provider、Router 或实现类。</p>
+        <ul><li><code>sample/src/main/AndroidManifest.xml :: application .sample.SampleApp</code></li><li><code>sample/src/main/AndroidManifest.xml :: activity .sample.activity.uipage.LaunchActivity</code></li><li><code>sample/src/main/AndroidManifest.xml :: activity .sample.activity.uipage.UiActivity</code></li><li><code>sample/src/main/AndroidManifest.xml :: activity .wxapi.WXEntryActivity</code></li><li><code>sample/src/main/AndroidManifest.xml :: activity com.tencent.tauth.AuthActivity</code></li><li><code>sample/src/main/AndroidManifest.xml :: activity com.tencent.connect.common.AssistActivity</code></li></ul>
+        <p>源码阅读建议从 <a href="../../../../yyyyy-cdoe/VipPassport/vip_passport_ui/src/main/java/com/zhihu/android/app/modules/passport/register/view/RegisterFragment.kt"><code>yyyyy-cdoe/VipPassport/vip_passport_ui/src/main/java/com/zhihu/android/app/modules/passport/register/view/RegisterFragment.kt</code></a>、<a href="../../../../yyyyy-cdoe/VipPassport/vip_passport_ui/src/main/java/com/zhihu/android/app/modules/passport/register/RegisterViewModel.kt"><code>yyyyy-cdoe/VipPassport/vip_passport_ui/src/main/java/com/zhihu/android/app/modules/passport/register/RegisterViewModel.kt</code></a>、<a href="../../../../yyyyy-cdoe/VipPassport/vip_passport_ui/src/main/java/com/zhihu/android/app/modules/passport/register/model/RegisterRepository.kt"><code>yyyyy-cdoe/VipPassport/vip_passport_ui/src/main/java/com/zhihu/android/app/modules/passport/register/model/RegisterRepository.kt</code></a> 开始，再沿调用与依赖反向确认谁创建入口、谁持有状态、谁执行 IO。</p>
+
+                        <h2 id="chain">5. 关键调用链与边界</h2>
+        <h3>源码直接链路：账号注册</h3>
+        <ol>
+          <li>RegisterFragment 收集手机号、验证码或社交注册输入</li>
+          <li>RegisterViewModel 调用 RegisterRepositoryImpl</li>
+          <li>RegisterRepositoryImpl 调 RegisterRemoteDataSource</li>
+          <li>RegisterRemoteDataSource 调 AccountRegisterService</li>
+          <li>结果回到 ViewModel/Fragment 更新注册状态</li>
+        </ol>
+        <p><strong>边界说明：</strong>Token 持久化、头像上传和社交绑定属于注册成功后的后置链，不应省略 RemoteDataSource 直接跳到 Service。</p>
+<h2 id="tradeoff">6. 技术亮点与取舍</h2>
+        <h3>亮点</h3><p>多来源注册统一成表单模型，风控预处理、验证码、账号创建与后置绑定边界清楚。</p>
+        <h3>取舍</h3><p>统一流程减少重复，但三方回调、Token 安全、Activity 重建与注册后部分失败更难恢复。</p>
+        <p>面试时不要把“使用了某框架”本身当亮点。更有价值的是说清楚为什么这样划分状态与生命周期、失败如何降级、版本/协议如何兼容，以及出现竞态时如何用真实调用链定位。</p>
+
+                        <h2 id="risk">7. 仓库专属风险与排查顺序</h2>
+        <p>下面的顺序按本仓真实状态 owner、服务与生命周期组织；前一步没有证据时，不跳到渲染层猜测。</p>
+        <ol>
+          <li><strong>第 1 步。</strong>先核对 RegisterFragment 的注册类型、区号、手机号、验证码和 callback 参数。</li>
+          <li><strong>第 2 步。</strong>检查 RegisterViewModel 当前请求状态，防止重复点击产生并发注册。</li>
+          <li><strong>第 3 步。</strong>沿 RegisterRepositoryImpl → RegisterRemoteDataSource → AccountRegisterService 检查参数转换与错误码。</li>
+          <li><strong>第 4 步。</strong>账号已创建但后置步骤失败时保存服务端账号真值，把 Token、头像或绑定按可恢复任务处理。</li>
+        </ol>
+        <h2 id="talk">8. 可直接复述的讲法</h2>
+        <h3>30 秒版本</h3>
+        <blockquote><p>VipPassport 的注册链不能跳过数据源：RegisterFragment → RegisterViewModel → RegisterRepositoryImpl → RegisterRemoteDataSource → AccountRegisterService。账号创建成功后，Token、头像和社交绑定是可恢复后置步骤，不应和核心注册事务混为一谈。 个人参与范围<strong>需本人确认</strong>。</p></blockquote>
+        <h3>2 分钟版本</h3>
+        <blockquote><p>用户输入先由 RegisterFragment 校验，RegisterViewModel 组织请求，RepositoryImpl 把远端职责交给 RegisterRemoteDataSource，后者才调用 AccountRegisterService。服务端创建账号成功后，再处理 Token 持久化、头像上传或社交绑定。显式 RemoteDataSource 让仓储可扩展缓存和 fake，但层级增加，错误必须保留原始业务码，后置失败也不能把已成功注册误报成整体失败。 若要把其中某个调用点写成个人成果，仍需本人确认并提供可核验记录。</p></blockquote>
+        <h2 id="qa">9. 仓库专属追问与回答</h2>
+        <h3>1. 问：Repository 会直接调用 AccountRegisterService 吗？</h3><p><strong>答：</strong>正确链中还有 RegisterRemoteDataSource，RepositoryImpl 把远端请求委托给它。</p>
+        <h3>2. 问：头像上传失败要回滚账号吗？</h3><p><strong>答：</strong>通常不应把可恢复后置步骤等同核心注册失败，应保存账号真值并提供重试。</p>
+        <h3>3. 问：如何避免重复注册请求？</h3><p><strong>答：</strong>ViewModel 维护提交中状态，并以手机号/注册方式和请求 id 约束重复点击及旧回调。</p>
+        <h3>4. 问：最小测试覆盖哪些层？</h3><p><strong>答：</strong>Repository 用 fake RemoteDataSource，RemoteDataSource 用 fake Service，页面测试重复提交和错误展示。</p>
+        <h3>5. 问：面试中怎样说明自己在这个仓库里的贡献边界？</h3><p><strong>答：</strong>只陈述自己能用需求单、MR、commit 或评审记录证明的 vippassport 调用点；公共框架、团队装配体系和历史代码不据为己有。无法核验的个人动作、结果和指标统一标为“需本人确认”。</p>
+<h2 id="evidence">10. 源码证据</h2>
+        <p>以下路径均在当前工作区真实存在；它们证明实现与工程结构，不自动证明个人贡献。</p>
+        <ul><li><a href="../../../../yyyyy-cdoe/VipPassport/vip_passport_ui/src/main/java/com/zhihu/android/app/modules/passport/register/view/RegisterFragment.kt"><code>yyyyy-cdoe/VipPassport/vip_passport_ui/src/main/java/com/zhihu/android/app/modules/passport/register/view/RegisterFragment.kt</code></a></li><li><a href="../../../../yyyyy-cdoe/VipPassport/vip_passport_ui/src/main/java/com/zhihu/android/app/modules/passport/register/RegisterViewModel.kt"><code>yyyyy-cdoe/VipPassport/vip_passport_ui/src/main/java/com/zhihu/android/app/modules/passport/register/RegisterViewModel.kt</code></a></li><li><a href="../../../../yyyyy-cdoe/VipPassport/vip_passport_ui/src/main/java/com/zhihu/android/app/modules/passport/register/model/RegisterRepository.kt"><code>yyyyy-cdoe/VipPassport/vip_passport_ui/src/main/java/com/zhihu/android/app/modules/passport/register/model/RegisterRepository.kt</code></a></li><li><a href="../../../../yyyyy-cdoe/VipPassport/vip_passport/src/main/java/com/zhihu/android/app/modules/passport/register/model/AccountRegisterService.kt"><code>yyyyy-cdoe/VipPassport/vip_passport/src/main/java/com/zhihu/android/app/modules/passport/register/model/AccountRegisterService.kt</code></a></li><li><a href="../../../../yyyyy-cdoe/VipPassport/vip_passport/src/main/java/com/zhihu/android/app/token/TokenManager.kt"><code>yyyyy-cdoe/VipPassport/vip_passport/src/main/java/com/zhihu/android/app/token/TokenManager.kt</code></a></li><li><a href="../../../../yyyyy-cdoe/VipPassport/sample/src/main/java/com/zhihu/android/sample/activity/uipage/contract/UiContract.java"><code>yyyyy-cdoe/VipPassport/sample/src/main/java/com/zhihu/android/sample/activity/uipage/contract/UiContract.java</code></a></li><li><a href="../../../../yyyyy-cdoe/VipPassport/sample/src/main/java/com/zhihu/android/sample/activity/uipage/LaunchActivity.java"><code>yyyyy-cdoe/VipPassport/sample/src/main/java/com/zhihu/android/sample/activity/uipage/LaunchActivity.java</code></a></li></ul>
+        <p>补充工程证据：<a href="../../../../yyyyy-cdoe/VipPassport/build.gradle"><code>yyyyy-cdoe/VipPassport/build.gradle</code></a>、<a href="../../../../yyyyy-cdoe/VipPassport/gradlew"><code>yyyyy-cdoe/VipPassport/gradlew</code></a>、<a href="../../../../yyyyy-cdoe/VipPassport/sample/build.gradle"><code>yyyyy-cdoe/VipPassport/sample/build.gradle</code></a>、<a href="../../../../yyyyy-cdoe/VipPassport/settings.gradle"><code>yyyyy-cdoe/VipPassport/settings.gradle</code></a>、<a href="../../../../yyyyy-cdoe/VipPassport/version.gradle"><code>yyyyy-cdoe/VipPassport/version.gradle</code></a>、<a href="../../../../yyyyy-cdoe/VipPassport/vip_passport/build.gradle"><code>yyyyy-cdoe/VipPassport/vip_passport/build.gradle</code></a>。</p>
+
+        <hr>
+        <p><a href="../repositories.html">← 返回仓库索引</a> · <a href="../index.html">返回资料首页</a></p>
+      </article>
+      <aside class="page-toc" aria-label="本页目录"><div class="toc-title">本页目录</div><a class="toc-link level-2" href="#position">仓库定位与面试边界</a><a class="toc-link level-2" href="#checkout">当前检出与工程健康</a><a class="toc-link level-2" href="#structure">模块与目录结构</a><a class="toc-link level-2" href="#entry">真实入口</a><a class="toc-link level-2" href="#chain">关键调用链</a><a class="toc-link level-2" href="#tradeoff">技术亮点与取舍</a><a class="toc-link level-2" href="#risk">风险、缺口与排查顺序</a><a class="toc-link level-2" href="#talk">可直接复述</a><a class="toc-link level-2" href="#qa">追问与回答</a><a class="toc-link level-2" href="#evidence">源码证据</a></aside>
+    </div>
+    </main>
+  </div>
+  <script src="../assets/search-data.js"></script>
+  <script src="../assets/docs.js"></script>
+</body>
+</html>

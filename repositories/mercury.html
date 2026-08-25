@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Mercury：基于当前检出源码的仓库定位、调用链、风险与面试话术">
+  <title>Mercury｜Android 基础设施逐仓分析</title>
+  <link rel="stylesheet" href="../assets/docs.css">
+  <script>try{const t=localStorage.getItem("interview-docs-theme");document.documentElement.dataset.theme=t||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light")}catch{}</script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <header class="topbar">
+    <button class="icon-button menu-button" type="button" data-menu-toggle aria-label="打开文档导航" aria-expanded="false">☰</button>
+    <a class="brand" href="../index.html"><span class="brand-mark">⌁</span><span>项目面试资料库</span></a>
+    <div class="search-shell">
+      <label class="sr-only" for="global-search">搜索所有文档</label>
+      <input id="global-search" type="search" data-search-input placeholder="搜索仓库、技术或面试题…" autocomplete="off">
+      <span class="search-shortcut">Ctrl K</span>
+      <div class="search-results" data-search-results hidden></div>
+    </div>
+    <button class="icon-button" type="button" data-theme-toggle aria-label="切换深浅主题">◐</button>
+  </header>
+  <div class="drawer-backdrop" data-drawer-backdrop hidden></div>
+  <div class="docs-layout">
+    <nav class="sidebar" data-sidebar aria-label="全站文档导航">
+      <div class="sidebar-heading">逐仓文档</div>
+      <section class="nav-group">
+        <h2 class="nav-group-title">仓库导航</h2>
+        <a class="nav-link" href="../repositories.html">全部仓库独立分析</a>
+        <a class="nav-link" href="../20-android-infrastructure-media.html">基础设施与媒体聚合分析</a>
+        <a class="nav-link" href="../index.html">总览与导航</a>
+      </section>
+      <p class="sidebar-note">离线资料 · 源码快照 2026-07-25</p>
+    </nav>
+    <main class="article-shell" id="main-content">
+      <div class="breadcrumbs"><a href="../index.html">首页</a><span>/</span><a href="../repositories.html">逐仓文档</a><span>/</span><span>Mercury</span></div>
+      <article class="markdown-body">
+        <h1>Mercury：业务 Hybrid/WebView 容器</h1>
+        <blockquote class="callout"><p><strong>证据口径：</strong>本文直接核对当前工作区 Git 跟踪文件、构建脚本与主源码。未执行可能下载依赖或改写缓存的构建。仓库事实不等于个人经历；个人贡献、作者身份、效果数据统一标为<strong>需本人确认</strong>。</p></blockquote>
+
+        <h2 id="定位">1. 仓库定位与业务边界</h2>
+        <p>提供 WebView 页面、业务插件、离线资源/DNS、支付模型与监控，底层页面会话和 JSBridge 由 mercury-core 承担。</p>
+        <ul>
+          <li><strong>项目类型：</strong>业务 Hybrid/WebView 容器</li>
+          <li><strong>技术栈：</strong>Java/Kotlin · Android/Gradle · WebView/Hybrid</li>
+          <li><strong>业务接入者视角：</strong>先理解稳定入口、输入输出和失败边界；除非有可核验经历，不把底层框架设计表述为个人贡献。</li>
+        </ul>
+
+        <h2 id="快照">2. 当前检出、规模、构建、测试与 CI</h2>
+        <table>
+          <thead><tr><th>项目</th><th>当前工作区事实</th></tr></thead>
+          <tbody>
+            <tr><td>分支</td><td><code>develop</code></td></tr>
+            <tr><td>最后提交</td><td><code>208d470382 · 2025-08-19</code></td></tr>
+            <tr><td>主源码规模</td><td>262 个 Git 跟踪的 Java/Kotlin/C/C++/Objective-C 文件（排除常见测试、样例与生成目录）</td></tr>
+            <tr><td>构建入口</td><td>settings.gradle、build.gradle、mercury-api/build.gradle、mercury/build.gradle、gradlew</td></tr>
+            <tr><td>测试</td><td>37 个按目录/命名匹配的测试文件；未运行测试，不能推断通过状态或覆盖率</td></tr>
+            <tr><td>CI</td><td>有（检出 3 个 CI/发布配置入口）；仅表示当前检出存在性，不表示流水线当前通过</td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="架构">3. 模块、分层与核心抽象</h2>
+        <p><strong>模块：</strong>app（示例）、mercury-api（模型/插件契约）、mercury（业务容器）。</p>
+        <ul><li>mercury-api 把 H5ExternalPlugin 等契约与实现解耦</li>
+<li>多个 WebViewClient 组合页面行为、资源拦截、监控与兼容逻辑</li>
+<li>业务容器能力完整，但 bridge、资源和生命周期共同扩大攻击面</li></ul>
+        <p>分层判断来自 <code>settings.gradle</code>、模块构建脚本以及下列源码入口的交叉核对；README 只作线索。</p>
+
+        <h2 id="接入">4. 初始化与真实业务接入入口</h2>
+        <p>业务页面通常进入 WebViewFragment2，由它创建 H5Page，并安装 InnerWebClient、ChromeClient 与外部插件。</p>
+        <p><strong>接入责任边界：</strong>业务侧需要负责参数映射、页面/会话生命周期、错误态与降级、埋点和真实场景验证；基础库内部机制能解释问题，但不能据此宣称自己是框架作者。</p>
+
+        <h2 id="调用链">5. 关键调用链</h2>
+        <p><code>路由/业务 → WebViewFragment2 → H5Page → InnerWebClient/MercuryH5PageListener → core H5PageImpl/JsBridge → DnsWebViewClient.shouldInterceptRequest()</code></p>
+        <p>复述时建议按“业务入口 → 稳定抽象 → 实现/策略 → 系统或三方边界 → 状态回传”展开，这样能明确自己在调用侧做了什么，也能说明故障应在哪一层定位。</p>
+
+        <h2 id="机制">6. 核心机制、亮点与取舍</h2>
+        <ul><li>mercury-api 把 H5ExternalPlugin 等契约与实现解耦</li>
+<li>多个 WebViewClient 组合页面行为、资源拦截、监控与兼容逻辑</li>
+<li>业务容器能力完整，但 bridge、资源和生命周期共同扩大攻击面</li></ul>
+        <p><strong>取舍结论：</strong>统一封装提高复用、可替换性和观测一致性，但会把配置、生命周期、并发或兼容性问题集中到公共层。因此接入不能只验证 happy path。</p>
+
+        <h2 id="风险">7. 风险、兼容性与调试路径</h2>
+        <h3>主要风险</h3>
+        <ul><li>JSBridge 必须做 origin、事件白名单、参数 schema 和权限校验</li>
+<li>Fragment/Page 销毁后 callback、client 和 cookie 状态可能泄漏</li>
+<li>系统/X5 WebView、离线/网络资源的双路径需要兼容测试</li></ul>
+        <h3>建议调试顺序</h3>
+        <ol><li>先标记页面 id、URL、WebView 内核与生命周期</li>
+<li>桥接故障按 JS event → plugin → callback map → evaluateJavascript 分段</li>
+<li>白屏按主文档加载、资源拦截、DNS/缓存和渲染进程拆解</li></ol>
+        <p>涉及 Android 版本、OEM、系统组件或三方 SDK 的路径，应补真机矩阵；涉及缓存、并发和生命周期的路径，应同时保留会话 id、时间线和线程信息。</p>
+
+        <h2 id="话术">8. 可直接复述的讲法</h2>
+        <h3>30 秒版本</h3>
+        <blockquote><p>这是 Mercury，定位是业务 Hybrid/WebView 容器。我会把它当作既有基础能力来接入：业务入口是业务页面通常进入 WebViewFragment2，由它创建 H5Page，并安装 InnerWebClient、ChromeClient 与外部插件。 核心链路是 路由/业务 → WebViewFragment2 → H5Page → InnerWebClient/MercuryH5PageListener → core H5PageImpl/JsBridge → DnsWebViewClient.shouldInterceptRequest()。如果面试追问个人贡献，我只讲自己真实做过的接入、异常处理和排障，个人动作与结果均需本人确认。</p></blockquote>
+        <h3>2 分钟版本</h3>
+        <blockquote><p>我先讲边界：提供 WebView 页面、业务插件、离线资源/DNS、支付模型与监控，底层页面会话和 JSBridge 由 mercury-core 承担。 当前模块是 app（示例）、mercury-api（模型/插件契约）、mercury（业务容器），构建入口是 settings.gradle、build.gradle、mercury-api/build.gradle、mercury/build.gradle、gradlew。业务接入时，业务页面通常进入 WebViewFragment2，由它创建 H5Page，并安装 InnerWebClient、ChromeClient 与外部插件。 从源码继续追，关键链路是 路由/业务 → WebViewFragment2 → H5Page → InnerWebClient/MercuryH5PageListener → core H5PageImpl/JsBridge → DnsWebViewClient.shouldInterceptRequest()。机制上，mercury-api 把 H5ExternalPlugin 等契约与实现解耦；多个 WebViewClient 组合页面行为、资源拦截、监控与兼容逻辑；业务容器能力完整，但 bridge、资源和生命周期共同扩大攻击面。我在业务侧会重点处理 JSBridge 必须做 origin、事件白名单、参数 schema 和权限校验；Fragment/Page 销毁后 callback、client 和 cookie 状态可能泄漏；系统/X5 WebView、离线/网络资源的双路径需要兼容测试。排障时按“先标记页面 id、URL、WebView 内核与生命周期 → 桥接故障按 JS event → plugin → callback map → evaluateJavascript 分段 → 白屏按主文档加载、资源拦截、DNS/缓存和渲染进程拆解”逐层缩小，而不是把所有问题都归到框架。框架设计和效果数据不能由仓库事实反推；本人实际负责的需求、动作、验证范围和指标都需本人确认。</p></blockquote>
+
+        <h2 id="追问">9. 追问与回答</h2>
+        <ol><li><p><strong>问：这个仓库和相邻能力怎么划界？</strong></p><p>答：提供 WebView 页面、业务插件、离线资源/DNS、支付模型与监控，底层页面会话和 JSBridge 由 mercury-core 承担。</p></li>
+<li><p><strong>问：最关键的调用转折在哪里？</strong></p><p>答：可直接沿这条链复述：路由/业务 → WebViewFragment2 → H5Page → InnerWebClient/MercuryH5PageListener → core H5PageImpl/JsBridge → DnsWebViewClient.shouldInterceptRequest()。入口、抽象层与最终执行层分别有源码路径支撑。</p></li>
+<li><p><strong>问：它最大的工程取舍是什么？</strong></p><p>答：mercury-api 把 H5ExternalPlugin 等契约与实现解耦；收益是统一和复用，代价是 JSBridge 必须做 origin、事件白名单、参数 schema 和权限校验。</p></li>
+<li><p><strong>问：线上出问题第一轮怎么查？</strong></p><p>答：先标记页面 id、URL、WebView 内核与生命周期；桥接故障按 JS event → plugin → callback map → evaluateJavascript 分段；白屏按主文档加载、资源拦截、DNS/缓存和渲染进程拆解。先固定请求/页面/会话标识，再看分层日志，避免只凭最终异常猜原因。</p></li>
+<li><p><strong>问：测试和 CI 能说明代码质量吗？</strong></p><p>答：不能。当前检出 37 个测试匹配文件，CI 状态为“有（检出 3 个 CI/发布配置入口）”；数量只说明可见入口，不代表覆盖率、断言质量或流水线当前通过。本文没有运行可能下载依赖的构建。</p></li>
+<li><p><strong>问：你个人在这里做了什么？</strong></p><p>答：需本人确认。安全说法是：“该能力由基础库提供，我只讲本人真实参与的业务接入、状态/异常处理、联调和排障；框架作者身份及效果数据不从源码推断。”</p></li></ol>
+
+        <h2 id="证据">10. 源码证据与确认边界</h2>
+        <h3>真实源码证据</h3>
+        <ul><li><code>yyyyy-cdoe/Mercury/mercury/src/main/java/com/zhihu/android/app/ui/fragment/webview/WebViewFragment2.java</code></li>
+<li><code>yyyyy-cdoe/Mercury/mercury/src/main/java/com/zhihu/android/app/ui/fragment/webview/InnerWebClient.java</code></li>
+<li><code>yyyyy-cdoe/Mercury/mercury-api/src/main/java/com/zhihu/android/app/mercury/plugin/H5ExternalPlugin.java</code></li>
+<li><code>yyyyy-cdoe/Mercury/mercury/src/main/java/com/zhihu/android/app/mercury/DnsWebViewClient.java</code></li></ul>
+        <h3>个人贡献边界</h3>
+        <p><strong>需本人确认：</strong>本人是否负责过上述入口、某次业务接入、故障排查、测试补充或治理；如确认参与，再补需求名称、时间范围、具体动作、验证方法与可核验结果。不得把仓库最后提交者、文件作者或框架设计默认归为本人，也不得编造成功率、耗时收益和故障下降数据。</p>
+      </article>
+      <nav class="page-pager" aria-label="文档返回">
+        <a href="../repositories.html"><small>← 返回</small><span>全部仓库独立分析</span></a>
+        <a class="next" href="../index.html"><small>返回首页 →</small><span>项目面试资料库</span></a>
+      </nav>
+      <footer class="article-footer">基于当前工作区源码生成。个人职责、动作与结果只使用本人可核验的部分。</footer>
+    </main>
+    <aside class="page-toc" aria-label="本页目录">
+      <div class="toc-heading">本页目录</div>
+      <a class="toc-link level-2" href="#定位">1. 仓库定位与业务边界</a>
+<a class="toc-link level-2" href="#快照">2. 当前检出、规模、构建、测试与 CI</a>
+<a class="toc-link level-2" href="#架构">3. 模块、分层与核心抽象</a>
+<a class="toc-link level-2" href="#接入">4. 初始化与真实业务接入入口</a>
+<a class="toc-link level-2" href="#调用链">5. 关键调用链</a>
+<a class="toc-link level-2" href="#机制">6. 核心机制、亮点与取舍</a>
+<a class="toc-link level-2" href="#风险">7. 风险、兼容性与调试路径</a>
+<a class="toc-link level-2" href="#话术">8. 可直接复述的讲法</a>
+<a class="toc-link level-2" href="#追问">9. 追问与回答</a>
+<a class="toc-link level-2" href="#证据">10. 源码证据与确认边界</a>
+      <a class="back-to-top" href="#">↑ 返回顶部</a>
+    </aside>
+  </div>
+  <script src="../assets/search-data.js"></script>
+  <script src="../assets/docs.js"></script>
+</body>
+</html>

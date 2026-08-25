@@ -1,0 +1,824 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>DevKit 魔改 MVI × Paging3：架构与盐言项目实战</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --surface: #ffffff;
+      --surface-2: #f0f4ff;
+      --text: #172033;
+      --muted: #61708a;
+      --line: #dce3ef;
+      --brand: #315efb;
+      --brand-2: #7b47ee;
+      --good: #087d55;
+      --warn: #9a5b00;
+      --danger: #b42318;
+      --code: #101729;
+      --code-text: #e8edf8;
+      --shadow: 0 14px 42px rgba(23, 32, 51, .08);
+      --radius: 18px;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0d1320;
+        --surface: #151d2d;
+        --surface-2: #1b2740;
+        --text: #edf2ff;
+        --muted: #a7b3c9;
+        --line: #2b3850;
+        --brand: #7ea2ff;
+        --brand-2: #b997ff;
+        --good: #5dd3a5;
+        --warn: #f3bd62;
+        --danger: #ff928a;
+        --code: #090e18;
+        --code-text: #e8edf8;
+        --shadow: 0 16px 45px rgba(0, 0, 0, .25);
+      }
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      max-width: 100%;
+      overflow-x: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        "PingFang SC", "Microsoft YaHei", sans-serif;
+      line-height: 1.72;
+    }
+    a { color: var(--brand); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code, pre { font-family: "JetBrains Mono", "Cascadia Code", Consolas, monospace; }
+    code {
+      padding: .12em .38em;
+      border-radius: 6px;
+      background: var(--surface-2);
+      font-size: .9em;
+    }
+    .layout {
+      width: min(1480px, 100%);
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr);
+    }
+    aside {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      padding: 28px 22px;
+      border-right: 1px solid var(--line);
+      background: color-mix(in srgb, var(--surface) 92%, transparent);
+      backdrop-filter: blur(14px);
+      overflow-y: auto;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 22px;
+      font-weight: 800;
+      letter-spacing: -.02em;
+    }
+    .logo {
+      width: 38px;
+      height: 38px;
+      display: grid;
+      place-items: center;
+      border-radius: 12px;
+      color: #fff;
+      background: linear-gradient(135deg, #315efb, #8b43ed);
+      box-shadow: 0 8px 24px rgba(49, 94, 251, .28);
+    }
+    nav a {
+      display: block;
+      margin: 3px 0;
+      padding: 8px 10px;
+      border-radius: 9px;
+      color: var(--muted);
+      font-size: 14px;
+      transition: .18s ease;
+    }
+    nav a:hover, nav a.active {
+      color: var(--brand);
+      background: var(--surface-2);
+      text-decoration: none;
+    }
+    .aside-note {
+      margin-top: 24px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    main { min-width: 0; padding: 44px clamp(24px, 5vw, 78px) 88px; }
+    .hero {
+      position: relative;
+      overflow: hidden;
+      padding: clamp(30px, 6vw, 68px);
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      background:
+        radial-gradient(circle at 92% 8%, rgba(123, 71, 238, .22), transparent 34%),
+        radial-gradient(circle at 10% 95%, rgba(49, 94, 251, .16), transparent 36%),
+        var(--surface);
+      box-shadow: var(--shadow);
+    }
+    .eyebrow {
+      color: var(--brand);
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+    h1 {
+      max-width: 900px;
+      margin: 12px 0 18px;
+      font-size: clamp(36px, 5.2vw, 68px);
+      line-height: 1.08;
+      letter-spacing: -.055em;
+    }
+    .lead {
+      max-width: 850px;
+      margin: 0;
+      color: var(--muted);
+      font-size: clamp(17px, 2vw, 21px);
+    }
+    .badges { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 26px; }
+    .badge {
+      padding: 7px 11px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--surface) 75%, transparent);
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+    section { scroll-margin-top: 24px; margin-top: 58px; }
+    h2 { margin: 0 0 12px; font-size: clamp(27px, 3vw, 38px); letter-spacing: -.035em; }
+    h3 { margin: 30px 0 10px; font-size: 21px; letter-spacing: -.015em; }
+    p { margin: 9px 0 15px; }
+    .section-intro { max-width: 920px; color: var(--muted); font-size: 16px; }
+    .grid { display: grid; gap: 16px; }
+    .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .card {
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: 0 8px 28px rgba(23, 32, 51, .04);
+    }
+    .card h3 { margin-top: 0; }
+    .metric { font-size: 34px; font-weight: 850; letter-spacing: -.04em; }
+    .muted { color: var(--muted); }
+    .good { color: var(--good); }
+    .warn { color: var(--warn); }
+    .danger { color: var(--danger); }
+    .callout {
+      margin: 20px 0;
+      padding: 17px 19px;
+      border-left: 4px solid var(--brand);
+      border-radius: 0 12px 12px 0;
+      background: var(--surface-2);
+    }
+    .callout.warn { border-color: var(--warn); }
+    .callout.danger { border-color: var(--danger); }
+    .callout strong { color: var(--text); }
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(130px, 1fr));
+      gap: 24px;
+      overflow-x: auto;
+      padding: 8px 4px 20px;
+    }
+    .flow-node {
+      position: relative;
+      min-height: 130px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--surface);
+    }
+    .flow-node:not(:last-child)::after {
+      content: "→";
+      position: absolute;
+      top: 45%;
+      right: -20px;
+      color: var(--brand);
+      font-size: 23px;
+      font-weight: 900;
+    }
+    .flow-node b { display: block; margin-bottom: 6px; color: var(--brand); }
+    .flow-node small { color: var(--muted); }
+    .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 14px; }
+    table { width: 100%; min-width: 720px; border-collapse: collapse; background: var(--surface); }
+    th, td { padding: 13px 15px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { color: var(--muted); background: var(--surface-2); font-size: 13px; }
+    tr:last-child td { border-bottom: 0; }
+    pre {
+      position: relative;
+      margin: 14px 0 22px;
+      padding: 20px;
+      border-radius: 14px;
+      background: var(--code);
+      color: var(--code-text);
+      overflow: auto;
+      font-size: 13px;
+      line-height: 1.62;
+      tab-size: 4;
+    }
+    pre code { padding: 0; background: transparent; color: inherit; }
+    .copy {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      padding: 5px 9px;
+      border: 1px solid #35405a;
+      border-radius: 8px;
+      color: #cbd5e9;
+      background: #1d2638;
+      cursor: pointer;
+      font-size: 11px;
+    }
+    .timeline { position: relative; margin-left: 10px; padding-left: 28px; border-left: 2px solid var(--line); }
+    .timeline-item { position: relative; margin: 0 0 25px; }
+    .timeline-item::before {
+      content: "";
+      position: absolute;
+      left: -36px;
+      top: 7px;
+      width: 13px;
+      height: 13px;
+      border: 3px solid var(--surface);
+      border-radius: 50%;
+      background: var(--brand);
+      box-shadow: 0 0 0 1px var(--brand);
+    }
+    .path {
+      display: block;
+      margin-top: 7px;
+      overflow-wrap: anywhere;
+      color: var(--muted);
+      font-family: "Cascadia Code", Consolas, monospace;
+      font-size: 12px;
+    }
+    details {
+      margin: 10px 0;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--surface);
+    }
+    summary { padding: 13px 16px; cursor: pointer; font-weight: 750; }
+    details > div { padding: 0 16px 16px; }
+    .checklist { list-style: none; padding: 0; }
+    .checklist li { position: relative; padding-left: 28px; margin: 10px 0; }
+    .checklist li::before {
+      content: "✓";
+      position: absolute;
+      left: 0;
+      top: 1px;
+      width: 20px;
+      height: 20px;
+      display: grid;
+      place-items: center;
+      border-radius: 6px;
+      color: #fff;
+      background: var(--good);
+      font-size: 12px;
+      font-weight: 900;
+    }
+    footer { margin-top: 70px; padding-top: 24px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }
+    @media (max-width: 1050px) {
+      .layout { display: block; width: 100%; max-width: 100%; overflow-x: hidden; }
+      aside, main { width: 100%; max-width: 100%; }
+      aside { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+      nav { display: flex; max-width: 100%; gap: 4px; overflow-x: auto; }
+      nav a { white-space: nowrap; }
+      .aside-note { display: none; }
+      main { padding-top: 28px; }
+      .grid-3 { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 680px) {
+      main { padding-inline: 15px; }
+      aside { padding: 16px 14px; }
+      .brand { margin-bottom: 10px; }
+      .hero { padding: 28px 20px; border-radius: 20px; }
+      .hero h1, .hero .lead, .eyebrow { overflow-wrap: anywhere; }
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+      .card { padding: 18px; }
+      section { margin-top: 44px; }
+    }
+    @media print {
+      aside { display: none; }
+      .layout { display: block; }
+      main { padding: 0; }
+      .hero, .card { box-shadow: none; }
+      section { break-inside: avoid; }
+      pre { white-space: pre-wrap; }
+      .copy { display: none; }
+    }
+  </style>
+</head>
+<body>
+<div class="layout">
+  <aside>
+    <div class="brand"><span class="logo">D</span><span>DevKit 架构手册</span></div>
+    <nav aria-label="文档目录">
+      <a href="#summary">结论先行</a>
+      <a href="#scope">工程范围与版本</a>
+      <a href="#architecture">整体架构</a>
+      <a href="#mvx">魔改 MVI / Mvx</a>
+      <a href="#paging">Paging3 封装</a>
+      <a href="#adapter">列表与加载状态</a>
+      <a href="#salt">盐言真实用法</a>
+      <a href="#template">推荐接入模板</a>
+      <a href="#pitfalls">边界与踩坑</a>
+      <a href="#index">源码索引</a>
+    </nav>
+    <div class="aside-note">
+      基于 2026-07-19 工作区源码静态分析。文档中的“源码事实”和“接入建议”已分开标注。
+    </div>
+  </aside>
+
+  <main>
+    <header class="hero">
+      <div class="eyebrow">ANDROID ARCHITECTURE · SOURCE REVIEW</div>
+      <h1>DevKit 魔改 MVI × Paging3</h1>
+      <p class="lead">从框架实现到盐言项目落地：状态如何流动、分页怎样触发、多类型列表如何渲染，以及新页面应该照着哪一套写。</p>
+      <div class="badges">
+        <span class="badge">Mavericks 3.0.6</span>
+        <span class="badge">Paging Runtime 3.2.0</span>
+        <span class="badge">Kotlin 1.7.20</span>
+        <span class="badge">Coroutines 1.6.4</span>
+        <span class="badge">盐言 / Knowledge Market</span>
+      </div>
+    </header>
+
+    <section id="summary">
+      <h2>结论先行</h2>
+      <p class="section-intro">DevKit 不是从零实现的 Redux 式 MVI，而是把 Mavericks、Paging3、RecyclerView 多类型列表、ViewHolder 生命周期和轻量注入拼成了一条更适合知乎 Android 组件化业务的开发链。</p>
+      <div class="grid grid-3">
+        <article class="card">
+          <div class="metric">Mvx</div>
+          <p class="muted">用 <code>MvxState</code> / <code>MvxViewModel</code> / <code>MvxView</code> 包住 Mavericks，并补齐 RxJava、LifecycleViewModel 与列表收集扩展。</p>
+        </article>
+        <article class="card">
+          <div class="metric">Paging3</div>
+          <p class="muted"><code>Pager</code> 缓存流，<code>ResponsePagingSource</code> 统一 Retrofit 响应，<code>PagingFlow</code> 负责分页数据变换。</p>
+        </article>
+        <article class="card">
+          <div class="metric">1 Adapter</div>
+          <p class="muted"><code>SuperAdapter</code> 按数据运行时类型分发不同 ViewHolder，同时承接注入、生命周期与默认加载状态。</p>
+        </article>
+      </div>
+      <div class="callout">
+        <strong>对“魔改 MVI”的准确理解：</strong>State 是单一 UI 状态源，ViewModel 通过 reducer 更新 State，View 订阅 State；但业务动作通常直接调用 ViewModel 方法，并没有统一的 Intent/Action/Reducer 类型层。因此它是“基于 Mavericks 的轻量 MVI”，不是严格 Redux。
+      </div>
+      <ul class="checklist">
+        <li>盐言最完整的端到端案例是 <code>HomePinTabFragment + HomePinTabViewModel</code>。</li>
+        <li>最精炼、最适合作为新页面参考的是 <code>NativeManuscriptAuthorFragment + ManuscriptBillboardViewModel</code>。</li>
+        <li>盐言当前没有使用 <code>MvxRepository</code>；网络分页逻辑通常直接放在 ViewModel 内部的 PagingSource 中。</li>
+        <li><code>LiteKnowledgeMarket</code> 的 <code>BasePagingFragment</code> 属于旧分页体系，不应和 DevKit/Paging3 混为一谈。</li>
+      </ul>
+    </section>
+
+    <section id="scope">
+      <h2>工程范围与版本</h2>
+      <p class="section-intro">本次分析只把直接 import <code>com.zhihu.android.devkit</code> 的代码视为 DevKit 用法，再用盐言业务目录补齐调用上下文。</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>角色</th><th>工程 / 模块</th><th>事实</th></tr></thead>
+          <tbody>
+            <tr><td>框架源码</td><td><code>yyyyy-cdoe/DevKit/devkit</code></td><td>Mvx、Paging、Adapter、加载状态、协程和生命周期扩展。</td></tr>
+            <tr><td>盐言主页案例</td><td><code>yyyyy-cdoe/km_home_base/km_home_base</code></td><td>依赖 DevKit 0.0.18；完整使用 Pager、PagingSource、PagerMediator、SuperAdapter。</td></tr>
+            <tr><td>盐言目录案例</td><td><code>yyyyy-cdoe/KnowledgeMarket/sku-manuscript</code></td><td>依赖 DevKit 0.0.18；有双向分页目录和手工 <code>PagingData.from</code> 两类用法。</td></tr>
+            <tr><td>宿主初始化</td><td><code>yyyyy-cdoe/VipAndroid</code></td><td><code>TaskManager.json</code> 在主线程调度 <code>T_DevKitInit</code>，且 <code>T_AppOnCreate</code> 依赖它。</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="grid grid-2" style="margin-top:16px">
+        <article class="card">
+          <h3>直接使用概况</h3>
+          <p><strong>30</strong> 处 <code>ViewBindingViewHolder</code> import，<strong>29</strong> 处 <code>LifecycleAware</code>，<strong>9</strong> 处 ViewHolder <code>inject</code>，以及 <strong>6</strong> 处 <code>SuperAdapter</code>。</p>
+          <p class="muted">说明 DevKit 在盐言里最广泛的价值其实是“列表渲染基础设施”，MVI/Paging3 端到端接入集中在少数核心页面。</p>
+        </article>
+        <article class="card">
+          <h3>版本口径</h3>
+          <p><code>athena.json</code> 标记 DevKit 发布版本为 <strong>0.0.19</strong>；盐言两个模块锁定 <strong>0.0.18</strong>。</p>
+          <p class="muted">DevKit 自己的 <code>version.gradle</code> 仍有 <code>versions.devkit = 0.0.7</code>，但发布任务版本由 Athena 配置描述。接入文档应以消费模块版本为准。</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="architecture">
+      <h2>整体架构</h2>
+      <p class="section-intro">一次列表刷新从 View 发起，穿过 ViewModel 和 PagingSource，最终以新的 PagingData generation 回到 State，再由 SuperAdapter 提交给 AsyncPagingDataDiffer。</p>
+      <div class="flow" aria-label="DevKit 数据流">
+        <div class="flow-node"><b>View / Fragment</b><small>调用 <code>refresh()</code>、订阅 State、监听 LoadState。</small></div>
+        <div class="flow-node"><b>MvxViewModel</b><small>持有 Pager；用 <code>setState</code> / <code>setOnEach</code> 更新不可变 State。</small></div>
+        <div class="flow-node"><b>Pager</b><small>包装 AndroidX Pager，并在 <code>viewModelScope</code> 中 <code>cachedIn</code>。</small></div>
+        <div class="flow-node"><b>PagingSource</b><small>把 Refresh / Append / Prepend 映射为 Retrofit 请求和 prev/next key。</small></div>
+        <div class="flow-node"><b>PagingData</b><small>通过 map/filter/combine/mediator 做惰性分页变换。</small></div>
+        <div class="flow-node"><b>SuperAdapter</b><small>按数据 Class 选择 ViewHolder，Differ 驱动 RecyclerView 更新。</small></div>
+      </div>
+      <div class="callout">
+        <strong>状态环路：</strong>网络列表数据不落成普通 <code>List</code> 再塞进 State，而是让 State 持有 <code>PagingData&lt;T&gt;</code>。加载进度和错误则走 Adapter 的 <code>CombinedLoadStates</code>，两者是两条并行信号。
+      </div>
+    </section>
+
+    <section id="mvx">
+      <h2>魔改 MVI / Mvx</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>类型</th><th>基类</th><th>DevKit 增量</th><th>盐言用法</th></tr></thead>
+          <tbody>
+            <tr><td><code>MvxState</code></td><td><code>MavericksState</code></td><td>只做语义别名，方便以后加扩展。</td><td><code>PinTabState</code>、<code>BillboardState</code>。</td></tr>
+            <tr><td><code>MvxViewModel&lt;S&gt;</code></td><td><code>MavericksViewModel&lt;S&gt;</code></td><td>委托 <code>LifecycleViewModel</code>；补 RxJava <code>execute</code>、Flow/Rx <code>collectState</code>；清理时发 clear event。</td><td>ViewModel 直接拥有服务、Pager、PagingSource 和业务方法。</td></tr>
+            <tr><td><code>MvxView</code></td><td><code>MavericksView</code></td><td>给 <code>SuperAdapter</code> 增加 State 属性收集：<code>collectFrom</code> / <code>collectFromAsync</code>。</td><td>Fragment 通常让 <code>invalidate()</code> 保持空实现，列表由属性订阅自动提交。</td></tr>
+            <tr><td><code>MvxRepository&lt;S&gt;</code></td><td><code>MavericksRepository&lt;S&gt;</code></td><td>独立 StateStore、协程作用域、Rx execute 和生命周期清理。</td><td class="warn">盐言扫描范围内未发现实际使用。</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>State 更新的三条路径</h3>
+      <div class="grid grid-3">
+        <article class="card"><h3><code>setState</code></h3><p>普通同步/协程业务状态：<code>copy(mealAllowanceFloatIcon = value)</code>。</p></article>
+        <article class="card"><h3><code>setOnEach</code></h3><p>把 Flow 每次发射映射为新 State。分页主链在盐言中主要使用这条。</p></article>
+        <article class="card"><h3><code>execute</code></h3><p>把 Rx Single/Observable/Completable 映射为 <code>Loading / Success / Fail</code>。</p></article>
+      </div>
+      <pre><button class="copy">复制</button><code>// 盐言 HomePinTab 的真实模式（节选）
+data class PinTabState(
+    val data: PagingData&lt;BaseModulesListItemData&gt; = PagingData.empty(),
+    val preLoadWebView: Async&lt;String&gt; = Uninitialized,
+) : MvxState
+
+init {
+    pager.flow
+        .mapPagingItem { it.moduleData }
+        .filterPaging { it is PinAllDataV2 || it is KingKongData /* ... */ }
+        .bindMediator(pagerMediator)
+        .setOnEach { copy(data = it) }
+}</code></pre>
+      <p class="path">源码：km_home_base/.../discovery/HomePinTabViewModel.kt:87-162</p>
+    </section>
+
+    <section id="paging">
+      <h2>Paging3 封装</h2>
+      <h3><code>Pager</code>：减少配置样板</h3>
+      <p><code>com.zhihu.android.devkit.paging.Pager</code> 包装 AndroidX <code>Pager</code>，默认 <code>pageSize=15</code>、<code>prefetchDistance=5</code>、关闭 placeholder，并直接在传入的 scope 上 <code>cachedIn</code>。每次工厂创建 PagingSource 时记录为 <code>currentPagingSource</code>，所以业务层可以通过 <code>pager.invalidate()</code> 触发新 generation。</p>
+
+      <h3><code>ResponsePagingSource</code>：统一 Retrofit 分页</h3>
+      <p>子类只需实现三类请求、前后 key 和列表解析。基类负责 Retrofit 成功判断、API Error 包装以及把异常转换为 <code>LoadResult.Error</code>。</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Paging3 LoadParams</th><th>DevKit 回调</th><th>返回 key</th><th>典型场景</th></tr></thead>
+          <tbody>
+            <tr><td><code>Refresh</code></td><td><code>onRefresh</code></td><td>同时解析 prevKey 与 nextKey</td><td>首次进入、下拉刷新、invalidate。</td></tr>
+            <tr><td><code>Append</code></td><td><code>onLoadMore</code></td><td>只解析 nextKey</td><td>接近列表底部时预取。</td></tr>
+            <tr><td><code>Prepend</code></td><td><code>onLoadBefore</code></td><td>只解析 prevKey</td><td>从中间章节打开后向上补数据。</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3><code>PagingFlow</code>：对 PagingData 内部元素做变换</h3>
+      <p><code>mapPagingItem</code>、<code>flatmapPagingItem</code>、<code>filterPaging</code>、header/footer/separator 插入和 <code>combinePaging</code> 都保留 PagingData 的惰性加载语义，避免把数据先展开成 List。</p>
+
+      <h3><code>PagerMediator</code>：对已展示分页数据做局部更新</h3>
+      <p>它缓存流经的原始 item，以 <code>changed</code> 和 <code>removed</code> 集合记录变更，再用一个 <code>MutableStateFlow</code> 触发 PagingData 重新 map/filter。盐言用它完成删卡和点赞状态更新，不必刷新整个网络列表。</p>
+      <pre><button class="copy">复制</button><code>fun deleteItem(id: String) {
+    pagerMediator.remove { item ->
+        item is PinAllDataV2 &amp;&amp; item.data?.businessId.toString() == id
+    }
+}
+
+fun likeEvent(id: String, isVote: Boolean, likeCount: String) {
+    pagerMediator.update(
+        predicate = { it is PinAllDataV2 &amp;&amp; it.data?.businessId.toString() == id },
+        transform = { (it as PinAllDataV2).copy(/* 更新点赞字段 */) }
+    )
+}</code></pre>
+    </section>
+
+    <section id="adapter">
+      <h2>列表、ViewHolder 与加载状态</h2>
+      <h3><code>SuperAdapter</code> 如何支持多类型</h3>
+      <p>每个数据具体 Class 的 <code>hashCode()</code> 被当作 viewType。<code>registerViewHolder</code> 建立数据类型到工厂的映射；绑定时再用 item 的运行时 Class 找工厂。因此一个 PagingData 可以混放榜单、内容卡、Banner、广告、直播间等完全不同的类型。</p>
+      <div class="grid grid-3">
+        <article class="card"><h3>反射建 Holder</h3><p><code>ViewBinding</code> 的静态 <code>inflate</code> 与 Holder 的单参数构造器通过反射调用，并有 inflate Method 缓存。</p></article>
+        <article class="card"><h3>轻量注入</h3><p><code>adapter.inject(instance)</code> 存入 <code>SimpleInstanceContainer</code>；Holder 内通过 <code>by inject()</code> 延迟读取。</p></article>
+        <article class="card"><h3>Holder 生命周期</h3><p>Holder 实现 <code>LifecycleAware</code> 后，item attach/detach 会收到独立 LifecycleOwner，适合曝光、动画和订阅。</p></article>
+      </div>
+
+      <pre><button class="copy">复制</button><code>// 盐言 ViewHolder 注入的真实模式
+class VipPinVH(
+    binding: HomeBaseItemPinV2Binding
+) : ViewBindingViewHolder&lt;PinAllDataV2, HomeBaseItemPinV2Binding&gt;(binding),
+    LifecycleAware {
+
+    private val viewModel: HomePinTabViewModel? by inject()
+    private val parentChannelType: IParentChannelType? by inject()
+
+    override fun onBindData(data: PinAllDataV2) { /* render */ }
+
+    override fun onViewAttachedToWindow(owner: LifecycleOwner) {
+        zaShow()
+        super.onViewAttachedToWindow(owner)
+    }
+}</code></pre>
+
+      <h3>加载状态矩阵</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>位置</th><th>Loading</th><th>Error</th><th>完成/空</th><th>默认注册</th></tr></thead>
+          <tbody>
+            <tr><td>Header / prepend</td><td>Loading holder</td><td>点击 retry</td><td>ReachEnd（可选）</td><td><code>TYPE_LOADING | TYPE_ERROR</code></td></tr>
+            <tr><td>Footer / append</td><td>Loading holder</td><td>点击 retry</td><td>ReachEnd</td><td><code>TYPE_LOADING | TYPE_ERROR | TYPE_REACH_END</code></td></tr>
+            <tr><td>Body / refresh</td><td>骨架屏</td><td>空态组件展示错误</td><td>Empty</td><td>默认关闭，需传 <code>bodyType</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p><code>setupWithRecyclerView</code> 使用 <code>ConcatAdapter</code> 把 header、body、SuperAdapter、footer 串起来；业务仍可用 <code>addLoadStateListener</code> 控制页面级骨架和错误容器。</p>
+    </section>
+
+    <section id="salt">
+      <h2>盐言项目真实用法</h2>
+      <h3>案例 A：HomePinTab——完整端到端链路</h3>
+      <div class="timeline">
+        <div class="timeline-item"><strong>1. State</strong><br><code>PinTabState.data</code> 保存 <code>PagingData&lt;BaseModulesListItemData&gt;</code>。</div>
+        <div class="timeline-item"><strong>2. ViewModel</strong><br>创建 <code>Pager(viewModelScope, prefetchDistance = 5)</code>，工厂每次返回新的内部类 <code>DiscoverTabListDataSource</code>。</div>
+        <div class="timeline-item"><strong>3. Source</strong><br><code>onRefresh</code> 请求 offset 0；<code>onLoadMore</code> 用 <code>offset + limit</code>；<code>resolveNextKey</code> 在 <code>isEnd</code> 后返回 null；不支持向前翻页。</div>
+        <div class="timeline-item"><strong>4. Transform</strong><br>原始网络模块先映射为 <code>moduleData</code>，过滤允许展示的卡片类型，再绑定 <code>PagerMediator</code>。</div>
+        <div class="timeline-item"><strong>5. Reduce</strong><br><code>setOnEach { copy(data = it) }</code> 把新的 PagingData 放回 State。</div>
+        <div class="timeline-item"><strong>6. View</strong><br><code>collectFrom(viewModel, PinTabState::data)</code> 自动 submit；<code>setupWithRecyclerView</code> 接入默认加载状态。</div>
+      </div>
+      <div class="callout">
+        <strong>业务特点：</strong>这是一个瀑布流、多卡型、动态删改 item 的复杂列表。自定义 DiffUtil 用业务 ID 判断 item，同一 Adapter 注册二十多种 Holder，并向 Holder 注入 ViewModel、父页面接口、曝光上报器和 LifecycleOwner。
+      </div>
+
+      <h3>案例 B：NativeManuscriptAuthor——双向目录分页</h3>
+      <p><code>ManuscriptBillboardViewModel</code> 内的 <code>ManuscriptBillboardSource</code> 同时实现 Refresh、Append、Prepend。首次请求可以围绕指定章节拼接前一页数据，让目标章节靠近第二个位置；到达顶部后把 header/author 信息写入首项。</p>
+      <pre><button class="copy">复制</button><code>private val pager = Pager(viewModelScope) {
+    ManuscriptBillboardSource()
+}
+
+init {
+    pager.flow
+        .combine(isLikeFlow) { pagingData, isLike ->
+            pagingData.map { item ->
+                item.copy(
+                    headerInfo = item.headerInfo?.copy(isLike = isLike),
+                    isSelected = item.id == initSectionId
+                )
+            }
+        }
+        .setOnEach { copy(catalogData = it) }
+}
+
+fun refresh() = pager.invalidate()</code></pre>
+      <p>Fragment 侧链路非常短：</p>
+      <pre><button class="copy">复制</button><code>adapter = SuperAdapter(differ)
+    .registerViewHolder(NativeManuscriptBillboardVH::class.java)
+    .inject(viewModel)
+    .inject(AUTHOR_TAB)
+    .collectFrom(viewModel, BillboardState::catalogData)
+    .setupWithRecyclerView(binding.rv)
+
+adapter.addLoadStateListener { states ->
+    when (states.refresh) {
+        is LoadState.Loading -&gt; showSkeleton()
+        is LoadState.Error   -&gt; showError()
+        else                 -&gt; showList()
+    }
+}</code></pre>
+
+      <h3>案例 C：NativeManuscriptRecommend——只借 Adapter，不做网络 Paging</h3>
+      <p>该页面使用 <code>SuperAdapter</code>、Holder 注入和 <code>PagingData.from(list)</code>，但网络“加载更多”是 RecyclerView 滚动监听 + Rx 请求 + 手工缓存完成的。它展示了 DevKit 各部分可拆开使用，但不应把它当作 PagingSource 接入范例。</p>
+
+      <h3>与旧盐言 Paging 的边界</h3>
+      <div class="callout warn">
+        <strong>不要混淆：</strong><code>KnowledgeMarket</code> / <code>LiteKnowledgeMarket</code> 中大量 <code>BasePagingFragment&lt;ZHObjectList&lt;...&gt;&gt;</code>、旧 <code>PagingRequestHelper</code> 和 <code>com.zhihu.android.api.model.Paging</code> 是历史分页框架。只有出现 <code>com.zhihu.android.devkit.paging</code> 与 <code>androidx.paging.PagingData/LoadState</code> 的链路，才属于本文的 DevKit + Paging3。
+      </div>
+    </section>
+
+    <section id="template">
+      <h2>推荐接入模板</h2>
+      <p class="section-intro">以下是从盐言两个成熟案例抽出的最小模板，名称经过泛化，属于“接入建议”而非仓库原样代码。</p>
+
+      <h3>1. State + ViewModel + PagingSource</h3>
+      <pre><button class="copy">复制</button><code>data class StoryListState(
+    val data: PagingData&lt;StoryCard&gt; = PagingData.empty()
+) : MvxState
+
+class StoryListViewModel(
+    initialState: StoryListState
+) : MvxViewModel&lt;StoryListState&gt;(initialState) {
+
+    private val service = Net.createService(StoryService::class.java)
+
+    private inner class StorySource :
+        ResponsePagingSource&lt;StoryPaging, StoryCard, StoryResponse&gt;() {
+
+        override suspend fun onRefresh(
+            params: LoadParams&lt;StoryPaging&gt;
+        ): Response&lt;out StoryResponse&gt; =
+            service.firstPage(limit = params.loadSize).awaitFirst()
+
+        override suspend fun onLoadMore(
+            params: LoadParams.Append&lt;StoryPaging&gt;
+        ): Response&lt;out StoryResponse&gt; =
+            service.nextPage(params.key.nextUrl).awaitFirst()
+
+        override suspend fun onLoadBefore(
+            params: LoadParams.Prepend&lt;StoryPaging&gt;
+        ): Response&lt;out StoryResponse&gt; {
+            throw NotImplementedError("此列表不支持向前加载")
+        }
+
+        override fun resolveValue(result: StoryResponse?) =
+            result?.data.orEmpty()
+
+        override fun resolvePreKey(
+            curParams: LoadParams&lt;StoryPaging&gt;?,
+            result: StoryResponse?,
+            firstValue: StoryCard?
+        ): StoryPaging? = null
+
+        override fun resolveNextKey(
+            curParams: LoadParams&lt;StoryPaging&gt;?,
+            result: StoryResponse?,
+            lastValue: StoryCard?
+        ): StoryPaging? = result?.paging?.takeUnless { it.isEnd }
+    }
+
+    private val pager = Pager(viewModelScope) { StorySource() }
+
+    init {
+        pager.flow.setOnEach { copy(data = it) }
+    }
+
+    fun refresh() = pager.invalidate()
+}</code></pre>
+
+      <h3>2. Fragment + Adapter</h3>
+      <pre><button class="copy">复制</button><code>class StoryListFragment : BaseFragment(), MvxView {
+    private val viewModel: StoryListViewModel by fragmentViewModel()
+    private lateinit var adapter: SuperAdapter
+
+    override fun onViewCreated(view: View, state: Bundle?) {
+        adapter = SuperAdapter(StoryDiff)
+            .registerViewHolder(StoryCardVH::class.java)
+            .inject(viewModel)
+            .collectFrom(viewModel, StoryListState::data)
+            .setupWithRecyclerView(binding.recyclerView)
+
+        adapter.addLoadStateListener { states ->
+            binding.refreshLayout.isRefreshing =
+                states.refresh is LoadState.Loading
+
+            binding.errorView.isVisible =
+                states.refresh is LoadState.Error &amp;&amp; adapter.itemCount == 0
+        }
+
+        binding.refreshLayout.setOnRefreshListener(viewModel::refresh)
+    }
+
+    override fun invalidate() = Unit
+}</code></pre>
+
+      <h3>3. ViewHolder</h3>
+      <pre><button class="copy">复制</button><code>class StoryCardVH(
+    binding: ItemStoryCardBinding
+) : ViewBindingViewHolder&lt;StoryCard, ItemStoryCardBinding&gt;(binding),
+    LifecycleAware {
+
+    private val viewModel: StoryListViewModel by inject()
+
+    override fun onBindData(data: StoryCard) {
+        binding.title.text = data.title
+        binding.root.setOnClickListener { /* 调 ViewModel 或 Router */ }
+    }
+
+    override fun onViewAttachedToWindow(owner: LifecycleOwner) {
+        super.onViewAttachedToWindow(owner)
+        // 曝光、动画、与 item 可见性绑定的订阅
+    }
+}</code></pre>
+    </section>
+
+    <section id="pitfalls">
+      <h2>边界与踩坑</h2>
+      <details open>
+        <summary>刷新：优先用 pager.invalidate() 还是 adapter.refresh()？</summary>
+        <div><p>两者都会产生新的 PagingData generation，但当前盐言架构把刷新入口放在 ViewModel，所以成熟案例使用 <code>pager.invalidate()</code>。这样 View 不需要知道 PagingSource。<code>adapter.refresh()</code> 更适合纯 UI 触发且不经过 ViewModel 的页面，但会削弱单向数据流边界。</p></div>
+      </details>
+      <details>
+        <summary>默认 getRefreshKey() 返回 null</summary>
+        <div><p><code>ResponsePagingSource</code> 没有基于 anchorPosition 恢复 key。刷新会回到业务定义的首屏语义；若页面要求保持当前位置，需要子类重写 <code>getRefreshKey</code> 或重新设计 key。</p></div>
+      </details>
+      <details>
+        <summary>单向列表也必须面对 Prepend 抽象方法</summary>
+        <div><p><code>ResponsePagingSource</code> 要求实现 <code>onLoadBefore</code>。单向列表应让 <code>resolvePreKey</code> 永远返回 null，确保 Paging3 不会调用它；实现中可明确抛出“不支持”。<code>ZHObjectPagingSource</code> 已提供默认抛错实现。</p></div>
+      </details>
+      <details>
+        <summary>异常捕获范围偏宽</summary>
+        <div><p><code>ResponsePagingSource.load</code> 捕获 <code>Throwable</code> 并转成 <code>LoadResult.Error</code>。这也可能包含协程取消异常，属于值得留意的实现风险：如果升级框架，建议对 <code>CancellationException</code> 直接重新抛出。</p></div>
+      </details>
+      <details>
+        <summary>默认 DiffUtil 只用 equals</summary>
+        <div><p><code>ObjectItemCallback</code> 的 item 和 content 比较都是 <code>oldItem == newItem</code>。复杂业务必须像 HomePinTab、NativeManuscriptAuthor 一样提供稳定 ID 的自定义 Callback，否则更新动画和局部刷新可能不符合预期。</p></div>
+      </details>
+      <details>
+        <summary>SuperAdapter 的数据类型必须是具体类</summary>
+        <div><p><code>registerViewHolder</code> 主动拒绝 primitive、interface 和 abstract class。viewType 来自具体 Class 的 hashCode，因此注册基类并不能匹配其子类；每个实际数据类都要注册，或使用拦截工厂。</p></div>
+      </details>
+      <details>
+        <summary>ViewBinding Holder 依赖构造器约定</summary>
+        <div><p>反射工厂要求 Holder 存在“参数类型恰好为对应 Binding 类”的公开构造器。修改为额外构造参数或抽象 Binding 类型会在运行时失败；额外依赖应通过 <code>adapter.inject</code> 传入。</p></div>
+      </details>
+      <details>
+        <summary>PagerMediator 依赖 equals/hashCode 稳定</summary>
+        <div><p>内部 HashMap/HashSet 以原始 item 为 key。优先使用不可变 data class + copy；不要在 item 加入缓存后原地修改参与 equals/hashCode 的字段。</p></div>
+      </details>
+      <details>
+        <summary>Body 状态需连同 Header 或 Footer 使用</summary>
+        <div><p>当前 <code>setupWithRecyclerView</code> 只有在 header 或 footer 启用时才创建 ConcatAdapter。若只传 <code>bodyType</code>、同时关闭 header/footer，body Adapter 不会挂载。默认参数启用了 header/footer，所以常规调用不受影响。</p></div>
+      </details>
+      <details>
+        <summary>初始化由宿主任务保证</summary>
+        <div><p>VIP 宿主通过 <code>T_DevKitInit</code> 在主线程调用 <code>DevKit.init(app)</code>，进而执行 <code>Mavericks.initialize(DEBUG)</code>。独立 Sample 或新宿主必须补同等初始化；旧 <code>Mvx.initialize</code> 已废弃。</p></div>
+      </details>
+    </section>
+
+    <section id="index">
+      <h2>源码索引</h2>
+      <p class="section-intro">链接均相对当前 HTML 文件，可在本地文件浏览器或支持本地跳转的编辑器中打开。</p>
+      <div class="grid grid-2">
+        <article class="card">
+          <h3>DevKit 核心</h3>
+          <a class="path" href="../yyyyy-cdoe/DevKit/devkit/src/main/java/com/zhihu/android/devkit/mvx/MvxViewModel.kt">MvxViewModel.kt</a>
+          <a class="path" href="../yyyyy-cdoe/DevKit/devkit/src/main/java/com/zhihu/android/devkit/mvx/MvxView.kt">MvxView.kt</a>
+          <a class="path" href="../yyyyy-cdoe/DevKit/devkit/src/main/java/com/zhihu/android/devkit/mvx/MvxRepository.kt">MvxRepository.kt</a>
+          <a class="path" href="../yyyyy-cdoe/DevKit/devkit/src/main/java/com/zhihu/android/devkit/paging/Pager.kt">Pager.kt</a>
+          <a class="path" href="../yyyyy-cdoe/DevKit/devkit/src/main/java/com/zhihu/android/devkit/paging/ResponsePagingSource.kt">ResponsePagingSource.kt</a>
+          <a class="path" href="../yyyyy-cdoe/DevKit/devkit/src/main/java/com/zhihu/android/devkit/paging/PagerMediator.kt">PagerMediator.kt</a>
+          <a class="path" href="../yyyyy-cdoe/DevKit/devkit/src/main/java/com/zhihu/android/devkit/paging/SuperAdapter.kt">SuperAdapter.kt</a>
+          <a class="path" href="../yyyyy-cdoe/DevKit/devkit/src/main/java/com/zhihu/android/devkit/paging/DefaultLoadStateAdapter.kt">DefaultLoadStateAdapter.kt</a>
+        </article>
+        <article class="card">
+          <h3>盐言案例</h3>
+          <a class="path" href="../yyyyy-cdoe/km_home_base/km_home_base/src/main/java/com/zhihu/android/feature/km_home_base/discovery/HomePinTabViewModel.kt">HomePinTabViewModel.kt</a>
+          <a class="path" href="../yyyyy-cdoe/km_home_base/km_home_base/src/main/java/com/zhihu/android/feature/km_home_base/discovery/HomePinTabFragment.kt">HomePinTabFragment.kt</a>
+          <a class="path" href="../yyyyy-cdoe/km_home_base/km_home_base/src/main/java/com/zhihu/android/feature/km_home_base/discovery/VipPinVH.kt">VipPinVH.kt</a>
+          <a class="path" href="../yyyyy-cdoe/KnowledgeMarket/sku-manuscript/src/main/java/com/zhihu/android/app/sku/manuscript/vip_manuscript/catalog/ManuscriptBillboardViewModel.kt">ManuscriptBillboardViewModel.kt</a>
+          <a class="path" href="../yyyyy-cdoe/KnowledgeMarket/sku-manuscript/src/main/java/com/zhihu/android/app/sku/manuscript/vip_manuscript/catalog/NativeManuscriptAuthorFragment.kt">NativeManuscriptAuthorFragment.kt</a>
+          <a class="path" href="../yyyyy-cdoe/KnowledgeMarket/sku-manuscript/src/main/java/com/zhihu/android/app/sku/manuscript/vip_manuscript/catalog/NativeManuscriptBillboardVH.kt">NativeManuscriptBillboardVH.kt</a>
+          <a class="path" href="../yyyyy-cdoe/VipAndroid/app/launch_config/TaskManager.json">VipAndroid TaskManager.json</a>
+        </article>
+      </div>
+    </section>
+
+    <footer>
+      <p>文档生成日期：2026-07-19 · 分析方式：本地源码静态审阅 · 业务源码未作修改。</p>
+    </footer>
+  </main>
+</div>
+<script>
+  document.querySelectorAll('pre').forEach((pre) => {
+    const button = pre.querySelector('.copy');
+    if (!button) return;
+    button.addEventListener('click', async () => {
+      const text = pre.querySelector('code')?.innerText || '';
+      try {
+        await navigator.clipboard.writeText(text);
+        button.textContent = '已复制';
+        setTimeout(() => button.textContent = '复制', 1200);
+      } catch {
+        button.textContent = '复制失败';
+      }
+    });
+  });
+
+  const navLinks = [...document.querySelectorAll('nav a')];
+  const sections = navLinks
+    .map((link) => document.querySelector(link.getAttribute('href')))
+    .filter(Boolean);
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      navLinks.forEach((link) => {
+        link.classList.toggle('active', link.getAttribute('href') === '#' + entry.target.id);
+      });
+    });
+  }, { rootMargin: '-15% 0px -70% 0px' });
+  sections.forEach((section) => observer.observe(section));
+</script>
+</body>
+</html>

@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="总览与导航：基于当前工作区源码证据整理的项目面试资料">
+  <title>项目面试资料导航｜项目面试资料</title>
+  <link rel="stylesheet" href="assets/docs.css">
+  <script>
+    try {
+      const savedTheme = localStorage.getItem("interview-docs-theme");
+      const preferredDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      document.documentElement.dataset.theme = savedTheme || (preferredDark ? "dark" : "light");
+    } catch {}
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <header class="topbar">
+    <button class="icon-button menu-button" type="button" data-menu-toggle aria-label="打开文档导航" aria-expanded="false">☰</button>
+    <a class="brand" href="index.html"><span class="brand-mark">⌁</span><span>项目面试资料库</span></a>
+    <div class="search-shell">
+      <label class="sr-only" for="global-search">搜索所有文档</label>
+      <input id="global-search" type="search" data-search-input placeholder="搜索仓库、技术或面试题…" autocomplete="off">
+      <span class="search-shortcut">Ctrl K</span>
+      <div class="search-results" data-search-results hidden></div>
+    </div>
+    <button class="icon-button" type="button" data-theme-toggle aria-label="切换深浅主题">◐</button>
+  </header>
+  <div class="drawer-backdrop" data-drawer-backdrop hidden></div>
+  <div class="docs-layout">
+    <nav class="sidebar" data-sidebar aria-label="全站文档导航">
+      <div class="sidebar-heading">文档导航</div>
+      
+        <section class="nav-group">
+          <h2 class="nav-group-title">逐仓文档</h2>
+          <a class="nav-link" href="repositories.html">66 个仓库独立分析</a>
+        </section>
+        <section class="nav-group">
+          <h2 class="nav-group-title">开始使用</h2>
+          <a class="nav-link active" href="index.html" aria-current="page">总览与导航</a>
+<a class="nav-link" href="50-interview-project-summary.html">五条主讲项目线</a>
+<a class="nav-link" href="70-resume-and-star-stories.html">简历与 STAR</a>
+<a class="nav-link" href="60-interview-question-bank.html">70 道面试题</a>
+        </section>
+
+        <section class="nav-group">
+          <h2 class="nav-group-title">仓库分析</h2>
+          <a class="nav-link" href="00-repository-inventory.html">全量仓库盘点</a>
+<a class="nav-link" href="10-android-business-repositories.html">Android 业务仓库</a>
+<a class="nav-link" href="20-android-infrastructure-media.html">基础设施与媒体</a>
+<a class="nav-link" href="30-cross-platform-rn-web.html">RN 与 Web</a>
+<a class="nav-link" href="31-tools-samples-and-assets.html">工具、样例与资产</a>
+        </section>
+
+        <section class="nav-group">
+          <h2 class="nav-group-title">质量复核</h2>
+          <a class="nav-link" href="40-android-docs-evidence-review.html">Android 证据复核</a>
+<a class="nav-link" href="41-full-workspace-coverage-review.html">全工作区覆盖复核</a>
+        </section>
+
+        <section class="nav-group">
+          <h2 class="nav-group-title">辅助材料</h2>
+          <a class="nav-link" href="ANALYSIS-TEMPLATE.html">仓库分析模板</a>
+<a class="nav-link" href="2026-07-24-all-repositories-analysis-plan.html">原始执行计划</a>
+        </section>
+
+        <section class="nav-group">
+          <h2 class="nav-group-title">Android 专题</h2>
+          <a class="nav-link" href="android-storage-guide.html">Android 存储方案</a>
+        </section>
+      <p class="sidebar-note">离线资料 · 证据快照 2026-07-24</p>
+    </nav>
+    <main class="article-shell" id="main-content">
+      <div class="breadcrumbs"><a href="index.html">首页</a><span>/</span><span>开始使用</span><span>/</span><span>总览与导航</span></div>
+      
+    <section class="stats-grid" aria-label="资料统计">
+      <div class="stat-card"><strong>66/66</strong><span>有效仓库已覆盖</span></div>
+      <div class="stat-card"><strong>70</strong><span>道面试追问题</span></div>
+      <div class="stat-card"><strong>10</strong><span>个 STAR 模板</span></div>
+      <div class="stat-card"><strong>通过</strong><span>最终覆盖复核</span></div>
+    </section>
+    <a class="repository-cta" href="repositories.html">
+      <span><strong>进入 66 个仓库逐仓文档</strong><small>每个仓库独立一页：源码入口、调用链、亮点、风险、面试讲法、追问与证据</small></span>
+      <span aria-hidden="true">→</span>
+    </a>
+    <a class="repository-cta" href="android-storage-guide.html">
+      <span><strong>学习 Android 存储方案</strong><small>SP、MMKV、DataStore、Room、文件、MediaStore、SAF、Keystore，结合真实业务源码理解</small></span>
+      <span aria-hidden="true">→</span>
+    </a>
+    <section class="external-guides" aria-labelledby="external-guides-heading">
+      <div class="repository-group-heading"><h2 id="external-guides-heading">docs 目录全部 HTML 入口</h2><span>5 篇</span></div>
+      <p>完成型专题直接用于复习；superpowers 下的计划与规格归入开发归档，保留入口但不作为主复习材料。</p>
+      
+    <section class="repository-group external-guide-group">
+      <div class="repository-group-heading"><h2>docs 根目录专题</h2><span>3 篇</span></div>
+      <div class="repository-grid">
+        <a class="repository-card" href="guides/android-custom-view-interview-guide.html">
+          <span class="repository-card-category">android-custom-view-interview-guide.html</span>
+          <strong>Android 自定义 View</strong>
+          <span>传统 View 体系、测量布局绘制、触摸分发与源码面试追问。</span>
+        </a>
+<a class="repository-card" href="guides/devkit-mvi-paging3-guide.html">
+          <span class="repository-card-category">devkit-mvi-paging3-guide.html</span>
+          <strong>DevKit MVI × Paging3</strong>
+          <span>从框架原理到盐言真实业务调用的 MVI 与 Paging3 专题。</span>
+        </a>
+<a class="repository-card" href="guides/kotlin-keywords-interview-guide.html">
+          <span class="repository-card-category">kotlin-keywords-interview-guide.html</span>
+          <strong>Kotlin 关键字</strong>
+          <span>面向 Android 客户端面试的 Kotlin 关键字、原理与 Java 对照。</span>
+        </a>
+      </div>
+    </section>
+
+    <section class="repository-group external-guide-group">
+      <div class="repository-group-heading"><h2>开发归档</h2><span>2 篇</span></div>
+      <div class="repository-grid">
+        <a class="repository-card" href="guides/kotlin-keywords-interview-guide-plan.html">
+          <span class="repository-card-category">superpowers/plans/2026-08-15-kotlin-keywords-interview-guide.html</span>
+          <strong>Kotlin 指南实施计划</strong>
+          <span>Kotlin 专题的实施步骤与验收记录，供回溯文档建设过程。</span>
+        </a>
+<a class="repository-card" href="guides/kotlin-keywords-interview-guide-design.html">
+          <span class="repository-card-category">superpowers/specs/2026-08-15-kotlin-keywords-interview-guide-design.html</span>
+          <strong>Kotlin 指南设计规格</strong>
+          <span>Kotlin 专题的信息架构与设计规格，不作为主复习内容。</span>
+        </a>
+      </div>
+    </section>
+    </section>
+      <article class="markdown-body">
+        <h1 id="项目面试资料导航">项目面试资料导航</h1>
+<blockquote class="callout"><p>适用对象：约三年 Android 经验的候选人。<br>证据快照：2026-07-24，基于 <code>C:\Users\msf\Desktop\code</code> 当前检出内容。<br>核心原则：先讲自己真实做过的业务接入，再用源码解释机制；不要把公司框架、团队仓库或上游项目包装成个人作品。</p>
+</blockquote>
+<h2 id="1-这套资料覆盖什么">1. 这套资料覆盖什么</h2>
+<ul>
+<li><a href="00-repository-inventory.html">仓库全量盘点</a> 记录了 67 个 <code>.git</code> 标记，其中 66 个是有效 Git 仓库；另有 <code>pikachu</code>、<code>xxxxx-html</code> 等非 Git 源码或资料目录。</li>
+<li><a href="10-android-business-repositories.html">Android 业务仓库</a> 深入或标准分析 23 个业务/主工程仓库。</li>
+<li><a href="20-android-infrastructure-media.html">Android 基础设施与媒体</a> 分析 33 个基础设施、Hybrid、媒体及相关仓库。</li>
+<li><code>10</code> 与 <code>20</code> 合计 56 个章节、55 个唯一仓库；<code>Kmaudio</code> 是同一仓库的业务视角和媒体视角，不能重复计算成两个项目。</li>
+<li><a href="30-cross-platform-rn-web.html">跨端 RN/Web</a> 分析 <code>pikachu</code> 与 <code>html-anything</code>。<code>pikachu</code> 当前副本缺少 <code>prn/*</code> 和 <code>.yarn/</code>，不能据此形成可信 Bundle 结论。</li>
+<li><a href="31-tools-samples-and-assets.html">工具、样例与资产</a> 区分个人/实验型项目、公司团队资产、上游开源工程和离线文档。</li>
+<li><a href="40-android-docs-evidence-review.html">Android 证据复核</a> 对 <code>10</code>、<code>20</code> 抽查了 102 条关键文件、类型和函数证据，并确认条件式个人贡献口径已经收口。</li>
+<li><a href="41-full-workspace-coverage-review.html">全工作区覆盖复核</a> 已完成 66 个有效 Git 仓库的并集、大小写和交叉证据检查：覆盖、源码证据、个人归因措辞和敏感信息门禁均已通过。通过表示文档口径合格，不表示源码已经证明候选人的具体经历；使用综合材料时仍须逐条确认“需本人确认”项。</li>
+</ul>
+<p>这不是“所有仓库都是候选人的项目”的清单，也不是完整 Git 历史归属审计。它能证明当前源码中有什么、调用链如何工作、有哪些工程风险；不能单独证明候选人负责过什么。</p>
+<h2 id="2-三层证据边界">2. 三层证据边界</h2>
+<table>
+<thead>
+<tr>
+<th>层级</th>
+<th>可以怎样说</th>
+<th>不可以怎样说</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>代码事实</td>
+<td>“<code>HomePinTabViewModel.refresh()</code> 会触发 <code>pager.invalidate()</code>。”</td>
+<td>把当前源码行为自动改写成“这是我实现的”。</td>
+</tr>
+<tr>
+<td>工程判断</td>
+<td>“捕获 <code>Throwable</code> 可能破坏协程取消语义，这是一个风险点。”</td>
+<td>把风险写成已经发生的线上事故或已经完成的治理。</td>
+</tr>
+<tr>
+<td>个人经历</td>
+<td>“在我实际负责的某需求中，我接入了……并通过……验证。”</td>
+<td>没有提交、需求、同事或数据佐证时声称“我主导/设计/从零搭建”。</td>
+</tr>
+</tbody></table>
+<p>凡涉及个人职责、方案决策、故障处理、测试贡献或结果，统一标记 <strong>“需本人确认”</strong>。结果必须说明指标、统计口径、时间范围和数据来源；缺任一项时，不写百分比、绝对收益或线上结论。</p>
+<p>安全表达模板：</p>
+<blockquote class="callout"><p>该框架/基础库由团队提供；如果这个调用点确实属于我的工作范围（需本人确认），我负责的是业务状态建模、接口接入、异常处理、联调或问题定位。结果只补充我能核验的真实数据。</p>
+</blockquote>
+<h2 id="3-先建立正确的模块关系">3. 先建立正确的模块关系</h2>
+<table>
+<thead>
+<tr>
+<th>关系</th>
+<th>各自职责</th>
+<th>面试边界</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>VipAndroid</code> 与 <code>VipHome</code></td>
+<td>前者是 VIP App 的构建装配壳；后者负责 Application、Launcher、主导航和启动生命周期。</td>
+<td>可作为一条“交付链”讲，但不能把两个仓库混成同一模块。</td>
+</tr>
+<tr>
+<td><code>KnowledgeMarket</code>、<code>km_home_base</code> 与 <code>DevKit</code></td>
+<td><code>KnowledgeMarket</code> 是知识市场聚合业务；<code>km_home_base</code> 是知识首页/书架容器及真实 Paging3 调用点；<code>DevKit</code> 提供 Mavericks 轻量 MVI 与分页封装。</td>
+<td>优先讲“在业务侧使用/接入 DevKit”，除非本人确实参与框架开发。</td>
+</tr>
+<tr>
+<td><code>VipManuscript</code> 与 <code>VipReader</code></td>
+<td>前者是盐言手稿阅读、双向目录和互动；后者是 EPUB 解析、预解析与进度同步。</td>
+<td>都属于阅读消费，但数据模型、分页/解析问题不同，不要说成同一个阅读器。</td>
+</tr>
+<tr>
+<td><code>Kmaudio</code> 与 <code>Media</code> 等基础库</td>
+<td><code>Kmaudio</code> 负责知识音频业务、数据源、播放列表和权益；<code>Media</code>/<code>Audio</code>/<code>Zhplayer</code>/<code>mediax</code> 提供协议、UI、Service、门面或引擎适配。</td>
+<td>讲清业务层和播放基础设施层，不把播放内核作者身份归给业务接入者。</td>
+</tr>
+<tr>
+<td><code>Feed</code>、<code>Comment</code> 与 <code>VipPassport</code></td>
+<td><code>Feed</code> 是内容分发，<code>Comment</code>/<code>VipComment</code> 是互动，<code>VipPassport</code> 是登录注册和 Token；<code>Account</code> 承接登录后的账号态与安全。</td>
+<td>它们能组成用户旅程，但源码不足以证明候选人全链路负责。</td>
+</tr>
+<tr>
+<td><code>pikachu</code> 与 Native 宿主</td>
+<td><code>pikachu</code> 是嵌入原生 App 的多页面 RN Bundle 工作区，通过 pageName、Deep Link、Bridge 和 Jotai 协作。</td>
+<td>适合讲 Android/RN 边界协作；不声称编写了 PRN 底层或整个 RN 工作区。</td>
+</tr>
+</tbody></table>
+<h2 id="4-推荐阅读顺序">4. 推荐阅读顺序</h2>
+<h3 id="30-分钟-先形成可说的项目故事">30 分钟：先形成可说的项目故事</h3>
+<ol>
+<li>读 <a href="50-interview-project-summary.html">项目主线总结</a> 的 30 秒、2 分钟和五条主线。</li>
+<li>用 <a href="70-resume-and-star-stories.html">简历与 STAR 模板</a> 只选择本人真实参与的 1—2 条主线，补齐“需本人确认”和“结果待补”。</li>
+<li>从 <a href="60-interview-question-bank.html">面试题库</a> 选择对应主讲题，练习 40—90 秒的“边界—链路—取舍—验证”回答。</li>
+<li>回到对应专题文档，记住入口、关键状态、一个取舍、一个风险和两个源码锚点。</li>
+</ol>
+<h3 id="2-小时-准备源码追问">2 小时：准备源码追问</h3>
+<ol>
+<li>读 <a href="10-android-business-repositories.html">Android 业务仓库</a> 的第 0、24、25 节，再读所选业务章节。</li>
+<li>读 <a href="20-android-infrastructure-media.html">Android 基础设施与媒体</a> 的第 0、34—36 节，再读相关基础库章节。</li>
+<li>若要讲 RN 协作，读 <a href="30-cross-platform-rn-web.html">跨端 RN/Web</a> 的第 0—11、23—25 节。</li>
+<li>用 <a href="40-android-docs-evidence-review.html">Android 证据复核</a> 检查 API 名、去重口径和风险措辞。</li>
+<li>用 <a href="41-full-workspace-coverage-review.html">全工作区覆盖复核</a> 核对 66 仓覆盖和个人归因门禁，再用 <a href="60-interview-question-bank.html">面试题库</a> 做源码追问、压力追问与模拟面试。</li>
+<li>最后在 <a href="70-resume-and-star-stories.html">简历与 STAR 模板</a> 中补本人动作、验证证据和真实结果；未确认的模板不进入简历。</li>
+</ol>
+<h3 id="全量审计-理解工作区边界">全量审计：理解工作区边界</h3>
+<ol>
+<li>从 <a href="00-repository-inventory.html">仓库全量盘点</a> 核对仓库性质和当前 checkout。</li>
+<li>顺序阅读 <code>10</code>、<code>20</code>、<code>30</code>、<code>31</code>。</li>
+<li>读 <a href="40-android-docs-evidence-review.html">Android 证据复核</a>，区分“已验证事实”“仍是风险推断”“无法从源码判断”。</li>
+<li>以 <a href="41-full-workspace-coverage-review.html">全工作区覆盖复核</a> 收口全仓覆盖：当前结论是“最终通过，可进入综合面试材料”，但候选人仍须确认每项真实职责、动作和结果。</li>
+<li>再按 <a href="50-interview-project-summary.html">项目主线总结</a> → <a href="60-interview-question-bank.html">面试题库</a> → <a href="70-resume-and-star-stories.html">简历与 STAR 模板</a> 的顺序完成口述、追问和简历准备。</li>
+</ol>
+<h2 id="5-文档地图">5. 文档地图</h2>
+<table>
+<thead>
+<tr>
+<th>文档</th>
+<th>用途</th>
+<th>重点输出</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="00-repository-inventory.html">00-repository-inventory.html</a></td>
+<td>全量库存和仓库属性</td>
+<td>数量、分类、构建入口、测试/CI、checkout 限制</td>
+</tr>
+<tr>
+<td><a href="10-android-business-repositories.html">10-android-business-repositories.html</a></td>
+<td>Android 业务调用</td>
+<td>首页、启动、阅读、音频、评论、Feed、账号等真实链路</td>
+</tr>
+<tr>
+<td><a href="20-android-infrastructure-media.html">20-android-infrastructure-media.html</a></td>
+<td>底层机制与业务边界</td>
+<td>MVI/Paging3、网络、路由、Hybrid、媒体、JNI</td>
+</tr>
+<tr>
+<td><a href="30-cross-platform-rn-web.html">30-cross-platform-rn-web.html</a></td>
+<td>跨端协作</td>
+<td>Native/RN 合同、轮询、状态生命周期、安全边界</td>
+</tr>
+<tr>
+<td><a href="31-tools-samples-and-assets.html">31-tools-samples-and-assets.html</a></td>
+<td>项目归属分级</td>
+<td>个人样例、公司资产、上游工程、敏感仓边界</td>
+</tr>
+<tr>
+<td><a href="40-android-docs-evidence-review.html">40-android-docs-evidence-review.html</a></td>
+<td>独立复核</td>
+<td>102 条抽查、55 个唯一仓库、已修正 API 名和措辞</td>
+</tr>
+<tr>
+<td><a href="41-full-workspace-coverage-review.html">41-full-workspace-coverage-review.html</a></td>
+<td>全工作区最终覆盖复核</td>
+<td>66 仓并集、40 条跨文档证据抽查、个人归因准入状态</td>
+</tr>
+<tr>
+<td><a href="50-interview-project-summary.html">50-interview-project-summary.html</a></td>
+<td>面试主讲稿</td>
+<td>30 秒/2 分钟/5 分钟、五条主线、辅助技术点和禁讲清单</td>
+</tr>
+<tr>
+<td><a href="60-interview-question-bank.html">60-interview-question-bank.html</a></td>
+<td>面试题库与模拟脚本</td>
+<td>70 道分层问题、三轮模拟面试、评分与本人补充清单</td>
+</tr>
+<tr>
+<td><a href="70-resume-and-star-stories.html">70-resume-and-star-stories.html</a></td>
+<td>简历与 STAR 候选模板</td>
+<td>五组项目经历、十个 STAR 故事、岗位定制和真实性问卷</td>
+</tr>
+</tbody></table>
+<h2 id="6-面试前最后检查">6. 面试前最后检查</h2>
+<ul>
+<li><input disabled="" type="checkbox"> 只保留本人确实做过的需求和调用点。</li>
+<li><input disabled="" type="checkbox"> 能说清“公司已有能力”和“我的业务动作”的分界。</li>
+<li><input disabled="" type="checkbox"> 每条主线至少能指出两个真实文件或类。</li>
+<li><input disabled="" type="checkbox"> 指标包含口径、时间范围和来源；没有指标就讲验证范围。</li>
+<li><input disabled="" type="checkbox"> 不把 <code>Kmaudio</code> 的两种分析视角算成两个项目。</li>
+<li><input disabled="" type="checkbox"> 不把 <code>VipAndroid</code> 与 <code>VipHome</code>、<code>VipManuscript</code> 与 <code>VipReader</code> 混为一个模块。</li>
+<li><input disabled="" type="checkbox"> 不把 Moonlight、CUDA、Obsidian Skills、<code>html-anything</code> 等自动归为个人项目。</li>
+<li><input disabled="" type="checkbox"> 不复述 Token、密钥、内网地址或其他敏感配置。</li>
+</ul>
+
+      </article>
+      
+    <nav class="page-pager" aria-label="文档翻页">
+      <span></span>
+      <a class="next" href="50-interview-project-summary.html"><small>下一篇 →</small><span>五条主讲项目线</span></a>
+    </nav>
+      <footer class="article-footer">
+        本站由 Markdown 源文档离线生成。涉及个人职责、动作和结果的内容，请只使用本人可核验的部分。
+      </footer>
+    </main>
+    <aside class="page-toc" aria-label="本页目录">
+      <div class="toc-heading">本页目录</div>
+      <a class="toc-link level-2" href="#1-这套资料覆盖什么">1. 这套资料覆盖什么</a>
+<a class="toc-link level-2" href="#2-三层证据边界">2. 三层证据边界</a>
+<a class="toc-link level-2" href="#3-先建立正确的模块关系">3. 先建立正确的模块关系</a>
+<a class="toc-link level-2" href="#4-推荐阅读顺序">4. 推荐阅读顺序</a>
+<a class="toc-link level-3" href="#30-分钟-先形成可说的项目故事">30 分钟：先形成可说的项目故事</a>
+<a class="toc-link level-3" href="#2-小时-准备源码追问">2 小时：准备源码追问</a>
+<a class="toc-link level-3" href="#全量审计-理解工作区边界">全量审计：理解工作区边界</a>
+<a class="toc-link level-2" href="#5-文档地图">5. 文档地图</a>
+<a class="toc-link level-2" href="#6-面试前最后检查">6. 面试前最后检查</a>
+      <a class="back-to-top" href="#">↑ 返回顶部</a>
+    </aside>
+  </div>
+  <script src="assets/search-data.js"></script>
+  <script src="assets/docs.js"></script>
+</body>
+</html>

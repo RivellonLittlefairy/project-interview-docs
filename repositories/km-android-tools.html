@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>km-android-tools：Android 团队自动化脚本集</title>
+  <link rel="stylesheet" href="../assets/docs.css">
+  <script defer src="../assets/search-data.js"></script>
+  <script defer src="../assets/docs.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <header class="topbar">
+    <button class="icon-button menu-button" type="button" data-menu-toggle aria-label="打开文档导航" aria-expanded="false">☰</button>
+    <a class="brand" href="../index.html"><span class="brand-mark">⌁</span><span>项目面试资料库</span></a>
+    <div class="search-shell">
+      <label class="sr-only" for="global-search">搜索所有文档</label>
+      <input id="global-search" type="search" data-search-input placeholder="搜索仓库、技术或面试题…" autocomplete="off">
+      <span class="search-shortcut">Ctrl K</span>
+      <div class="search-results" data-search-results hidden></div>
+    </div>
+    <button class="icon-button" type="button" data-theme-toggle aria-label="切换深浅主题">◐</button>
+  </header>
+  <div class="drawer-backdrop" data-drawer-backdrop hidden></div>
+  <div class="docs-layout">
+    <nav class="sidebar" data-sidebar aria-label="全站文档导航">
+      <div class="sidebar-heading">文档导航</div>
+      <section class="nav-group">
+        <h2 class="nav-group-title">逐仓文档</h2>
+        <a class="nav-link active" href="../repositories.html">仓库独立分析</a>
+      </section>
+      <section class="nav-group">
+        <h2 class="nav-group-title">开始使用</h2>
+        <a class="nav-link" href="../index.html">总览与导航</a>
+      </section>
+      <section class="nav-group">
+        <h2 class="nav-group-title">来源分析</h2>
+        <a class="nav-link" href="../00-repository-inventory.html">全量仓库盘点</a>
+        <a class="nav-link" href="../30-cross-platform-rn-web.html">RN 与 Web</a>
+        <a class="nav-link" href="../31-tools-samples-and-assets.html">工具、样例与资产</a>
+      </section>
+      <p class="sidebar-note">离线资料 · 源码证据快照</p>
+    </nav>
+    <main class="article-shell" id="main-content">
+      <div class="breadcrumbs"><a href="../index.html">首页</a><span>/</span><a href="../repositories.html">仓库索引</a><span>/</span><span>km-android-tools</span></div>
+      <article class="markdown-body">
+      <h1>km-android-tools：Android 团队自动化脚本集</h1>
+      <p><strong>定位标签：</strong>团队工程资产 / 个人脚本范围需举证</p>
+      <nav class="toc" aria-label="本页目录">
+        <strong>本页目录</strong>
+        <ol>
+          <li><a href="#identity">定位与归属边界</a></li>
+          <li><a href="#checkout">检出与构建信息</a></li>
+          <li><a href="#structure">结构与核心入口</a></li>
+          <li><a href="#workflow">关键工作流</a></li>
+          <li><a href="#tradeoffs">亮点与取舍</a></li>
+          <li><a href="#risks">风险、测试与排查</a></li>
+          <li><a href="#pitch">面试讲法</a></li>
+          <li><a href="#questions">追问与回答</a></li>
+          <li><a href="#evidence">源码证据</a></li>
+        </ol>
+      </nav>
+      <section id="identity"><h2>定位与归属边界</h2><ul><li>Python 脚本集合，围绕 GitLab MR、里程碑、周报、发布合并、代码评审提醒和 Wiki/企微发布自动化。</li><li>这是团队工具仓，不能把全仓成果归为个人。本人维护的脚本与函数范围<strong>需本人确认</strong>，并给 MR、CI 运行记录与指标口径。</li><li>仓中存在硬编码凭据、内网地址等严重问题；本文只报告存在性与治理建议，不复制任何值。</li></ul></section>
+      <section id="checkout"><h2>检出与构建信息</h2><ul><li>库存记录：分支 <code>master</code>，提交 <code>28e81c7</code>（2026-04-02），Python 小型仓。</li><li>安装入口：<code>requirements.txt</code>；仓内是多个独立脚本，没有统一 CLI、测试或 CI 入口。</li><li>未执行真实脚本：它们会访问 GitLab/Wiki/企业消息和可能产生 MR；本轮仅静态核验，避免外部副作用和凭据使用。</li></ul></section>
+      <section id="structure"><h2>结构与核心入口</h2><ul><li><code>weekly.py</code>、<code>android_weekly.py</code>：聚合 MR/人员/里程碑并生成周会材料。</li><li><code>mr_report/km-mr-report.py</code>：统计 MR、提交、AAR 体积和变更项目，生成 HTML/Wiki 报告。</li><li><code>daily_release2develop_mr.py</code>：比较分支提交并创建漏合并 MR。</li><li><code>codereview/*</code>：检查 MR 描述、审批和 reviewer；<code>utils/git_helper.py</code> 封装 Git 动作。</li></ul></section>
+      <section id="workflow"><h2>关键工作流</h2><ol><li>CI/Jenkins/Webhook 提供项目与 MR 上下文 → GitLab/项目管理/Wiki API 拉取数据。</li><li>规则过滤、分页与聚合 → BeautifulSoup/HTML 模板生成报告。</li><li>发布到 Wiki 或企业消息；发布/建 MR 前应按确定性 key 做幂等检查。</li><li>脚本退出码、结构化日志和审计记录作为反馈；高风险写操作应支持 dry-run。</li></ol></section>
+      <section id="tradeoffs"><h2>亮点与取舍</h2><ul><li>脚本快速覆盖跨系统流程，交付成本低；但独立入口、import 副作用和重复 client 让维护与测试困难。</li><li>自动创建 MR/提醒能减少人工漏项，必须付出幂等、权限最小化和审计成本。</li><li>HTML 报告直观，但外部 MR 文本进入模板前必须转义。</li></ul></section>
+      <section id="risks"><h2>风险、测试与排查</h2><ul><li>P0：立即吊销轮换硬编码 token/口令/HMAC/webhook，清 Git 历史，迁 CI secret，启用 secret scanning；不要在日志或面试材料复述。</li><li>P1：统一 HTTP client 的 timeout、有限重试/backoff、分页、幂等与状态校验；网络超时后先查询再重试写操作。</li><li>P1：拆 API client、纯规则、renderer 与 publisher；fixture 单测、fake server contract test、dry-run snapshot。</li><li>排查：先确认触发上下文与权限 → API 分页/速率限制 → 规则过滤 → 模板转义 → 发布幂等 → 结构化日志/退出码。</li></ul></section>
+      <section id="automation-case">
+        <h2>漏合并与周报任务的可测拆分</h2>
+        <p><code>daily_release2develop_mr.py</code> 代表的是带写副作用的自动化：先比较 release 与 develop 的提交集合，识别只在 release 的候选，再决定是否创建回合并 MR。实现时应把“获取分支提交”“过滤 merge/revert/cherry-pick”“查找已有 open MR”“生成标题描述”“创建 MR”拆成独立阶段。幂等键可由项目、source、target 和候选提交集合摘要组成；若创建请求超时，下一次必须先按 source/target 查询，而不是直接重发。dry-run 应输出候选提交、过滤理由和预计 MR，不执行 push 或 API 写入。</p>
+        <p>周报链路则适合纯数据 fixture。固定一组跨页 GitLab MR，包括 feature、bug、关闭/合并状态、缺 milestone、多人 reviewer 和重复项目；先断言分页 client 收齐数据，再断言规则分组与人员统计，最后对 HTML/Wiki 结构做 snapshot。MR 标题、描述和用户名都属于外部输入，进入 BeautifulSoup/模板前要按目标上下文转义。AAR 体积等构建产物指标还要明确单位、基线版本与缺失值语义，不能把未产出的 artifact 当 0。</p>
+        <p>线上定位应使用一次 run id 串起触发、API 请求、规则结果和发布动作，日志只记录项目 ID、分页游标、条数、耗时与脱敏错误码。GitLab 429 要尊重 Retry-After，5xx 使用有限指数退避，401/403 直接停止并提示权限，参数错误不重试。发布 Wiki 或企微前保存内容摘要，成功后记录远端对象 ID；这样既能审计，也能在重跑时判断是否已完成。当前脚本没有统一框架，这些是基于现有入口可落地的重构边界，不等于仓库已经具备。</p>
+      </section>
+      <section id="pitch">
+        <h2>面试讲法</h2>
+        <h3>30 秒版本</h3><blockquote><p>这是团队 Python 自动化仓，把 GitLab MR、里程碑和构建信息聚合成周报、版本报告或提醒。它的工程价值在数据源、规则、幂等和发布闭环；当前首要问题是硬编码凭据和缺测试。本人负责的具体脚本与收益指标都需本人确认。</p></blockquote>
+        <h3>2 分钟版本</h3><blockquote><p>典型链路是 CI 提供项目上下文，API 拉数据，规则过滤聚合，模板生成 HTML，再发布 Wiki/企微或创建 MR。真正难点不在写脚本，而在分页、超时、重复执行、权限与审计。当前仓多个入口直接耦合 client 和发布动作，且存在硬编码敏感信息；整改先轮换 secret，再拆 client/规则/renderer/publisher，补 fixture、fake server 与 dry-run。面试中只有能由本人 MR 和运行记录验证的脚本才说“我负责”，指标要给统计期、口径和数据源。</p></blockquote>
+      </section>
+      <section id="questions"><h2>追问与回答</h2>
+    <details open>
+      <summary>问题1：自动创建 MR 怎么防重复？</summary>
+      <p>按 source/target/open state 查询，以确定性 key 幂等；超时后先查结果再决定是否重试。</p>
+    </details>
+    <details>
+      <summary>问题2：怎么测试跨系统脚本？</summary>
+      <p>规则用 fixture 单测，HTTP 用 fake server/contract test，发布动作 mock，dry-run 输出差异。</p>
+    </details>
+    <details>
+      <summary>问题3：为什么先轮换再清历史？</summary>
+      <p>清历史不能让已泄露凭据失效；轮换先切断风险，之后再降低遗留暴露。</p>
+    </details>
+    <details>
+      <summary>问题4：报告生成如何防注入？</summary>
+      <p>所有外部文本按 HTML/Markdown 目标上下文转义，模板与数据分离，并用恶意 fixture 回归。</p>
+    </details>
+    <details>
+      <summary>问题5：怎样证明自动化收益？</summary>
+      <p>用 CI/Wiki/监控记录给出节省人时、漏合并率或消息到达率，并注明统计期、口径、基线和样本。</p>
+    </details></section>
+      <section id="evidence">
+        <h2>源码证据</h2>
+        
+        <ol><li><code>yyyyy-cdoe/km-android-tools/README.md</code></li><li><code>yyyyy-cdoe/km-android-tools/weekly.py</code></li><li><code>yyyyy-cdoe/km-android-tools/mr_report/km-mr-report.py</code></li><li><code>yyyyy-cdoe/km-android-tools/daily_release2develop_mr.py</code></li><li><code>yyyyy-cdoe/km-android-tools/codereview/gitlab_mr_developer_check.py</code></li><li><code>yyyyy-cdoe/km-android-tools/utils/git_helper.py</code></li></ol>
+        <p>证据口径：路径来自当前工作区源码与权威库存；个人贡献仍需本人确认，未由路径本身推断。</p>
+      </section>
+      <p><a href="../repositories.html">返回仓库索引</a> · <a href="../index.html">返回文档首页</a></p>
+      </article>
+    </main>
+  </div>
+</body>
+</html>

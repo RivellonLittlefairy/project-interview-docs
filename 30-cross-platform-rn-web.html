@@ -1,0 +1,1059 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="RN 与 Web：基于当前工作区源码证据整理的项目面试资料">
+  <title>跨端项目面试手册：RN Bundle 与本地 Agent Web 工具｜项目面试资料</title>
+  <link rel="stylesheet" href="assets/docs.css">
+  <script>
+    try {
+      const savedTheme = localStorage.getItem("interview-docs-theme");
+      const preferredDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      document.documentElement.dataset.theme = savedTheme || (preferredDark ? "dark" : "light");
+    } catch {}
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <header class="topbar">
+    <button class="icon-button menu-button" type="button" data-menu-toggle aria-label="打开文档导航" aria-expanded="false">☰</button>
+    <a class="brand" href="index.html"><span class="brand-mark">⌁</span><span>项目面试资料库</span></a>
+    <div class="search-shell">
+      <label class="sr-only" for="global-search">搜索所有文档</label>
+      <input id="global-search" type="search" data-search-input placeholder="搜索仓库、技术或面试题…" autocomplete="off">
+      <span class="search-shortcut">Ctrl K</span>
+      <div class="search-results" data-search-results hidden></div>
+    </div>
+    <button class="icon-button" type="button" data-theme-toggle aria-label="切换深浅主题">◐</button>
+  </header>
+  <div class="drawer-backdrop" data-drawer-backdrop hidden></div>
+  <div class="docs-layout">
+    <nav class="sidebar" data-sidebar aria-label="全站文档导航">
+      <div class="sidebar-heading">文档导航</div>
+      
+        <section class="nav-group">
+          <h2 class="nav-group-title">逐仓文档</h2>
+          <a class="nav-link" href="repositories.html">66 个仓库独立分析</a>
+        </section>
+        <section class="nav-group">
+          <h2 class="nav-group-title">开始使用</h2>
+          <a class="nav-link" href="index.html">总览与导航</a>
+<a class="nav-link" href="50-interview-project-summary.html">五条主讲项目线</a>
+<a class="nav-link" href="70-resume-and-star-stories.html">简历与 STAR</a>
+<a class="nav-link" href="60-interview-question-bank.html">70 道面试题</a>
+        </section>
+
+        <section class="nav-group">
+          <h2 class="nav-group-title">仓库分析</h2>
+          <a class="nav-link" href="00-repository-inventory.html">全量仓库盘点</a>
+<a class="nav-link" href="10-android-business-repositories.html">Android 业务仓库</a>
+<a class="nav-link" href="20-android-infrastructure-media.html">基础设施与媒体</a>
+<a class="nav-link active" href="30-cross-platform-rn-web.html" aria-current="page">RN 与 Web</a>
+<a class="nav-link" href="31-tools-samples-and-assets.html">工具、样例与资产</a>
+        </section>
+
+        <section class="nav-group">
+          <h2 class="nav-group-title">质量复核</h2>
+          <a class="nav-link" href="40-android-docs-evidence-review.html">Android 证据复核</a>
+<a class="nav-link" href="41-full-workspace-coverage-review.html">全工作区覆盖复核</a>
+        </section>
+
+        <section class="nav-group">
+          <h2 class="nav-group-title">辅助材料</h2>
+          <a class="nav-link" href="ANALYSIS-TEMPLATE.html">仓库分析模板</a>
+<a class="nav-link" href="2026-07-24-all-repositories-analysis-plan.html">原始执行计划</a>
+        </section>
+
+        <section class="nav-group">
+          <h2 class="nav-group-title">Android 专题</h2>
+          <a class="nav-link" href="android-storage-guide.html">Android 存储方案</a>
+        </section>
+      <p class="sidebar-note">离线资料 · 证据快照 2026-07-24</p>
+    </nav>
+    <main class="article-shell" id="main-content">
+      <div class="breadcrumbs"><a href="index.html">首页</a><span>/</span><span>仓库分析</span><span>/</span><span>RN 与 Web</span></div>
+      
+      <article class="markdown-body">
+        <h1 id="跨端项目面试手册-rn-bundle-与本地-agent-web-工具">跨端项目面试手册：RN Bundle 与本地 Agent Web 工具</h1>
+<blockquote class="callout"><p>检查范围：<code>pikachu</code>、<code>html-anything</code>，时间为 2026-07-24。<br>本文以当前 checkout 的源码、构建配置、测试和 CI 为准，README 只作为线索。分析过程只读业务源码；没有提交、推送、安装依赖或执行会改变仓库状态的构建。</p>
+</blockquote>
+<h2 id="0-先把表达边界说清楚">0. 先把表达边界说清楚</h2>
+<p>这两个项目适合证明的不是“会写几个 React 页面”，而是三类可迁移能力：</p>
+<ol>
+<li>能沿着 Native/RN 或 Browser/Node 边界追完整调用链；</li>
+<li>能处理异步任务、流式数据、取消、生命周期和状态一致性；</li>
+<li>能识别“功能可用”和“安全地暴露能力”不是一回事。</li>
+</ol>
+<p>但必须区分三层口径：</p>
+<ul>
+<li><strong>源码事实</strong>：仓库中确实存在的架构、调用链、风险和测试。</li>
+<li><strong>可合理主张的工作</strong>：只有确实由本人做过的业务接入、问题排查、性能治理或方案取舍，才能使用“我负责”。</li>
+<li><strong>不能从源码推出的事实</strong>：个人职责、业务指标、线上故障、团队规模和最终收益都需要本人补充，不能由本文代填。</li>
+</ul>
+<p>面试中更稳妥的条件式开场是：</p>
+<blockquote class="callout"><p>【需本人确认】仅当本人确实参与过相关接入时，可表述为：“我主要从 Android 业务侧参与跨端页面的接入和协作。下面我会先讲项目本身的链路，再明确哪些调用点是我实际负责的；底层 PRN 框架或整个 Web 工具不是我个人从零开发的。”</p>
+</blockquote>
+<hr>
+<h2 id="1-两个项目放在一起看">1. 两个项目放在一起看</h2>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th><code>pikachu</code></th>
+<th><code>html-anything</code></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>项目形态</td>
+<td>嵌入原生 App 的 React Native Bundle 工作区</td>
+<td>本地优先的 Next.js 全栈 HTML 生成工具</td>
+</tr>
+<tr>
+<td>核心边界</td>
+<td>Native 路由/Bridge ↔ RN 页面 ↔ HTTP/Jotai</td>
+<td>Browser ↔ Next API/SSE ↔ 本地 agent 子进程</td>
+</tr>
+<tr>
+<td>核心异步模型</td>
+<td>请求任务 → Deep Link → 轮询结果 → Bridge/Atom 回传</td>
+<td><code>spawn</code> → stdout 增量 → SSE → Zustand → iframe</td>
+</tr>
+<tr>
+<td>状态特点</td>
+<td>页面局部 state + app 生命周期 Jotai atom</td>
+<td>task 维度 Zustand 状态 + task 维度 <code>AbortController</code></td>
+</tr>
+<tr>
+<td>最值得讲</td>
+<td>动态页面注册、AI 生图闭环、Native 合同边界</td>
+<td>多 CLI adapter、流式链路、取消传播、Host 安全门</td>
+</tr>
+<tr>
+<td>最大风险</td>
+<td>当前 checkout 不完整；分页并发和全局 atom 清理有缺口</td>
+<td>iframe 隔离声明过强；高权限本地 API 不能直接暴露公网</td>
+</tr>
+</tbody></table>
+<p>两个项目的共同心智模型都是“<strong>薄 UI + 明确适配层 + 外部运行时</strong>”：</p>
+<div class="code-block">
+      <div class="code-toolbar"><span>text</span><button type="button" data-copy-code>复制</button></div>
+      <pre><code class="language-text">用户动作
+  → 页面状态与参数校验
+  → 跨边界适配层（Bridge / API / CLI adapter）
+  → 外部运行时（Native / 服务端任务 / 本地 agent）
+  → 异步结果（轮询 / SSE）
+  → 状态容器
+  → UI 渲染与下游回传</code></pre>
+    </div>
+<hr>
+<h2 id="第一部分-pikachu">第一部分：<code>pikachu</code></h2>
+<h2 id="2-项目定位">2. 项目定位</h2>
+<p><code>pikachu</code> 是 React Native 0.72.10 的多页面 Bundle 工作区，不是一个具备 <code>android/</code>、<code>ios/</code>、<code>app.json</code> 和 <code>metro.config.js</code> 的独立 RN App。它通过 PRN 工具链生成页面 Bundle，再由原生宿主通过页面名、Deep Link、初始化参数和 Bridge 承载。</p>
+<p>源码当前有：</p>
+<ul>
+<li>76 个 <code>pages/*</code> 页面目录；</li>
+<li>18 个 <code>packages/*</code> 横向共享包；</li>
+<li>排除依赖目录后约 1770 个 TS/TSX 文件；</li>
+<li><code>entry</code>、<code>entry-lite</code>、<code>entry-zhi</code> 三套入口；</li>
+<li>React Native、Jotai、Reanimated，以及内部 PRN bridge、UI、utils、bootstrap 等依赖。</li>
+</ul>
+<p>根 <code>package.json</code> 声明的工作区是 <code>prn/*</code>、<code>pages/*</code>、<code>packages/*</code> 和 <code>docs</code>。因此合理架构应是：</p>
+<div class="code-block">
+      <div class="code-toolbar"><span>text</span><button type="button" data-copy-code>复制</button></div>
+      <pre><code class="language-text">Native App
+  ├─ Deep Link / pageName / initProps
+  ├─ Native loading、导航栈、编辑器等能力
+  │
+  ▼
+PRN runtime（当前副本缺失 prn/*）
+  ├─ @kfe/prn-entry
+  ├─ @kfe/prn-bootstrap
+  ├─ @kfe/prn-bridges
+  ├─ @kfe/prn-utils
+  └─ @kfe/prn-ui
+  │
+  ▼
+pages/entry*
+  ├─ pages.mjs：页面名 → workspace package
+  ├─ getRNPageLoaders.ts：动态构造 loader
+  └─ index.tsx：批量注册、检测、启动耗时
+  │
+  ▼
+pages/*
+  ├─ AI 生图、内容、搜索、直播等垂直页面
+  └─ 通过 Bridge / HTTP / Jotai 与宿主及服务交互
+  │
+  ▼
+packages/*
+  └─ shared、preview、biz-components 等横向复用能力</code></pre>
+    </div>
+<p>这套结构的价值是：业务页面可以独立拆包和按名称加载，Native 只依赖稳定的页面合同；代价是本地开发、Bundle、Native 联调都依赖完整的 PRN 工作区和宿主环境。</p>
+<h2 id="3-动态页面入口链路">3. 动态页面入口链路</h2>
+<p>调用顺序不是普通 RN App 的 <code>AppRegistry.registerComponent()</code>，而是 PRN 自己的注册协议：</p>
+<ol>
+<li><code>pages/entry/src/pages.mjs</code> 维护 <code>pageName → workspace package</code> 的映射，开发态还会额外注册示例页面。</li>
+<li><code>pages/entry/src/getRNPageLoaders.ts</code> 遍历映射，通过 <code>new Function(&#39;&#39;, &quot;return require(...)&quot;)</code> 为每个页面构造延迟 loader。</li>
+<li><code>pages/entry/src/index.tsx</code> 最先导入 <code>@kfe/prn-entry</code>，保证拆包前初始化核心组件。</li>
+<li>随后调用 <code>registerAll(getRNPageLoaders())</code> 批量注册，再调用 <code>registryDetect()</code> 和 <code>logBootTime()</code>。</li>
+<li>原生侧以 <code>moduleName=pikachu&amp;pageName=...&amp;initProps=...</code> 打开具体页面。</li>
+</ol>
+<p>这里的关键取舍是“<strong>页面映射集中、页面实现分散、加载发生在运行时</strong>”。它降低了 Native 对每个 RN 页面实现的感知，但 <code>new Function + require</code> 会降低静态分析透明度，也让页面名、包名和构建产物之间的合同更依赖工具链校验。</p>
+<p>面试时可以这样解释：</p>
+<blockquote class="callout"><p>它不是把所有 RN 页面做成一个大入口，而是先用页面表生成 loader，再统一注册给宿主。Native 只需要知道页面名，RN 内部仍能按 workspace 做垂直拆分。排查“页面打不开”时，可按页面表、loader、注册、Bundle 是否含该 package、Native 传参五层往下查，而不是一上来只看页面组件。</p>
+</blockquote>
+<h2 id="4-ai-生图完整业务链路">4. AI 生图完整业务链路</h2>
+<h3 id="4-1-创建任务">4.1 创建任务</h3>
+<p><code>pages/GenerateAIImage/src/Entry.tsx</code> 维护描述、角色、场景、风格、特征词和 plugin 状态：</p>
+<ol>
+<li>页面挂载后请求生成配置；</li>
+<li>成功后填充风格和特征词，并通知 Native 隐藏 loading；</li>
+<li>用户点击生成时，把角色、场景、描述、特征词拼成请求参数；</li>
+<li><code>POST /km-indep-home-comm/aigc/images</code> 创建异步任务；</li>
+<li>若接口返回业务拦截消息，则 Toast 后终止；</li>
+<li>否则取得 <code>taskId</code>，通过 Deep Link 打开 <code>GenerateAIImageResult</code>，并把原参数和 <code>taskId</code> 编码进 <code>initProps</code>。</li>
+</ol>
+<p>这一段能体现两点：</p>
+<ul>
+<li>UI 并不等待图片生成完成，只等待“任务创建成功”，长任务被拆到结果页；</li>
+<li>Deep Link 既是路由，也是跨 Native/RN 的序列化合同，字段兼容性和 URL 长度都需要治理。</li>
+</ul>
+<h3 id="4-2-轮询结果">4.2 轮询结果</h3>
+<p><code>pages/GenerateAIImageResult/src/Entry.tsx</code> 的状态机是：</p>
+<div class="code-block">
+      <div class="code-toolbar"><span>text</span><button type="button" data-copy-code>复制</button></div>
+      <pre><code class="language-text">taskId
+  → 每 2 秒查询任务
+  ├─ FINISHED：保存图片，默认选中第一张，停止轮询
+  ├─ FAILED：保存失败文案，停止轮询
+  ├─ ILLEGAL：标记违规并停止轮询
+  ├─ 超过 60 秒：标记超时
+  └─ 请求异常：进入失败状态</code></pre>
+    </div>
+<p>并发和生命周期处理：</p>
+<ul>
+<li><code>isPollingRef</code> 是同步门禁，防止同一页面重复启动轮询；</li>
+<li><code>pollingStartTimeRef</code> 记录开始时间；</li>
+<li><code>while</code> 每轮请求后用 <code>setTimeout</code> 等待 2 秒；</li>
+<li>effect cleanup 调用 <code>stopPolling()</code>，页面卸载后下一轮不会继续发请求；</li>
+<li>重新生成取得新 <code>taskId</code> 后更新 <code>id</code>，旧 effect cleanup 停止旧循环，新 effect 启动新任务。</li>
+</ul>
+<p>它不是严格的网络取消：已经发出的 <code>GetImageResult()</code> 请求没有 <code>AbortSignal</code>，cleanup 只是阻止后续轮询和后续循环。因此更准确的说法是“<strong>停止调度</strong>”，不是“取消在途 HTTP”。</p>
+<h3 id="4-3-把结果交回下游">4.3 把结果交回下游</h3>
+<p>结果页按 <code>source</code> 分三条回传路径：</p>
+<ul>
+<li><code>comment</code>：按 <code>aiImageAtomKey</code> 写入 app 生命周期 Jotai atom，再通过 <code>popNavigation</code> 销毁相关页面栈；</li>
+<li><code>publisher</code>：通过 <code>editor/setAiAlbumImageResult</code> Bridge 把资源 ID 交给 Native 编辑器；</li>
+<li>默认编辑器：通过 Deep Link 携带资源 ID 打开下游编辑器。</li>
+</ul>
+<p>这说明“选择图片”不是单纯页面内部状态，而是一个跨页面、跨 RN/Native 的业务合同。需要明确：</p>
+<ul>
+<li>评论场景需要共享完整图片元数据；</li>
+<li>Native 发布器只需要图片资源 ID；</li>
+<li>默认编辑器继续走路由协议。</li>
+</ul>
+<h2 id="5-ai-图库-分页与-jotai-状态">5. AI 图库、分页与 Jotai 状态</h2>
+<p><code>AIImageSelection</code> 首次加载调用 <code>GetHistoryData({ limit: 20, type: &#39;image&#39; })</code>，接口类型虽然声明了 <code>offset?: number</code>，实际首次请求没有传 <code>offset</code>。后续翻页不再自行累加 offset，而是直接请求服务端 <code>paging.next</code>。</p>
+<p>这是 cursor 分页思路：客户端不解释游标，只保存下一页 URL。优点是服务端可调整分页策略，缺点是这个 URL 也成为服务端与客户端的信任边界。</p>
+<p>当前实现的优点：</p>
+<ul>
+<li>首次请求有 <code>try/catch</code>，能区分 loading、失败和空数据；</li>
+<li>用 <code>Set&lt;string&gt;</code> 保存选择顺序和去重；</li>
+<li>评论、发布器和默认编辑器的确认逻辑分支清楚；</li>
+<li>最多选择数量由 props 控制，并有默认值。</li>
+</ul>
+<p>当前实现的风险：</p>
+<ul>
+<li><code>handleEndReached()</code> 只检查 <code>isEnd</code> 和 <code>fetchUrl</code>，没有独立的分页 loading 门禁；</li>
+<li>连续触底可能并发请求同一个 <code>paging.next</code>，产生重复追加或乱序覆盖；</li>
+<li>翻页请求没有 <code>try/catch</code>，失败不会转换为可见状态；</li>
+<li>app 生命周期 atom 的实现注释明确要求使用后 <code>removeKey()</code>，但列表组件的卸载清理被整段注释，可能留下场景数据；</li>
+<li>页面不可见时通过全局事件恢复评论编辑器，说明 AppState、页面可见性和 Native 导航栈并非同一个生命周期，需要联调验证。</li>
+</ul>
+<p>如果重做，优先级应是：</p>
+<ol>
+<li>给分页增加 <code>loadingMoreRef</code> 或请求序号，阻止重复请求和旧响应覆盖；</li>
+<li>给翻页增加错误状态与重试；</li>
+<li>恢复并验证 atom 的场景级清理；</li>
+<li>为轮询和 metadata 请求引入 <code>AbortController</code>；</li>
+<li>将 Deep Link 参数做统一 schema 校验和版本化。</li>
+</ol>
+<h2 id="6-错误处理-稳定性与安全">6. 错误处理、稳定性与安全</h2>
+<h3 id="已有处理">已有处理</h3>
+<ul>
+<li>首屏配置请求用 <code>try/catch/finally</code>，无论成功失败都会通知 Native 结束 loading；</li>
+<li>创建任务同时处理网络异常和业务拦截消息；</li>
+<li>轮询区分成功、普通失败、内容违规、超时和请求异常；</li>
+<li>重新生成失败会 Toast；</li>
+<li>结果页卸载会停止后续轮询。</li>
+</ul>
+<h3 id="仍需改进">仍需改进</h3>
+<ul>
+<li>结果页的 <code>GetAiPrompt(id)</code> effect 没有 <code>catch</code>，也没有取消或组件存活检查；</li>
+<li>轮询超时和失败只有 UI 状态，缺少任务耗时、轮询次数、错误类型等结构化观测；</li>
+<li>Deep Link 的 <code>initProps</code>、Native Bridge 名称和数据 shape 都是跨团队合同，但当前调用点看不到 schema 版本或运行时校验；</li>
+<li>图片 URL、下一页 URL和服务端返回文案进入客户端，需要明确可信域、协议和长度限制。</li>
+</ul>
+<h3 id="敏感信息">敏感信息</h3>
+<p>当前根目录存在 <code>.sentryclirc</code>，有疑似明文 token 风险。本文不复制任何值。正确动作是：</p>
+<ol>
+<li>立即轮换对应凭据；</li>
+<li>从仓库历史中清理；</li>
+<li>改由 CI Secret 或环境变量注入；</li>
+<li>对构建日志做脱敏。</li>
+</ol>
+<h2 id="7-工程质量与当前-checkout-边界">7. 工程质量与当前 checkout 边界</h2>
+<h3 id="当前-checkout-的事实">当前 checkout 的事实</h3>
+<ul>
+<li>不是 Git 工作区；</li>
+<li>声明的 <code>prn/*</code> 不存在；</li>
+<li><code>.yarn/</code> 不存在；</li>
+<li><code>prnn/</code> 存在但为空；</li>
+<li>没有独立 RN App 所需的 <code>android/</code>、<code>ios/</code>、<code>app.json</code>、<code>metro.config.js</code>；</li>
+<li><code>package.json</code> 固定 Yarn 3.6.4，当前环境没有可直接使用的 Yarn 命令；</li>
+<li>当前 Node 是 20.12.0，而 <code>joker.yml</code> 使用 Node 16.17.1；</li>
+<li>只有 2 个实际测试文件，另有 1 个快照文件；</li>
+<li>CI 的 <code>unittest</code> 是 <code>echo skipping</code>。</li>
+</ul>
+<p>因此不能把“当前副本无法 Bundle”直接归因于业务代码。更准确的结论是：</p>
+<blockquote class="callout"><p>这是一个不完整 checkout，缺少仓库声明的 PRN workspace 和 Yarn 本地发行文件。应先恢复完整源码和匹配工具链，再判断真实构建错误。</p>
+</blockquote>
+<p>本轮没有运行 Bundle、Jest 或 TypeScript 全量检查。旧审计中的历史构建错误若被引用，必须明确标记为旧快照，不能冒充本轮实测。</p>
+<h3 id="测试建议">测试建议</h3>
+<ul>
+<li>对 <code>getRNPageLoaders()</code> 做页面表与 workspace package 的一致性测试；</li>
+<li>对 AI 任务状态机做 fake timer 测试，覆盖成功、失败、违规、超时、卸载；</li>
+<li>对 <code>source</code> 三分支做 Bridge/Atom/Deep Link 合同测试；</li>
+<li>对分页做重复触底、乱序响应和失败重试测试；</li>
+<li>对 app 生命周期 atom 做卸载清理回归测试；</li>
+<li>CI 不应继续跳过单测，至少把上述纯逻辑链路纳入门禁。</li>
+</ul>
+<h2 id="8-pikachu-的亮点与风险排序">8. <code>pikachu</code> 的亮点与风险排序</h2>
+<h3 id="最值得讲的亮点">最值得讲的亮点</h3>
+<ol>
+<li><strong>Native/RN 边界清楚</strong>：页面名、Deep Link、Bridge 和 app 级 atom 分别承担路由、能力调用和跨页面状态。</li>
+<li><strong>长任务拆页</strong>：创建任务与等待任务分离，结果页能独立处理轮询、超时、重试和回传。</li>
+<li><strong>多消费方回传</strong>：评论、Native 发布器、默认编辑器使用不同合同，业务分支完整。</li>
+<li><strong>页面动态注册</strong>：多页面 Bundle 通过页面表统一注册，适合大型宿主的模块化接入。</li>
+</ol>
+<h3 id="风险优先级">风险优先级</h3>
+<ul>
+<li><strong>P0：凭据风险</strong>——<code>.sentryclirc</code> 疑似包含明文敏感值，应轮换并迁移 Secret。</li>
+<li><strong>P1：checkout 不完整</strong>——缺 <code>prn/</code>、<code>.yarn/</code>，不能形成可信构建结论。</li>
+<li><strong>P1：全局状态残留</strong>——atom 是 app 生命周期，但页面清理被注释。</li>
+<li><strong>P1：分页并发</strong>——触底没有 loading 门禁与异常处理。</li>
+<li><strong>P2：取消不完整</strong>——轮询只停止后续调度，metadata 请求没有取消。</li>
+<li><strong>P2：测试门禁弱</strong>——CI 跳过单测，跨端合同缺回归保护。</li>
+</ul>
+<h2 id="9-pikachu-可直接复述的话术">9. <code>pikachu</code> 可直接复述的话术</h2>
+<h3 id="30-秒版本">30 秒版本</h3>
+<blockquote class="callout"><p>【需本人确认】仅当本人确实阅读过该链路且能承受源码追问时，可表述为：“<code>pikachu</code> 是嵌入原生 App 的多页面 RN Bundle，不是独立 RN App。它通过页面表和 PRN bootstrap 动态注册页面，业务页面再通过 Deep Link、Bridge 和 Jotai 与 Native 协作。我重点看过 AI 生图链路：创建任务拿到 taskId，结果页每 2 秒轮询、60 秒超时，成功后按评论、发布器和默认编辑器三种来源回传。这个项目能体现我对 Native/RN 合同、异步任务和生命周期问题的理解；具体哪些调用点由我负责，我会按真实经历说明。”</p>
+</blockquote>
+<h3 id="2-分钟版本">2 分钟版本</h3>
+<blockquote class="callout"><p>这个项目的定位是大型原生 App 中的 RN 页面工作区。它把页面按 <code>pages/*</code> 做垂直拆分，把共享能力放在 <code>packages/*</code>，入口通过 <code>pages/entry/src/pages.mjs</code> 维护页面名到 package 的映射，再动态生成 loader 统一注册给 PRN runtime。Native 不需要感知页面内部实现，只通过 pageName、initProps、Bridge 和导航栈跟 RN 交互。</p>
+<p>【需本人确认】仅当本人确实掌握该源码链路时，可表述为：“我会用 AI 生图作为主链路。生成页先加载风格和特征词配置，用户组合描述、角色、场景和风格后，客户端只负责创建异步任务。拿到 taskId 后跳转结果页，结果页用 ref 做重复轮询门禁，每 2 秒查一次，最多等 60 秒，并区分成功、失败、内容违规和超时。成功后，评论场景写 Jotai 并回退页面栈，Native 发布器走 Bridge，只传资源 ID，默认编辑器继续走 Deep Link。”</p>
+<p>这个方案的优点是长任务和输入页解耦，多种消费方合同也比较清楚。风险是轮询只停止后续调度，没有真正取消在途请求；图库触底分页缺少并发门禁；app 生命周期 atom 要求清理，但调用页的 cleanup 被注释。建议的改进顺序是先补分页和 atom 生命周期，再把轮询、metadata 请求接入 AbortSignal，最后给 Deep Link 和 Bridge 参数加 schema 与合同测试。</p>
+<p>另外，当前副本缺少 <code>prn/*</code> 和 <code>.yarn/</code>，因此不能把本地不能 Bundle 直接说成业务代码问题；应先恢复完整 checkout 和匹配工具链。</p>
+</blockquote>
+<h3 id="star-版本">STAR 版本</h3>
+<p>以下内容只能在本人确实参与后使用：</p>
+<ul>
+<li><strong>S</strong>：AI 生图是 Native 宿主中的 RN 多页面流程，任务耗时长，结果还要回传评论、发布器和编辑器三种下游。</li>
+<li><strong>T</strong>：【需本人确认】仅当本人真实负责对应工作时，填写“我负责【真实页面/调用点】”，目标填写【真实目标，例如减少重复请求、保证回传一致性】。</li>
+<li><strong>A</strong>：【需本人确认】仅填写本人实际执行且能举证的动作，例如“我梳理了‘创建 taskId → Deep Link → 轮询 → source 分流’链路；在【真实工作】中处理了【轮询门禁/生命周期清理/Bridge 合同/分页状态】；并通过【日志、测试、联调方法】验证”。</li>
+<li><strong>R</strong>：结果指标必须同时注明【指标定义与计算口径】【统计时间范围】【数据来源或看板/日志】【基线与结果值】。没有可核验数据时，只陈述实际覆盖的边界，不填写提升百分比或推断性收益。</li>
+<li><strong>证据</strong>：<code>pages/GenerateAIImage/src/Entry.tsx</code>、<code>pages/GenerateAIImageResult/src/Entry.tsx</code>、<code>pages/AIImageSelection/src/components/AIImageList/index.tsx</code>。</li>
+</ul>
+<h2 id="10-pikachu-常见追问">10. <code>pikachu</code> 常见追问</h2>
+<h3 id="问-为什么不用-webview-或者为什么不用全-native">问：为什么不用 WebView，或者为什么不用全 Native？</h3>
+<p>答：</p>
+<blockquote class="callout"><p>这类内容和活动页面变化快、数量多，RN 能共享 TypeScript 组件和业务逻辑，同时保留原生导航、编辑器和宿主能力。代价是跨端合同和运行时依赖更复杂，所以要把 pageName、initProps、Bridge 事件和生命周期当成正式 API 管理，而不能只靠口头约定。</p>
+</blockquote>
+<h3 id="问-轮询为什么用-ref-不只用-state">问：轮询为什么用 ref，不只用 state？</h3>
+<p>答：</p>
+<blockquote class="callout"><p>state 更新是异步的，闭包里的值也可能滞后。<code>isPollingRef</code> 能在同一个事件循环中立刻阻止重复启动，state 则用于 UI 展示。不过当前实现还没有取消在途请求；改进时可把 taskId 和 AbortSignal 一起作为任务身份管理。</p>
+</blockquote>
+<h3 id="问-分页为什么直接请求-paging-next">问：分页为什么直接请求 <code>paging.next</code>？</h3>
+<p>答：</p>
+<blockquote class="callout"><p>这是服务端 cursor 分页，客户端不需要理解 offset 语义，能减少翻页规则耦合。但客户端仍要做可信域校验、并发门禁、响应顺序保护和错误重试，当前实现后面三项还不完整。</p>
+</blockquote>
+<h3 id="问-jotai-atom-和-bridge-怎么选">问：Jotai atom 和 Bridge 怎么选？</h3>
+<p>答：</p>
+<blockquote class="callout"><p>RN 内部且跨页面需要完整对象时，atom 成本低；需要交给 Native 编辑器时，Bridge 是明确的跨运行时合同；需要打开另一个独立功能时，用 Deep Link。选择依据是状态归属和消费方，不是个人偏好。</p>
+</blockquote>
+<h3 id="问-页面卸载后还会不会请求">问：页面卸载后还会不会请求？</h3>
+<p>答：</p>
+<blockquote class="callout"><p>当前轮询 cleanup 会把 ref 置为 false，阻止下一轮，但已经发出的 HTTP 不会被真正中止。<code>GetAiPrompt</code> 也没有取消。因此严格回答是“后续调度会停，在途请求未完全取消”。</p>
+</blockquote>
+<h3 id="问-页面打不开怎么排查">问：页面打不开怎么排查？</h3>
+<p>答：</p>
+<blockquote class="callout"><p>可依次检查页面是否在 <code>pages/entry/src/pages.mjs</code>、package 是否存在、loader 是否生成、入口是否执行 <code>registerAll</code>、Bundle 是否包含页面、Native 的 moduleName/pageName 是否匹配、initProps 是否能解析，最后再看页面首屏和 Bridge。这样能先定位是构建注册问题、路由合同问题，还是业务组件问题。</p>
+</blockquote>
+<h2 id="11-pikachu-源码证据">11. <code>pikachu</code> 源码证据</h2>
+<table>
+<thead>
+<tr>
+<th>结论</th>
+<th>相对路径</th>
+<th>类 / 函数 / 配置</th>
+<th>可信度</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>多页面动态入口</td>
+<td><code>pages/entry/src/pages.mjs</code></td>
+<td><code>pages</code> 映射</td>
+<td>已核对</td>
+</tr>
+<tr>
+<td>loader 由页面表生成</td>
+<td><code>pages/entry/src/getRNPageLoaders.ts</code></td>
+<td><code>getRNPageLoaders()</code>、<code>new Function()</code></td>
+<td>已核对</td>
+</tr>
+<tr>
+<td>PRN 先初始化再批量注册</td>
+<td><code>pages/entry/src/index.tsx</code></td>
+<td><code>registerAll()</code>、<code>registryDetect()</code>、<code>logBootTime()</code></td>
+<td>已核对</td>
+</tr>
+<tr>
+<td>创建 AI 任务后跳转结果页</td>
+<td><code>pages/GenerateAIImage/src/Entry.tsx</code></td>
+<td><code>handleGenerate()</code></td>
+<td>已核对</td>
+</tr>
+<tr>
+<td>结果页 2 秒轮询、60 秒超时</td>
+<td><code>pages/GenerateAIImageResult/src/Entry.tsx</code></td>
+<td><code>startPolling()</code>、<code>stopPolling()</code></td>
+<td>已核对</td>
+</tr>
+<tr>
+<td>三种来源使用不同回传合同</td>
+<td><code>pages/GenerateAIImageResult/src/Entry.tsx</code></td>
+<td><code>handlePublish()</code></td>
+<td>已核对</td>
+</tr>
+<tr>
+<td>首次历史请求不传 offset</td>
+<td><code>pages/AIImageSelection/src/components/AIImageList/index.tsx</code></td>
+<td><code>fetchHistoryData()</code></td>
+<td>已核对</td>
+</tr>
+<tr>
+<td>翻页使用服务端 next URL</td>
+<td><code>pages/AIImageSelection/src/components/AIImageList/index.tsx</code></td>
+<td><code>handleEndReached()</code></td>
+<td>已核对</td>
+</tr>
+<tr>
+<td>atom 为 app 生命周期且要求清理</td>
+<td><code>packages/shared/src/jotai/AIImageSelectionAtom/aiImageSelectionAtom.ts</code></td>
+<td><code>aiImageSelectionAtom</code></td>
+<td>已核对</td>
+</tr>
+<tr>
+<td>页面卸载清理被注释</td>
+<td><code>pages/AIImageSelection/src/components/AIImageList/index.tsx</code></td>
+<td>注释的 cleanup effect</td>
+<td>已核对</td>
+</tr>
+<tr>
+<td>Bundle 依赖 PRN workspace</td>
+<td><code>package.json</code></td>
+<td><code>workspaces</code>、<code>bundle:*</code></td>
+<td>已核对</td>
+</tr>
+<tr>
+<td>CI 跳过单测</td>
+<td><code>joker.yml</code></td>
+<td><code>test.unittest</code></td>
+<td>已核对</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="第二部分-html-anything">第二部分：<code>html-anything</code></h2>
+<h2 id="12-项目定位">12. 项目定位</h2>
+<p><code>html-anything</code> 是一个本地优先的 agentic HTML 编辑器：</p>
+<ul>
+<li>浏览器输入 Markdown、表格或原始内容；</li>
+<li>Next.js API 加载技能模板并调用本机已登录的 coding-agent CLI；</li>
+<li>CLI stdout 被适配成统一事件；</li>
+<li>服务端通过 SSE 把 HTML 增量发回浏览器；</li>
+<li>Zustand 按 task 存储输出；</li>
+<li>iframe 用 <code>srcDoc</code> 实时预览，再导出 HTML、图片或平台格式。</li>
+</ul>
+<p>这不是普通的“前端调用云端大模型 API”。核心能力依赖 Node <code>child_process.spawn</code> 和本机 CLI 会话，所以安全模型是“单机可信用户 + loopback API”，不能把它当成无认证公网服务。</p>
+<p>工作区实际包含三个 package：</p>
+<div class="code-block">
+      <div class="code-toolbar"><span>text</span><button type="button" data-copy-code>复制</button></div>
+      <pre><code class="language-text">html-anything/
+  ├─ next/   Next.js UI、API、agent adapter、技能、导出
+  ├─ e2e/    Playwright 配置、UI 与 Host 安全测试
+  └─ cli/    CLI package</code></pre>
+    </div>
+<p>README 的 workspace 段落只列 <code>next</code>、<code>e2e</code>，但 <code>pnpm-workspace.yaml</code> 还包含 <code>cli</code>。CI 和 <code>scripts/guard.ts</code> 也主要覆盖 Next 与 e2e，没有为 <code>cli</code> 配置同等的 typecheck/test/build 门禁。</p>
+<h2 id="13-agent-检测与-adapter">13. Agent 检测与 adapter</h2>
+<h3 id="13-1-检测">13.1 检测</h3>
+<p><code>GET /api/agents</code> 调用 <code>detectAgents()</code>：</p>
+<ol>
+<li>读取进程 <code>PATH</code>；</li>
+<li>额外扫描用户工具链目录，如 <code>.local/bin</code>、<code>.bun/bin</code>、Volta、pnpm、npm global，以及 Windows Scoop/AppData 目录；</li>
+<li>对每个 agent 返回是否可用、实际 binary、模型选项和平台信息。</li>
+</ol>
+<p>源码的 <code>AGENTS</code> 当前定义 20 个条目，不是 README 某处写的 8 个或某处写的 9 个。并且“被检测到”不等于“可调用”：</p>
+<ul>
+<li>6 个 ACP adapter 是 detection-only；</li>
+<li><code>pi</code> 的 <code>pi-rpc</code> 也未接通；</li>
+<li><code>buildArgv()</code> 遇到这些协议会抛 <code>UnsupportedAgentProtocolError</code>；</li>
+<li>其余 13 个有 <code>stdin</code>、<code>argv</code> 或 <code>argv-message</code> 调用路径。</li>
+</ul>
+<p>因此面试中应说：</p>
+<blockquote class="callout"><p>源码登记了 20 种 CLI，但当前构建并非 20 种都能完成转换；ACP 和 pi-rpc 共 7 种只做检测和清晰报错。可用性必须按协议 adapter 判断，不能只看 picker 里有没有名字。</p>
+</blockquote>
+<h3 id="13-2-参数与输出协议">13.2 参数与输出协议</h3>
+<p><code>next/src/lib/agents/argv.ts</code> 做两件事：</p>
+<ul>
+<li>为不同 CLI 生成参数、模型参数和输入协议；</li>
+<li>把多种 JSON-line 或纯文本输出解析为统一的 <code>delta</code>、<code>html</code>、<code>meta</code>、<code>raw</code>。</li>
+</ul>
+<p>例如：</p>
+<ul>
+<li>Claude、Gemini、Copilot、OpenCode 等会启用跳过权限或自动批准参数；</li>
+<li>Codex 使用 workspace-write sandbox，并允许网络；</li>
+<li>DeepSeek 类把 prompt 放在 argv；</li>
+<li>OpenClaw 用 <code>--message</code>，并在进程退出后解析整段 JSON；</li>
+<li>其余多数通过 stdin 输入 prompt，再逐行解析 stdout。</li>
+</ul>
+<p>adapter 模式的好处是上层 SSE/UI 不关心每个 CLI 的协议；代价是 CLI 版本升级后，参数和输出 JSON shape 可能变化，需要独立兼容测试。</p>
+<h2 id="14-转换与流式预览链路">14. 转换与流式预览链路</h2>
+<p>完整链路如下：</p>
+<div class="code-block">
+      <div class="code-toolbar"><span>text</span><button type="button" data-copy-code>复制</button></div>
+      <pre><code class="language-text">用户点击转换
+  → useConvert.run(taskId)
+  → 为该 task 创建 AbortController
+  → POST /api/convert
+  → loadSkill(templateId)
+  → assemblePrompt() 或 buildEditPrompt()
+  → invokeAgent()
+  → child_process.spawn(local CLI)
+  → stdout parser: delta / html / meta / error / done
+  → Next ReadableStream 包装 SSE
+  → useConvert 解析 SSE block
+  → Zustand appendHtmlFor(taskId)
+  → PreviewPane 320ms 防抖
+  → iframe srcDoc 渲染</code></pre>
+    </div>
+<p>几个关键设计：</p>
+<ol>
+<li><strong>task 级状态</strong>：Zustand 的 <code>setHtmlFor</code>、<code>appendHtmlFor</code>、<code>setStatusFor</code> 都接受 <code>taskId</code>，多个任务不会共用一份输出。</li>
+<li><strong>增量渲染</strong>：每个 delta 追加到 task HTML，并记录字节数、chunk 数和首字节时间。</li>
+<li><strong>预览节流</strong>：流式期间 iframe 大约每 320ms 更新一次，避免每个 token 都重新加载 iframe；任务结束时立即提交最后值。</li>
+<li><strong>diff-edit</strong>：已有 HTML 且内容变化时，把旧内容、旧 HTML 和新内容一起发给服务端，要求 agent 做最小差异编辑，降低 token 和样式漂移。</li>
+<li><strong>容错解析</strong>：如果 agent 不按要求流式返回，而把 HTML 放进 Write 工具输入，parser 可发 <code>html</code> 事件覆盖之前的文本。</li>
+</ol>
+<h2 id="15-并发-取消和状态语义">15. 并发、取消和状态语义</h2>
+<h3 id="15-1-取消链路是完整亮点">15.1 取消链路是完整亮点</h3>
+<div class="code-block">
+      <div class="code-toolbar"><span>text</span><button type="button" data-copy-code>复制</button></div>
+      <pre><code class="language-text">用户取消 task
+  → client AbortController.abort()
+  → fetch signal 中止
+  → request.signal abort
+  → server AbortController.abort()
+  → invokeAgent signal
+  → child.kill(&quot;SIGTERM&quot;)</code></pre>
+    </div>
+<p><code>useConvert</code> 用 <code>Map&lt;taskId, AbortController&gt;</code> 管理控制器：</p>
+<ul>
+<li>不同 task 可以并发；</li>
+<li>同一 task 再运行时先取消旧请求；</li>
+<li>取消后状态回到 <code>idle</code>；</li>
+<li>finally 只清理仍属于当前 run 的 controller，避免旧请求误删新请求的控制器。</li>
+</ul>
+<p>服务端外层 SSE 的 <code>cancel()</code> 会 abort child。需要注意，<code>next/src/lib/agents/invoke.ts</code> 内层 <code>ReadableStream.cancel()</code> 是空实现；当前链路依赖外层 request/SSE 的 AbortSignal 传播，而不是依赖直接 cancel 内层 reader。</p>
+<h3 id="15-2-当前有一个状态语义风险">15.2 当前有一个状态语义风险</h3>
+<p>agent 退出时，<code>next/src/lib/agents/invoke.ts</code> 无论 exit code 是否为 0 都发 <code>done</code> 事件；client 的 <code>handleEvent(&quot;error&quot;)</code> 只写错误日志，<code>handleEvent(&quot;done&quot;)</code> 也只写退出日志。只要 SSE 正常读到 EOF，<code>useConvert.run()</code> 最后就会：</p>
+<ul>
+<li>设置 <code>status = done</code>；</li>
+<li>提交 diff-edit baseline。</li>
+</ul>
+<p>因此可能出现“日志里有 agent error 或非零 exit，但任务状态仍为 done”。更稳妥的设计是：</p>
+<ol>
+<li>client 记录是否收到 error 和最终 exit code；</li>
+<li>非零 exit 或 error 事件把 task 标为 <code>error</code>；</li>
+<li>只有成功且 HTML 通过最小完整性校验时，才提交 baseline；</li>
+<li>区分 <code>cancelled</code>、<code>failed</code>、<code>completed_with_warnings</code>。</li>
+</ol>
+<h2 id="16-安全模型">16. 安全模型</h2>
+<h3 id="16-1-host-校验是最重要的安全亮点">16.1 Host 校验是最重要的安全亮点</h3>
+<p><code>/api/convert</code> 接受 <code>cwd</code> 和 <code>binOverride</code>，并能用高权限参数启动本地 coding agent。这意味着如果恶意网页能通过 DNS rebinding 请求用户本机 API，就可能把“生成 HTML”变成对本机的间接远程代码执行。</p>
+<p>项目用 middleware 对全部 <code>/api/*</code> 做 Host allowlist：</p>
+<ul>
+<li>默认只允许 <code>127.0.0.1</code>、<code>localhost</code> 和 <code>[::1]</code>；</li>
+<li>拒绝空 Host、<code>0.0.0.0</code> 和伪装子域；</li>
+<li>可用环境变量显式增加可信 Host；</li>
+<li>也提供完全关闭门禁的开关，但源码明确标记为高风险；</li>
+<li>Playwright 专门覆盖 <code>/api/convert</code> RCE 向量和 deploy token-write 向量。</li>
+</ul>
+<p>这是一个很好的面试点：</p>
+<blockquote class="callout"><p>安全不是只给输入做 escape，而是先识别系统中“高权限能力在哪里”。这里真正危险的是本地 agent spawn、文件写入和带凭据的部署 API，所以 middleware 覆盖整个 <code>/api/*</code>，在请求进入 handler 前挡掉 DNS rebinding。</p>
+</blockquote>
+<h3 id="16-2-iframe-不是-readme-所说的强隔离">16.2 iframe 不是 README 所说的强隔离</h3>
+<p>主预览实际是：</p>
+<div class="code-block">
+      <div class="code-toolbar"><span>html</span><button type="button" data-copy-code>复制</button></div>
+      <pre><code class="language-html">&lt;iframe
+  srcDoc=&quot;{generatedHtml}&quot;
+  sandbox=&quot;allow-scripts allow-same-origin&quot;&gt;
+&lt;/iframe&gt;</code></pre>
+    </div>
+<p>README 声称“isolated origin”“cookies/localStorage quarantined”。这个表述不能直接成立。<code>srcDoc</code> 继承嵌入文档来源语义，再同时授予 <code>allow-scripts</code> 和 <code>allow-same-origin</code>，不应被当成不可信 HTML 的强安全边界；生成脚本可能接触同源父页面能力。README 自己在两处重复了过强描述。</p>
+<p>这是当前最高优先级风险。可选改进按隔离强度排序：</p>
+<ol>
+<li>把预览放到独立 origin，通过严格 <code>postMessage</code> 协议通信；</li>
+<li>如果业务允许，移除 <code>allow-same-origin</code>；</li>
+<li>若必须保留第三方脚本能力，至少使用独立域、CSP、权限策略和网络出口限制；</li>
+<li>导出和截图不要依赖能访问宿主状态的 iframe；</li>
+<li>明确把生成 HTML 视为不可信内容，并增加专门安全测试。</li>
+</ol>
+<p>Host guard 保护的是“谁能调用本地 API”，iframe 隔离保护的是“生成内容在浏览器里能做什么”，二者不能互相替代。</p>
+<h3 id="16-3-技能安装安全">16.3 技能安装安全</h3>
+<p>技能安装链路做得比较扎实：</p>
+<ul>
+<li>限制压缩包大小和解压后总大小，防 gzip bomb；</li>
+<li>解压前遍历 tar header；</li>
+<li>拒绝绝对路径、<code>..</code>、symlink、hardlink 和特殊文件；</li>
+<li>限制 <code>SKILL.md</code>、示例 HTML/Markdown 的单文件大小；</li>
+<li>staging 目录与目标目录放在同一文件系统；</li>
+<li>使用 rename 原子替换；</li>
+<li>替换失败时恢复备份。</li>
+</ul>
+<p>这说明“下载一个模板目录”也应按供应链输入处理，而不是直接 <code>tar -xzf</code> 到用户目录。</p>
+<h2 id="17-导出与部署边界">17. 导出与部署边界</h2>
+<p>Web 层支持 HTML、图片和多个平台格式导出，相关代码位于 <code>next/src/lib/export/</code>。这部分的通用价值是：</p>
+<ul>
+<li>编辑态保存语义内容和生成 HTML；</li>
+<li>预览态通过 iframe 呈现；</li>
+<li>发布态对 CSS、公式、图片或平台格式做专门适配。</li>
+</ul>
+<p>README 的“Vercel 可部署”只能理解为 Web 层或部分无本地依赖能力可部署。核心转换链需要：</p>
+<ul>
+<li>Node runtime；</li>
+<li>本机已安装并已登录的 agent CLI；</li>
+<li><code>child_process.spawn</code>；</li>
+<li>本机工作目录和权限模型。</li>
+</ul>
+<p>因此不能把当前核心链路直接描述成普通远程 Vercel SaaS。若要远程化，需要新增身份认证、租户隔离、任务队列、沙箱执行器、Secret 管理、资源配额和审计。</p>
+<h2 id="18-工程质量-实测与-readme-偏差">18. 工程质量、实测与 README 偏差</h2>
+<h3 id="工程门禁">工程门禁</h3>
+<p>CI 使用 Node 24，并执行：</p>
+<ol>
+<li><code>pnpm install --frozen-lockfile</code>；</li>
+<li>workspace guard；</li>
+<li>Next typecheck；</li>
+<li>e2e typecheck；</li>
+<li>Next 单测；</li>
+<li>Next build；</li>
+<li>安装 Chromium；</li>
+<li>Playwright e2e。</li>
+</ol>
+<p>当前 checkout 的本轮只读/低副作用实测：</p>
+<table>
+<thead>
+<tr>
+<th>检查</th>
+<th>结果</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>scripts/guard.ts</code></td>
+<td>通过</td>
+</tr>
+<tr>
+<td>Next TypeScript <code>--noEmit</code></td>
+<td>通过</td>
+</tr>
+<tr>
+<td>e2e TypeScript <code>--noEmit</code></td>
+<td>通过</td>
+</tr>
+<tr>
+<td>Playwright <code>--list</code></td>
+<td>通过，3 个文件共 11 条用例</td>
+</tr>
+<tr>
+<td>Next unit test</td>
+<td>未启动成功；当前 Node 20.12.0 下 Vitest/Rolldown 调用 <code>styleText()</code> 报参数兼容错误</td>
+</tr>
+<tr>
+<td>完整 build / e2e</td>
+<td>本轮未运行，避免产生构建和报告文件</td>
+</tr>
+</tbody></table>
+<p>单测启动错误不能直接归类为业务测试失败。仓库 CI 明确使用 Node 24，而本机是 Node 20.12.0；应先切到项目 CI 的 Node 版本再重跑。</p>
+<h3 id="readme-与源码不一致">README 与源码不一致</h3>
+<ul>
+<li>首页一处写 9 个 agent，能力表又写 8 个；源码定义 20 个，其中 7 个协议未接通。</li>
+<li>README 写 75 个技能；当前 <code>next/src/lib/templates/skills</code> 下有 81 个包含 <code>SKILL.md</code> 的目录。</li>
+<li>README workspace 只列 <code>next</code>、<code>e2e</code>；配置还包含 <code>cli</code>。</li>
+<li>README 把 iframe 描述为强隔离；实际 sandbox 属性不足以支持这个结论。</li>
+<li>README 说闭环覆盖全部列出的 8 个 CLI；本轮没有逐个真实调用这些外部 CLI，不能把该声明当成当前验证结果。</li>
+<li>CI 没有给 <code>cli</code> 同等的 typecheck/test/build 门禁，guard 也基本不检查它。</li>
+</ul>
+<h2 id="19-html-anything-的亮点与风险排序">19. <code>html-anything</code> 的亮点与风险排序</h2>
+<h3 id="最值得讲的亮点-2">最值得讲的亮点</h3>
+<ol>
+<li><strong>adapter 统一多 CLI</strong>：上层只消费统一事件，不耦合每家 stdout 协议。</li>
+<li><strong>端到端取消</strong>：task 级 controller 一直传播到 child <code>SIGTERM</code>。</li>
+<li><strong>流式性能取舍</strong>：SSE 增量写状态，iframe 用 320ms 防抖平衡实时性和重载成本。</li>
+<li><strong>Host 安全门</strong>：威胁模型准确覆盖本地高权限 API 和 DNS rebinding。</li>
+<li><strong>技能供应链防护</strong>：tar 预检、大小限制、拒绝链接、原子替换和回滚形成完整闭环。</li>
+</ol>
+<h3 id="风险优先级-2">风险优先级</h3>
+<ul>
+<li><strong>P0：iframe 隔离不足</strong>——不可信脚本与 same-origin 同时开放。</li>
+<li><strong>P0：不能无认证暴露公网</strong>——API 能指定 cwd/bin 并启动高权限本地 agent。</li>
+<li><strong>P1：错误状态语义</strong>——error 或非零 exit 仍可能最终显示 done。</li>
+<li><strong>P1：README 漂移</strong>——agent、skill、workspace 和安全声明与源码不一致。</li>
+<li><strong>P2：CLI package 门禁不足</strong>——workspace 有 <code>cli</code>，CI/guard 覆盖不对等。</li>
+<li><strong>P2：adapter 漂移风险</strong>——外部 CLI 参数与输出协议随版本变化。</li>
+</ul>
+<h2 id="20-html-anything-可直接复述的话术">20. <code>html-anything</code> 可直接复述的话术</h2>
+<h3 id="30-秒版本-2">30 秒版本</h3>
+<blockquote class="callout"><p><code>html-anything</code> 是本地优先的 agentic HTML 编辑器。浏览器把内容发给 Next API，服务端加载技能模板并 spawn 用户本机的 coding-agent CLI，再把 stdout 统一解析成 SSE 增量；前端按 task 写入 Zustand，并以 320ms 防抖更新 iframe。它最值得讲的是多 CLI adapter、端到端取消和 Host 防 DNS rebinding。最大的风险是主预览同时开放 scripts 和 same-origin，不能按 README 所说当作强隔离。</p>
+</blockquote>
+<h3 id="2-分钟版本-2">2 分钟版本</h3>
+<blockquote class="callout"><p>这个项目不是前端直接调云端模型，而是复用用户本机已经登录的 coding-agent CLI。启动时 <code>/api/agents</code> 扫 PATH 和额外工具链目录；每个 CLI 在 <code>next/src/lib/agents/argv.ts</code> 里有参数和输出 parser。转换时 <code>/api/convert</code> 加载技能、组 prompt，再通过 <code>child_process.spawn</code> 启动 agent。stdout 被统一成 delta、html、meta、error、done 事件，外层包装成 SSE。客户端按 taskId 维护 AbortController 和 Zustand 状态，每个 delta 追加 HTML，预览组件大约每 320ms 更新一次 iframe。</p>
+<p>取消链路很完整：客户端 abort fetch，request signal 传到服务端 controller，再传到 agent stream，最后对 child 发 SIGTERM。它还用 Host allowlist 防 DNS rebinding，因为 <code>/api/convert</code> 能用高权限参数启动本机 agent，本质上是高风险本地能力。</p>
+<p>当前有两个关键改进点。第一，error 事件或非零 exit 只记日志，SSE 正常结束后 task 仍可能变成 done，应该把进程结果纳入状态机。第二，iframe 用 <code>srcDoc + allow-scripts + allow-same-origin</code>，不能算强隔离；应迁移到独立 origin 或移除 same-origin。另一个工程问题是 README 的 agent、skill 和 workspace 数量已经跟源码漂移。</p>
+<p>如果面试官问部署，应明确：Web 层可以部署，但依赖本机 CLI 和 <code>spawn</code> 的核心转换链不是普通 Vercel 远程服务；远程化需要重新设计认证、沙箱、队列、配额和审计。</p>
+</blockquote>
+<h3 id="star-版本-2">STAR 版本</h3>
+<p>只有本人确实参与该项目时才可改成“我负责”：</p>
+<ul>
+<li><strong>S</strong>：需要统一多家本地 CLI 的输入输出协议，并在浏览器里实时预览生成 HTML。</li>
+<li><strong>T</strong>：【需本人确认】仅当本人真实负责对应工作时，填写“我负责【真实 adapter / SSE / 前端状态 / 安全治理范围】”。</li>
+<li><strong>A</strong>：【需本人确认】仅填写本人实际执行且能举证的动作，例如“我把 CLI 差异收敛到 argv/parser adapter；用 SSE 串起子进程和浏览器；按 task 管理并发和取消；针对本地高权限 API 增加 Host 校验；对【真实问题】补充测试”。</li>
+<li><strong>R</strong>：结果指标必须同时注明【指标定义与计算口径】【统计时间范围】【数据来源或看板/日志】【基线与结果值】。例如支持 CLI 数必须区分“可检测”和“可调用”，性能指标必须给出统计样本。没有可核验数据时，只陈述实际覆盖的链路和测试。</li>
+<li><strong>复盘</strong>：说明仍需解决 iframe 独立 origin、exit code 状态语义和 CLI 门禁。</li>
+</ul>
+<h2 id="21-html-anything-常见追问">21. <code>html-anything</code> 常见追问</h2>
+<h3 id="问-为什么用-sse-不用-websocket">问：为什么用 SSE，不用 WebSocket？</h3>
+<p>答：</p>
+<blockquote class="callout"><p>当前主要是服务端向客户端单向输出增量，用户输入和取消仍可用普通 HTTP/AbortSignal，SSE 更简单，也能被 <code>fetch</code> 的流直接消费。若以后需要双向会话、工具确认或多路实时控制，再考虑 WebSocket。</p>
+</blockquote>
+<h3 id="问-怎么保证多个任务互不干扰">问：怎么保证多个任务互不干扰？</h3>
+<p>答：</p>
+<blockquote class="callout"><p>controller 按 taskId 存在 Map 中，Zustand 的写操作也都带 taskId。同一 task 重跑先取消旧 controller，不同 task 可以并发。finally 还会校验 Map 中仍是当前 controller，避免旧任务结束时删掉新任务的控制器。</p>
+</blockquote>
+<h3 id="问-为什么不能把-detection-only-agent-也算-支持">问：为什么不能把 detection-only agent 也算“支持”？</h3>
+<p>答：</p>
+<blockquote class="callout"><p>检测只证明 binary 存在。真正支持还要有 prompt 传输、stdout parser、取消、退出状态和测试。源码对 ACP 和 pi-rpc 会明确抛 unsupported，所以应分别描述“可检测”和“可调用”。</p>
+</blockquote>
+<h3 id="问-host-allowlist-能解决所有安全问题吗">问：Host allowlist 能解决所有安全问题吗？</h3>
+<p>答：</p>
+<blockquote class="callout"><p>不能。它主要防恶意网页通过 DNS rebinding 调本机 API。它不解决已允许 Host 上的身份认证，也不解决生成 HTML 在 iframe 中的脚本权限，更不替代 agent 自身的文件和网络沙箱。</p>
+</blockquote>
+<h3 id="问-allow-scripts-allow-same-origin-为什么危险">问：<code>allow-scripts allow-same-origin</code> 为什么危险？</h3>
+<p>答：</p>
+<blockquote class="callout"><p>对不可信内容同时开放脚本和同源，会让脚本获得远高于纯 sandbox 的能力。这里又使用 <code>srcDoc</code>，不能轻率声称 cookie/localStorage 与宿主完全隔离。最稳妥方案是独立预览域加严格消息协议。</p>
+</blockquote>
+<h3 id="问-进程退出码该怎样映射到-ui">问：进程退出码该怎样映射到 UI？</h3>
+<p>答：</p>
+<blockquote class="callout"><p>可把 run 状态建模成 running、cancelled、failed、done、done-with-warning。error 事件和非零 exit 进入 failed；只有 exit 0、没有 error 且 HTML 通过最低完整性校验，才进入 done 并更新 diff baseline。</p>
+</blockquote>
+<h3 id="问-为什么预览要-320ms-防抖">问：为什么预览要 320ms 防抖？</h3>
+<p>答：</p>
+<blockquote class="callout"><p>iframe 的 <code>srcDoc</code> 更新会触发文档重载。每个 token 都更新会浪费 CPU、重复加载资源并造成闪烁；约 3fps 对“看见逐步生成”已经足够，任务结束时再立即提交最终值。这个值仍应通过性能数据调优，而不是当成固定真理。</p>
+</blockquote>
+<h3 id="问-能直接部署到-vercel-吗">问：能直接部署到 Vercel 吗？</h3>
+<p>答：</p>
+<blockquote class="callout"><p>静态 Web 和部分 API 可以，但核心转换依赖本机 CLI、登录态、文件系统和 child process。普通远程 Vercel 实例没有用户本机环境。若做 SaaS，需要独立的受控执行器，而不是直接把现有本地 API 暴露出去。</p>
+</blockquote>
+<h2 id="22-html-anything-源码证据">22. <code>html-anything</code> 源码证据</h2>
+<table>
+<thead>
+<tr>
+<th>结论</th>
+<th>相对路径</th>
+<th>类 / 函数 / 配置</th>
+<th>可信度</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>实际 workspace 有 3 个 package</td>
+<td><code>pnpm-workspace.yaml</code></td>
+<td><code>cli</code>、<code>e2e</code>、<code>next</code></td>
+<td>已核对</td>
+</tr>
+<tr>
+<td>源码定义 20 个 agent</td>
+<td><code>next/src/lib/agents/detect.ts</code></td>
+<td><code>AGENTS</code></td>
+<td>已核对</td>
+</tr>
+<tr>
+<td>ACP 与 pi-rpc 未接通</td>
+<td><code>next/src/lib/agents/detect.ts</code>、<code>next/src/lib/agents/argv.ts</code></td>
+<td><code>AgentProtocol</code>、<code>UnsupportedAgentProtocolError</code></td>
+<td>已核对</td>
+</tr>
+<tr>
+<td>扫描 PATH 和额外工具目录</td>
+<td><code>next/src/lib/agents/detect.ts</code></td>
+<td><code>userToolchainDirs()</code>、<code>detectAgents()</code></td>
+<td>已核对</td>
+</tr>
+<tr>
+<td>为不同 CLI 构造高权限参数</td>
+<td><code>next/src/lib/agents/argv.ts</code></td>
+<td><code>buildArgv()</code></td>
+<td>已核对</td>
+</tr>
+<tr>
+<td>Node 启动本地 agent</td>
+<td><code>next/src/lib/agents/invoke.ts</code></td>
+<td><code>invokeAgent()</code>、<code>spawn()</code></td>
+<td>已核对</td>
+</tr>
+<tr>
+<td>API 加载技能并包装 SSE</td>
+<td><code>next/src/app/api/convert/route.ts</code></td>
+<td><code>POST()</code></td>
+<td>已核对</td>
+</tr>
+<tr>
+<td>task 级并发和取消</td>
+<td><code>next/src/lib/use-convert.ts</code></td>
+<td><code>controllers</code>、<code>run()</code>、<code>cancel()</code></td>
+<td>已核对</td>
+</tr>
+<tr>
+<td>delta 写入 task 状态</td>
+<td><code>next/src/lib/store.ts</code></td>
+<td><code>appendHtmlFor()</code></td>
+<td>已核对</td>
+</tr>
+<tr>
+<td>iframe 约 320ms 更新</td>
+<td><code>next/src/components/preview-pane.tsx</code></td>
+<td><code>debouncedHtml</code> effect</td>
+<td>已核对</td>
+</tr>
+<tr>
+<td>主预览同时允许 scripts 与 same-origin</td>
+<td><code>next/src/components/preview-pane.tsx</code></td>
+<td><code>iframe sandbox</code></td>
+<td>已核对</td>
+</tr>
+<tr>
+<td>全部 API 受 Host allowlist 保护</td>
+<td><code>next/src/middleware.ts</code></td>
+<td><code>middleware()</code>、<code>matcher</code></td>
+<td>已核对</td>
+</tr>
+<tr>
+<td>DNS rebinding 威胁模型</td>
+<td><code>next/src/lib/security/host-validation.ts</code></td>
+<td><code>isAllowedHost()</code></td>
+<td>已核对</td>
+</tr>
+<tr>
+<td>技能 tar 安装做预检和原子替换</td>
+<td><code>next/src/lib/skills/install.ts</code></td>
+<td><code>preflightTarball()</code>、install swap</td>
+<td>已核对</td>
+</tr>
+<tr>
+<td>CI 覆盖 Next 与 e2e</td>
+<td><code>.github/workflows/ci.yml</code></td>
+<td><code>ci</code> job</td>
+<td>已核对</td>
+</tr>
+<tr>
+<td>guard 基本不覆盖 CLI</td>
+<td><code>scripts/guard.ts</code></td>
+<td>workspace shape assertions</td>
+<td>已核对</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="第三部分-迁移到-android-面试语境">第三部分：迁移到 Android 面试语境</h2>
+<h2 id="23-rn-web-能力怎样迁移回-android">23. RN/Web 能力怎样迁移回 Android</h2>
+<table>
+<thead>
+<tr>
+<th>跨端问题</th>
+<th>Android 中的对应问题</th>
+<th>可迁移方法</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Deep Link <code>initProps</code></td>
+<td>Intent/Bundle、路由参数</td>
+<td>schema、默认值、版本和来源校验</td>
+</tr>
+<tr>
+<td>Native Bridge</td>
+<td>JSBridge、AIDL、SDK facade</td>
+<td>稳定接口、线程约束、错误码和兼容策略</td>
+</tr>
+<tr>
+<td>Jotai/Zustand</td>
+<td>ViewModel、StateFlow、MVI state</td>
+<td>明确状态归属、生命周期和单一写入口</td>
+</tr>
+<tr>
+<td>taskId 轮询</td>
+<td>WorkManager、长任务查询</td>
+<td>任务身份、超时、退避、取消和幂等</td>
+</tr>
+<tr>
+<td>SSE stdout delta</td>
+<td>Flow/Channel/网络流</td>
+<td>背压、取消传播、增量渲染</td>
+</tr>
+<tr>
+<td>iframe sandbox</td>
+<td>WebView 安全</td>
+<td>origin、JS 接口、CSP、文件访问和混合内容</td>
+</tr>
+<tr>
+<td>Host allowlist</td>
+<td>本地 HTTP 服务、调试端口</td>
+<td>先做威胁建模，再限制调用来源</td>
+</tr>
+<tr>
+<td>多 CLI adapter</td>
+<td>多厂商 SDK adapter</td>
+<td>把差异收敛在边界层，上层消费统一协议</td>
+</tr>
+</tbody></table>
+<p>一段适合 Android 面试的总结：</p>
+<blockquote class="callout"><p>【需本人确认】仅当本人确实具备相应分析和实践经验时，可表述为：“我看 RN 和 Web 项目时不会只停留在语法层，而是把它们映射回 Android 熟悉的问题：路由参数相当于 Intent 合同，Bridge 相当于跨进程或 SDK facade，Jotai/Zustand 相当于状态容器，SSE 和轮询都要处理生命周期与取消。真正可迁移的是边界治理、状态建模和故障定位方法。”</p>
+</blockquote>
+<h2 id="24-跨团队协作应该怎样讲">24. 跨团队协作应该怎样讲</h2>
+<p>可以按“合同—联调—观测—回滚”四层回答：</p>
+<ol>
+<li><strong>合同</strong>：先定义 pageName、initProps、Bridge 事件、资源 ID、错误码和版本兼容。</li>
+<li><strong>联调</strong>：准备最小调用样例和 mock；分别验证 Native 发出、RN 接收、服务响应、下游回传。</li>
+<li><strong>观测</strong>：统一 taskId/requestId，记录阶段耗时、状态转换和失败类型，不打印敏感字段。</li>
+<li><strong>回滚</strong>：页面注册、Deep Link 和服务字段都要兼容旧宿主；高风险能力提供开关和降级路径。</li>
+</ol>
+<p>如果被问“你不是 RN/Web 作者，为什么要讲”，可以回答：</p>
+<blockquote class="callout"><p>【需本人确认】仅当本人确实承担过相关接入或排查时，可表述为：“我不会把框架作者的工作说成自己的。但 Android 业务接入跨端页面时，问题经常发生在边界上：参数不兼容、页面生命周期不一致、Bridge 回调丢失、长任务重复请求、宿主与 Bundle 版本错配。能从业务调用点追到框架边界，是我排查和协作所需要的能力。”</p>
+</blockquote>
+<h2 id="25-最后复习清单">25. 最后复习清单</h2>
+<p>面试前本人需要补充：</p>
+<ul>
+<li>本人真实负责过哪些页面、Bridge 或 Native 调用点？</li>
+<li>本人遇到过哪一个真实故障，如何复现、定位和验证？</li>
+<li>是否有任务耗时、崩溃率、失败率、重复请求量或联调周期数据？每项是否同时具备明确计算口径、统计时间范围、数据来源和基线/结果值？</li>
+<li>哪些方案由本人提出，哪些只是仓库已有能力？</li>
+<li>若没有参与 <code>html-anything</code>，只把它当作源码阅读和安全分析案例，不放进“项目经历”。</li>
+</ul>
+<p>不要说：</p>
+<ul>
+<li>“20 个 agent 全部支持”；</li>
+<li>“iframe 已经完全隔离”；</li>
+<li>“核心转换可以直接部署到 Vercel”；</li>
+<li>“<code>pikachu</code> 本身缺少 Native 工程是设计缺陷”；</li>
+<li>宣称“这些框架均由个人编写”；</li>
+<li>“本轮所有测试和构建都通过”。</li>
+</ul>
+<p>可以说：</p>
+<blockquote class="callout"><p>【需本人确认】仅当本人能解释对应源码并承受连续追问时，可表述为：“我能给出从入口、适配层、异步任务、状态容器到 UI 和下游回传的完整证据链，也能明确指出当前 checkout、测试环境和个人贡献的边界。”</p>
+</blockquote>
+
+      </article>
+      
+    <nav class="page-pager" aria-label="文档翻页">
+      <a href="20-android-infrastructure-media.html"><small>← 上一篇</small><span>基础设施与媒体</span></a>
+      <a class="next" href="31-tools-samples-and-assets.html"><small>下一篇 →</small><span>工具、样例与资产</span></a>
+    </nav>
+      <footer class="article-footer">
+        本站由 Markdown 源文档离线生成。涉及个人职责、动作和结果的内容，请只使用本人可核验的部分。
+      </footer>
+    </main>
+    <aside class="page-toc" aria-label="本页目录">
+      <div class="toc-heading">本页目录</div>
+      <a class="toc-link level-2" href="#0-先把表达边界说清楚">0. 先把表达边界说清楚</a>
+<a class="toc-link level-2" href="#1-两个项目放在一起看">1. 两个项目放在一起看</a>
+<a class="toc-link level-2" href="#第一部分-pikachu">第一部分： pikachu</a>
+<a class="toc-link level-2" href="#2-项目定位">2. 项目定位</a>
+<a class="toc-link level-2" href="#3-动态页面入口链路">3. 动态页面入口链路</a>
+<a class="toc-link level-2" href="#4-ai-生图完整业务链路">4. AI 生图完整业务链路</a>
+<a class="toc-link level-3" href="#4-1-创建任务">4.1 创建任务</a>
+<a class="toc-link level-3" href="#4-2-轮询结果">4.2 轮询结果</a>
+<a class="toc-link level-3" href="#4-3-把结果交回下游">4.3 把结果交回下游</a>
+<a class="toc-link level-2" href="#5-ai-图库-分页与-jotai-状态">5. AI 图库、分页与 Jotai 状态</a>
+<a class="toc-link level-2" href="#6-错误处理-稳定性与安全">6. 错误处理、稳定性与安全</a>
+<a class="toc-link level-3" href="#已有处理">已有处理</a>
+<a class="toc-link level-3" href="#仍需改进">仍需改进</a>
+<a class="toc-link level-3" href="#敏感信息">敏感信息</a>
+<a class="toc-link level-2" href="#7-工程质量与当前-checkout-边界">7. 工程质量与当前 checkout 边界</a>
+<a class="toc-link level-3" href="#当前-checkout-的事实">当前 checkout 的事实</a>
+<a class="toc-link level-3" href="#测试建议">测试建议</a>
+<a class="toc-link level-2" href="#8-pikachu-的亮点与风险排序">8. pikachu 的亮点与风险排序</a>
+<a class="toc-link level-3" href="#最值得讲的亮点">最值得讲的亮点</a>
+<a class="toc-link level-3" href="#风险优先级">风险优先级</a>
+<a class="toc-link level-2" href="#9-pikachu-可直接复述的话术">9. pikachu 可直接复述的话术</a>
+<a class="toc-link level-3" href="#30-秒版本">30 秒版本</a>
+<a class="toc-link level-3" href="#2-分钟版本">2 分钟版本</a>
+<a class="toc-link level-3" href="#star-版本">STAR 版本</a>
+<a class="toc-link level-2" href="#10-pikachu-常见追问">10. pikachu 常见追问</a>
+<a class="toc-link level-3" href="#问-为什么不用-webview-或者为什么不用全-native">问：为什么不用 WebView，或者为什么不用全 Native？</a>
+<a class="toc-link level-3" href="#问-轮询为什么用-ref-不只用-state">问：轮询为什么用 ref，不只用 state？</a>
+<a class="toc-link level-3" href="#问-分页为什么直接请求-paging-next">问：分页为什么直接请求 paging.next ？</a>
+<a class="toc-link level-3" href="#问-jotai-atom-和-bridge-怎么选">问：Jotai atom 和 Bridge 怎么选？</a>
+<a class="toc-link level-3" href="#问-页面卸载后还会不会请求">问：页面卸载后还会不会请求？</a>
+<a class="toc-link level-3" href="#问-页面打不开怎么排查">问：页面打不开怎么排查？</a>
+<a class="toc-link level-2" href="#11-pikachu-源码证据">11. pikachu 源码证据</a>
+<a class="toc-link level-2" href="#第二部分-html-anything">第二部分： html-anything</a>
+<a class="toc-link level-2" href="#12-项目定位">12. 项目定位</a>
+<a class="toc-link level-2" href="#13-agent-检测与-adapter">13. Agent 检测与 adapter</a>
+<a class="toc-link level-3" href="#13-1-检测">13.1 检测</a>
+<a class="toc-link level-3" href="#13-2-参数与输出协议">13.2 参数与输出协议</a>
+<a class="toc-link level-2" href="#14-转换与流式预览链路">14. 转换与流式预览链路</a>
+<a class="toc-link level-2" href="#15-并发-取消和状态语义">15. 并发、取消和状态语义</a>
+<a class="toc-link level-3" href="#15-1-取消链路是完整亮点">15.1 取消链路是完整亮点</a>
+<a class="toc-link level-3" href="#15-2-当前有一个状态语义风险">15.2 当前有一个状态语义风险</a>
+<a class="toc-link level-2" href="#16-安全模型">16. 安全模型</a>
+<a class="toc-link level-3" href="#16-1-host-校验是最重要的安全亮点">16.1 Host 校验是最重要的安全亮点</a>
+<a class="toc-link level-3" href="#16-2-iframe-不是-readme-所说的强隔离">16.2 iframe 不是 README 所说的强隔离</a>
+<a class="toc-link level-3" href="#16-3-技能安装安全">16.3 技能安装安全</a>
+<a class="toc-link level-2" href="#17-导出与部署边界">17. 导出与部署边界</a>
+<a class="toc-link level-2" href="#18-工程质量-实测与-readme-偏差">18. 工程质量、实测与 README 偏差</a>
+<a class="toc-link level-3" href="#工程门禁">工程门禁</a>
+<a class="toc-link level-3" href="#readme-与源码不一致">README 与源码不一致</a>
+<a class="toc-link level-2" href="#19-html-anything-的亮点与风险排序">19. html-anything 的亮点与风险排序</a>
+<a class="toc-link level-3" href="#最值得讲的亮点-2">最值得讲的亮点</a>
+<a class="toc-link level-3" href="#风险优先级-2">风险优先级</a>
+<a class="toc-link level-2" href="#20-html-anything-可直接复述的话术">20. html-anything 可直接复述的话术</a>
+<a class="toc-link level-3" href="#30-秒版本-2">30 秒版本</a>
+<a class="toc-link level-3" href="#2-分钟版本-2">2 分钟版本</a>
+<a class="toc-link level-3" href="#star-版本-2">STAR 版本</a>
+<a class="toc-link level-2" href="#21-html-anything-常见追问">21. html-anything 常见追问</a>
+<a class="toc-link level-3" href="#问-为什么用-sse-不用-websocket">问：为什么用 SSE，不用 WebSocket？</a>
+<a class="toc-link level-3" href="#问-怎么保证多个任务互不干扰">问：怎么保证多个任务互不干扰？</a>
+<a class="toc-link level-3" href="#问-为什么不能把-detection-only-agent-也算-支持">问：为什么不能把 detection-only agent 也算“支持”？</a>
+<a class="toc-link level-3" href="#问-host-allowlist-能解决所有安全问题吗">问：Host allowlist 能解决所有安全问题吗？</a>
+<a class="toc-link level-3" href="#问-allow-scripts-allow-same-origin-为什么危险">问： allow-scripts allow-same-origin 为什么危险？</a>
+<a class="toc-link level-3" href="#问-进程退出码该怎样映射到-ui">问：进程退出码该怎样映射到 UI？</a>
+<a class="toc-link level-3" href="#问-为什么预览要-320ms-防抖">问：为什么预览要 320ms 防抖？</a>
+<a class="toc-link level-3" href="#问-能直接部署到-vercel-吗">问：能直接部署到 Vercel 吗？</a>
+<a class="toc-link level-2" href="#22-html-anything-源码证据">22. html-anything 源码证据</a>
+<a class="toc-link level-2" href="#第三部分-迁移到-android-面试语境">第三部分：迁移到 Android 面试语境</a>
+<a class="toc-link level-2" href="#23-rn-web-能力怎样迁移回-android">23. RN/Web 能力怎样迁移回 Android</a>
+<a class="toc-link level-2" href="#24-跨团队协作应该怎样讲">24. 跨团队协作应该怎样讲</a>
+<a class="toc-link level-2" href="#25-最后复习清单">25. 最后复习清单</a>
+      <a class="back-to-top" href="#">↑ 返回顶部</a>
+    </aside>
+  </div>
+  <script src="assets/search-data.js"></script>
+  <script src="assets/docs.js"></script>
+</body>
+</html>

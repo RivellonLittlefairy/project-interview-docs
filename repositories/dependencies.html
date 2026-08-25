@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dependencies：Android 依赖治理规则仓</title>
+  <link rel="stylesheet" href="../assets/docs.css">
+  <script defer src="../assets/search-data.js"></script>
+  <script defer src="../assets/docs.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <header class="topbar">
+    <button class="icon-button menu-button" type="button" data-menu-toggle aria-label="打开文档导航" aria-expanded="false">☰</button>
+    <a class="brand" href="../index.html"><span class="brand-mark">⌁</span><span>项目面试资料库</span></a>
+    <div class="search-shell">
+      <label class="sr-only" for="global-search">搜索所有文档</label>
+      <input id="global-search" type="search" data-search-input placeholder="搜索仓库、技术或面试题…" autocomplete="off">
+      <span class="search-shortcut">Ctrl K</span>
+      <div class="search-results" data-search-results hidden></div>
+    </div>
+    <button class="icon-button" type="button" data-theme-toggle aria-label="切换深浅主题">◐</button>
+  </header>
+  <div class="drawer-backdrop" data-drawer-backdrop hidden></div>
+  <div class="docs-layout">
+    <nav class="sidebar" data-sidebar aria-label="全站文档导航">
+      <div class="sidebar-heading">文档导航</div>
+      <section class="nav-group">
+        <h2 class="nav-group-title">逐仓文档</h2>
+        <a class="nav-link active" href="../repositories.html">仓库独立分析</a>
+      </section>
+      <section class="nav-group">
+        <h2 class="nav-group-title">开始使用</h2>
+        <a class="nav-link" href="../index.html">总览与导航</a>
+      </section>
+      <section class="nav-group">
+        <h2 class="nav-group-title">来源分析</h2>
+        <a class="nav-link" href="../00-repository-inventory.html">全量仓库盘点</a>
+        <a class="nav-link" href="../30-cross-platform-rn-web.html">RN 与 Web</a>
+        <a class="nav-link" href="../31-tools-samples-and-assets.html">工具、样例与资产</a>
+      </section>
+      <p class="sidebar-note">离线资料 · 源码证据快照</p>
+    </nav>
+    <main class="article-shell" id="main-content">
+      <div class="breadcrumbs"><a href="../index.html">首页</a><span>/</span><a href="../repositories.html">仓库索引</a><span>/</span><span>dependencies</span></div>
+      <article class="markdown-body">
+      <h1>Dependencies：Android 依赖治理规则仓</h1>
+      <p><strong>定位标签：</strong>团队配置资产 / 非 Runtime 代码</p>
+      <nav class="toc" aria-label="本页目录">
+        <strong>本页目录</strong>
+        <ol>
+          <li><a href="#identity">定位与归属边界</a></li>
+          <li><a href="#checkout">检出与构建信息</a></li>
+          <li><a href="#structure">结构与核心入口</a></li>
+          <li><a href="#workflow">关键工作流</a></li>
+          <li><a href="#tradeoffs">亮点与取舍</a></li>
+          <li><a href="#risks">风险、测试与排查</a></li>
+          <li><a href="#pitch">面试讲法</a></li>
+          <li><a href="#questions">追问与回答</a></li>
+          <li><a href="#evidence">源码证据</a></li>
+        </ol>
+      </nav>
+      <section id="identity"><h2>定位与归属边界</h2><ul><li>以 JSON/文本维护 Android 依赖准入、flavor 范围、替代关系、架构例外、权限和第三方 SDK 信息。</li><li>这是团队治理资产，不是个人项目；本人制定规则、推动迁移或维护范围均<strong>需本人确认</strong>并由 MR/评审记录证明。</li><li>本仓描述“允许什么、替换什么、临时破例什么”，真正执行者应在消费这些 JSON 的构建插件或主工程。</li></ul></section>
+      <section id="checkout"><h2>检出与构建信息</h2><ul><li>库存记录：分支 <code>add_ttwebview</code>，提交 <code>a1e20ca</code>（2025-12-30），配置仓。</li><li>没有传统编译入口；关键文件是 <code>dependenciesV2.json</code>、<code>substitute.json</code>、<code>rules_breaker.json</code>、<code>permissions.json</code>、<code>thirdSdk.json</code>。</li><li>未检出自动化测试/CI；当前只做 JSON 与 README 静态核验，未找到仓内消费代码，无法单仓执行端到端构建。</li></ul></section>
+      <section id="structure"><h2>结构与核心入口</h2><ul><li><code>dependenciesV2.json</code>：依赖坐标与可用 flavor 白名单。</li><li><code>substitute.json</code>：新库 <code>use</code> 替代旧库 <code>insteadof</code>，可按 <code>since</code> 生效。</li><li><code>rules_breaker.json</code>：特定模块间依赖的临时白名单与说明。</li><li><code>thirdSdk.json</code> / <code>permissions.json</code>：第三方 SDK 与权限治理元数据。</li></ul></section>
+      <section id="workflow"><h2>关键工作流</h2><ol><li>提议引入三方库 → 评估维护性、许可证、重复能力、兼容性、体积与迁移成本。</li><li>团队评审/投票通过 → 在依赖清单声明主依赖及传递依赖 → 补开源许可信息。</li><li>构建消费端按 flavor 校验坐标；遇到旧/新库重复类时应用 substitute 规则。</li><li>架构例外只能进入 rules_breaker 白名单，并应附原因、owner 和移除时间。</li></ol></section>
+      <section id="tradeoffs"><h2>亮点与取舍</h2><ul><li>集中规则降低各业务仓重复决策和依赖漂移，但配置与消费插件分仓后容易契约漂移。</li><li>替代规则能快速消除重复类，代价是可能掩盖真实传递依赖，应配 dependency graph 验证。</li><li>白名单支持渐进迁移，却容易永久化技术债；需要 owner、期限和 CI 阻断。</li></ul></section>
+      <section id="risks"><h2>风险、测试与排查</h2><ul><li>P1：没有 schema/CI，JSON 格式、重复坐标、无效 flavor、循环替代或过期例外可能静默进入主工程。</li><li>P1：README 含历史内网流程/链接，需明确当前是否仍有效并避免把内部信息用于对外材料。</li><li>建议测试：JSON Schema + 坐标去重 + substitute 图无环 + rules_breaker 到期检查 + 消费插件 contract fixture。</li><li>排查依赖冲突：输出完整 dependency graph → 定位重复类与引入链 → 检查 substitute/since/flavor → 验证消费端规则版本 → 最小化复现。</li></ul></section>
+      <section id="policy-case">
+        <h2>依赖冲突案例与规则验证</h2>
+        <p>README 给出的典型场景是新库 B 已经包含旧库 A 的全部或部分代码，而某个组件仍直接声明 A，最终在打包阶段出现 duplicate class。处理时不能只看到异常类名就往 <code>substitute.json</code> 加规则。第一步要从主工程 dependency insight 找出 A、B 的完整引入路径和最终解析版本；第二步确认 B 对 A 是二进制兼容替代、源码搬迁还是仅部分能力重叠；第三步核对 <code>since</code>，确保只有真正包含旧实现的 B 版本才触发替代。最后用包含旧调用点的 fixture 编译、运行关键路径并检查产物，防止“类不重复了，但运行时 API 已不兼容”。</p>
+        <p><code>dependenciesV2.json</code> 的 flavor 语义也应成为机器可验证契约。测试样例至少覆盖空 flavor 等同 standard、debug 不进入 release、internal 能进入非公开构建、多名字声明的解析，以及未知 flavor 被拒绝。坐标清单需要检查重复项、空名称和格式；第三方 SDK 条目还要关联许可证、owner、版本来源和传递依赖。仅验证 JSON 能解析远远不够，因为合法 JSON 仍可能表达无效政策。</p>
+        <p><code>rules_breaker.json</code> 应被当成有时限的债务台账。每条例外除 desc 与 whitelist 外，最好增加 owner、创建原因、目标架构、到期版本和关联 issue；CI 在接近到期时告警，过期后默认阻断。治理指标也不宜只报“规则条数”，更有意义的是新增例外数量、按期清理率、重复类事故数和依赖升级平均耗时。当前仓没有消费端实现，因此页面只提出可验证的契约，不能声称这些检查已经落地。</p>
+      </section>
+      <section id="pitch">
+        <h2>面试讲法</h2>
+        <h3>30 秒版本</h3><blockquote><p>这是团队 Android 依赖治理配置仓：依赖准入按 flavor 声明，substitute 解决新旧库重复，rules_breaker 管临时架构例外。它没有 Runtime 代码，价值在统一规则；当前主要缺口是 schema、CI 和消费端契约测试。个人规则贡献需本人确认。</p></blockquote>
+        <h3>2 分钟版本</h3><blockquote><p>依赖治理不是维护一个版本号表，而是把准入、替代、权限和例外做成可执行政策。这里 dependenciesV2 控制坐标与 flavor，substitute 建模新旧库替换，rules_breaker 记录临时白名单。优点是决策集中、主工程可自动阻断；风险是配置和消费插件分离、白名单永久化、缺少 schema 与图校验。重做会加 JSON Schema、重复/环检测、例外过期 owner、依赖图 fixture 和消费端 contract test。没有本人 MR/评审证据时，只说团队资产结构。</p></blockquote>
+      </section>
+      <section id="questions"><h2>追问与回答</h2>
+    <details open>
+      <summary>问题1：为什么不直接在各业务 build.gradle 管？</summary>
+      <p>集中治理可以统一准入、许可证和替代策略，避免每个仓各自漂移；业务仍负责声明真实依赖。</p>
+    </details>
+    <details>
+      <summary>问题2：substitute 怎样避免误替换？</summary>
+      <p>限定版本生效点，结合完整 dependency graph 和二进制/API 兼容验证，不能只靠坐标名。</p>
+    </details>
+    <details>
+      <summary>问题3：rules breaker 为什么危险？</summary>
+      <p>例外能绕过架构约束；没有 owner、期限和监控时会成为永久债务。</p>
+    </details>
+    <details>
+      <summary>问题4：怎么给配置仓补测试？</summary>
+      <p>JSON Schema、重复键/坐标检查、替代图无环、过期白名单检查，再用消费插件 fixture 做 contract test。</p>
+    </details>
+    <details>
+      <summary>问题5：依赖冲突如何定位？</summary>
+      <p>先看重复类和两条引入链，再核对 substitute 与 flavor 是否命中，最后在最小工程验证规则消费版本。</p>
+    </details></section>
+      <section id="evidence">
+        <h2>源码证据</h2>
+        
+        <ol><li><code>yyyyy-cdoe/Dependencies/README.md</code></li><li><code>yyyyy-cdoe/Dependencies/dependenciesV2.json</code></li><li><code>yyyyy-cdoe/Dependencies/substitute.json</code></li><li><code>yyyyy-cdoe/Dependencies/rules_breaker.json</code></li><li><code>yyyyy-cdoe/Dependencies/thirdSdk.json</code></li></ol>
+        <p>证据口径：路径来自当前工作区源码与权威库存；个人贡献仍需本人确认，未由路径本身推断。</p>
+      </section>
+      <p><a href="../repositories.html">返回仓库索引</a> · <a href="../index.html">返回文档首页</a></p>
+      </article>
+    </main>
+  </div>
+</body>
+</html>

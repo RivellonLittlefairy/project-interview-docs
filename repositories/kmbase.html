@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="KmBase Android 业务仓库源码证据、调用链与面试讲法">
+  <title>KmBase｜Android 业务仓库分析</title>
+  <link rel="stylesheet" href="../assets/docs.css">
+  <script>try{const t=localStorage.getItem("interview-docs-theme");document.documentElement.dataset.theme=t||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light")}catch{}</script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <header class="topbar">
+    <button class="icon-button menu-button" type="button" data-menu-toggle aria-label="打开文档导航" aria-expanded="false">☰</button>
+    <a class="brand" href="../index.html"><span class="brand-mark">⌁</span><span>项目面试资料库</span></a>
+    <div class="search-shell"><label class="sr-only" for="global-search">搜索文档</label><input id="global-search" type="search" data-search-input placeholder="搜索仓库、技术或面试题…" autocomplete="off"><div class="search-results" data-search-results hidden></div></div>
+    <button class="icon-button" type="button" data-theme-toggle aria-label="切换深浅主题">◐</button>
+  </header>
+  <div class="drawer-backdrop" data-drawer-backdrop hidden></div>
+  <div class="docs-layout">
+    <nav class="sidebar" data-sidebar aria-label="文档导航">
+      <div class="sidebar-heading">仓库文档</div>
+      <section class="nav-group">
+        <h2 class="nav-group-title">返回</h2>
+        <a class="nav-link" href="../repositories.html">全部仓库</a>
+        <a class="nav-link" href="../index.html">资料首页</a>
+        <a class="nav-link" href="../10-android-business-repositories.html">业务仓聚合分析</a>
+      </section>
+      <p class="sidebar-note">离线源码证据 · 2026-07-25</p>
+    </nav>
+    <main class="article-shell" id="main-content">
+    <div class="breadcrumbs"><a href="../index.html">首页</a><span>/</span><a href="../repositories.html">仓库索引</a><span>/</span><span>KmBase</span></div>
+    <div class="article-grid">
+      <article class="markdown-body">
+        <h1 id="kmbase">KmBase：知识业务目录、书架、购买底栏、评价与进度的组件集合</h1>
+        <blockquote class="callout"><p>基于当前本地检出与真实源码路径整理。源码只能证明仓库中存在这些实现；所有个人职责、主导范围、上线结果和收益均为<strong>需本人确认</strong>，不得把团队框架、三方内核或上游仓库归为本人原创，也不在没有数据源时编造性能指标。</p></blockquote>
+
+        <h2 id="position">1. 仓库定位与面试边界</h2>
+        <p><code>yyyyy-cdoe/KmBase</code> 的当前定位是<strong>知识业务目录、书架、购买底栏、评价与进度的组件集合</strong>。主要技术形态为 Kotlin/Java、RxJava/LiveData、Service、ViewModel/Presenter 与可复用 View。</p>
+        <p>面试应聚焦业务入口、状态编排、生命周期、异常兜底和组件集成。可以讲“我如何使用既有能力完成业务调用与排障”，但“本人实现/主导”的范围一律<strong>需本人确认</strong>，且应有 MR、commit、需求、评审或上线记录佐证。</p>
+
+        <h2 id="checkout">2. 当前检出、规模、构建入口、测试与 CI</h2>
+        <table><thead><tr><th>项目</th><th>当前证据</th></tr></thead><tbody>
+          <tr><td>分支</td><td><code>add_bookshelf</code></td></tr>
+          <tr><td>最后提交</td><td><code>0c3b61188a</code> · 2025-06-25 · 书架功能</td></tr>
+          <tr><td>规模</td><td>1504 个 Git 跟踪文件；552 个 Java/Kotlin 源码文件（当前扫描口径）</td></tr>
+          <tr><td>构建入口</td><td><code>app/build.gradle</code>、<code>build.gradle</code>、<code>gradlew</code>、<code>km-video-base/build.gradle</code>、<code>kmarket-ui/build.gradle</code>、<code>kmbase/build.gradle</code>、<code>member-point/build.gradle</code>、<code>settings.gradle</code>、<code>sku-bottombar/build.gradle</code>、<code>sku-detailview/build.gradle</code></td></tr>
+          <tr><td>CI</td><td><code>.gitlab-ci.yml</code>、<code>Jenkinsfile</code></td></tr>
+          <tr><td>测试判断</td><td>识别到 10 个测试文件（扫描结果最多展示 10 个），其中至少 9 个文件名指向具体业务/工具场景；仍需阅读断言后才能评价覆盖质量。</td></tr>
+        </tbody></table>
+        <p>建议的静态构建检查入口是 <code>./gradlew projects</code>、<code>./gradlew tasks</code> 和目标模块的 <code>test</code>/<code>lint</code>；当前文档未执行全量构建，内网制品、旧 Gradle/AGP、NDK 或渠道凭据可能是环境限制，不能把“未执行”写成“构建失败”。</p>
+
+        <h2 id="structure">3. 模块与目录结构</h2>
+        <p>Gradle settings 可识别模块：<code>:app</code>、<code>:kmarket-ui</code>、<code>:kmbase</code>、<code>:sku-progress</code>、<code>:sku-bottombar</code>、<code>:sku-detailview</code>、<code>:sku-gift</code>、<code>:km-video-base</code>、<code>:sku-rating</code>、<code>:member-point</code>。</p>
+        <p>主要物理目录：<code>app/</code>、<code>km-video-base/</code>、<code>kmarket-ui/</code>、<code>kmbase/</code>、<code>member-point/</code>、<code>sku-bottombar/</code>、<code>sku-detailview/</code>、<code>sku-gift/</code>、<code>sku-progress/</code>、<code>sku-rating/</code>。</p>
+        <p>从命名可见实现模块与 API/示例模块的分层；调用方应优先依赖稳定 API，示例 <code>app</code> 只用于独立调试，不能误当成线上宿主入口。</p>
+
+        <h2 id="entry">4. 真实入口</h2>
+        <p>Manifest 抽样入口如下；其中 <code>app</code> 下的 Activity/Application 可能只是 demo 或宿主壳，业务集成仍需回到 API、Provider、Router 或实现类。</p>
+        <ul><li><code>app/src/main/AndroidManifest.xml :: application .App</code></li><li><code>app/src/main/AndroidManifest.xml :: activity .MainActivity</code></li><li><code>app/src/main/AndroidManifest.xml :: activity com.zhihu.android.debug_center.ui.DebugCenterActivity</code></li><li><code>app/src/main/AndroidManifest.xml :: activity com.zhihu.android.app.debug.capture.CaptureActivity</code></li><li><code>kmarket-ui/src/main/AndroidManifest.xml :: activity com.zhihu.android.app.market.ui.activity.KMSimpleActivity</code></li><li><code>kmbase/src/main/AndroidManifest.xml :: activity com.zhihu.android.app.base.ui.activity.KmHostActivity</code></li></ul>
+        <p>源码阅读建议从 <a href="../../../../yyyyy-cdoe/KmBase/kmbase/src/main/java/com/zhihu/android/kmarket/base/catalog/KMCatalogView.kt"><code>yyyyy-cdoe/KmBase/kmbase/src/main/java/com/zhihu/android/kmarket/base/catalog/KMCatalogView.kt</code></a>、<a href="../../../../yyyyy-cdoe/KmBase/kmbase/src/main/java/com/zhihu/android/kmarket/base/catalog/KMCatalogViewModel.kt"><code>yyyyy-cdoe/KmBase/kmbase/src/main/java/com/zhihu/android/kmarket/base/catalog/KMCatalogViewModel.kt</code></a>、<a href="../../../../yyyyy-cdoe/KmBase/kmarket-ui/src/main/java/com/zhihu/android/app/market/api/CatalogService.kt"><code>yyyyy-cdoe/KmBase/kmarket-ui/src/main/java/com/zhihu/android/app/market/api/CatalogService.kt</code></a> 开始，再沿调用与依赖反向确认谁创建入口、谁持有状态、谁执行 IO。</p>
+
+                        <h2 id="chain">5. 关键调用链与边界</h2>
+        <h3>源码直接链路：目录组件</h3>
+        <ol>
+          <li>业务页面组合 KMCatalogView</li>
+          <li>KMCatalogView 创建或使用 KMCatalogViewModel</li>
+          <li>KMCatalogViewModel 直接调用 CatalogService</li>
+          <li>目录状态返回 KMCatalogView 渲染</li>
+        </ol>
+        <p><strong>边界说明：</strong>这是可独立验证的目录链。</p>
+        <h3>独立购买机制</h3>
+        <ol>
+          <li>PurchaseWidgetManager 接收外部传入的 purchase model</li>
+          <li>Manager 根据模型装配购买控件与交互</li>
+        </ol>
+        <p><strong>边界说明：</strong>源码不能证明 PurchaseWidgetManager 直接调用 SKUService，交易服务必须沿实际调用方另行确认。</p>
+<h2 id="tradeoff">6. 技术亮点与取舍</h2>
+        <h3>亮点</h3><p>把跨 SKU 稳定能力拆成独立模块，详情页按需组合，而不是复制目录、底栏和进度逻辑。</p>
+        <h3>取舍</h3><p>复用减少重复，但公共模型或路由变化影响多个仓库，API 兼容性成本高。</p>
+        <p>面试时不要把“使用了某框架”本身当亮点。更有价值的是说清楚为什么这样划分状态与生命周期、失败如何降级、版本/协议如何兼容，以及出现竞态时如何用真实调用链定位。</p>
+
+                        <h2 id="risk">7. 仓库专属风险与排查顺序</h2>
+        <p>下面的顺序按本仓真实状态 owner、服务与生命周期组织；前一步没有证据时，不跳到渲染层猜测。</p>
+        <ol>
+          <li><strong>第 1 步。</strong>目录无数据先检查 KMCatalogView 的业务 id、类型和 ViewModel 绑定。</li>
+          <li><strong>第 2 步。</strong>进入 KMCatalogViewModel 查看 CatalogService 的参数、错误和目录状态转换。</li>
+          <li><strong>第 3 步。</strong>购买控件错误时先核对传给 PurchaseWidgetManager 的 purchase model，而不是假定 Manager 会重拉 SKU。</li>
+          <li><strong>第 4 步。</strong>目录正确但购买态过期时分别确认目录链和交易/权益数据来源，不合并状态 owner。</li>
+        </ol>
+        <h2 id="talk">8. 可直接复述的讲法</h2>
+        <h3>30 秒版本</h3>
+        <blockquote><p>KmBase 提供的是可复用业务组件。目录的直接链是 KMCatalogView → KMCatalogViewModel → CatalogService；PurchaseWidgetManager 则消费外部传入的 purchase model。它不直接调用 SKUService，因此目录和购买必须作为两套机制排查。 个人参与范围<strong>需本人确认</strong>。</p></blockquote>
+        <h3>2 分钟版本</h3>
+        <blockquote><p>我会用两个边界解释 KmBase。KMCatalogView 把目录请求交给 KMCatalogViewModel，ViewModel 直接调用 CatalogService 并把状态回给 View；购买区由 PurchaseWidgetManager 根据调用方给的 purchase model 装配。源码没有 Manager 直连 SKUService 的证据。组件复用能减少详情页重复实现，但模型来源分散时容易出现目录、购买和权益状态不同步，因此必须明确每个状态的 owner。 若要把其中某个调用点写成个人成果，仍需本人确认并提供可核验记录。</p></blockquote>
+        <h2 id="qa">9. 仓库专属追问与回答</h2>
+        <h3>1. 问：目录请求真正由谁发起？</h3><p><strong>答：</strong>KMCatalogViewModel 直接调用 CatalogService，View 负责绑定和展示。</p>
+        <h3>2. 问：PurchaseWidgetManager 会自己请求 SKU 吗？</h3><p><strong>答：</strong>当前源码只证明它接收 purchase model，不能声称直接调用 SKUService。</p>
+        <h3>3. 问：购买按钮价格旧了先查哪里？</h3><p><strong>答：</strong>先查传入 Manager 的 purchase model 生成时机和更新通知，再查交易数据源。</p>
+        <h3>4. 问：怎样测试 KmBase 组件契约？</h3><p><strong>答：</strong>目录用 fake CatalogService 测状态，购买控件用不同 purchase model 测展示与点击，不把两者混成一条测试。</p>
+        <h3>5. 问：面试中怎样说明自己在这个仓库里的贡献边界？</h3><p><strong>答：</strong>只陈述自己能用需求单、MR、commit 或评审记录证明的 kmbase 调用点；公共框架、团队装配体系和历史代码不据为己有。无法核验的个人动作、结果和指标统一标为“需本人确认”。</p>
+<h2 id="evidence">10. 源码证据</h2>
+        <p>以下路径均在当前工作区真实存在；它们证明实现与工程结构，不自动证明个人贡献。</p>
+        <ul><li><a href="../../../../yyyyy-cdoe/KmBase/kmbase/src/main/java/com/zhihu/android/kmarket/base/catalog/KMCatalogView.kt"><code>yyyyy-cdoe/KmBase/kmbase/src/main/java/com/zhihu/android/kmarket/base/catalog/KMCatalogView.kt</code></a></li><li><a href="../../../../yyyyy-cdoe/KmBase/kmbase/src/main/java/com/zhihu/android/kmarket/base/catalog/KMCatalogViewModel.kt"><code>yyyyy-cdoe/KmBase/kmbase/src/main/java/com/zhihu/android/kmarket/base/catalog/KMCatalogViewModel.kt</code></a></li><li><a href="../../../../yyyyy-cdoe/KmBase/kmarket-ui/src/main/java/com/zhihu/android/app/market/api/CatalogService.kt"><code>yyyyy-cdoe/KmBase/kmarket-ui/src/main/java/com/zhihu/android/app/market/api/CatalogService.kt</code></a></li><li><a href="../../../../yyyyy-cdoe/KmBase/sku-bottombar/src/main/java/com/zhihu/android/app/sku/bottombar/ui/widget/control/PurchaseWidgetManager.kt"><code>yyyyy-cdoe/KmBase/sku-bottombar/src/main/java/com/zhihu/android/app/sku/bottombar/ui/widget/control/PurchaseWidgetManager.kt</code></a></li><li><a href="../../../../yyyyy-cdoe/KmBase/kmbase/src/test/java/com/zhihu/android/kmarket/base/lifecycle/ShareableViewModelTest.kt"><code>yyyyy-cdoe/KmBase/kmbase/src/test/java/com/zhihu/android/kmarket/base/lifecycle/ShareableViewModelTest.kt</code></a></li><li><a href="../../../../yyyyy-cdoe/KmBase/app/src/main/java/com/zhihu/android/app/AllButtonFragment.kt"><code>yyyyy-cdoe/KmBase/app/src/main/java/com/zhihu/android/app/AllButtonFragment.kt</code></a></li><li><a href="../../../../yyyyy-cdoe/KmBase/app/src/main/java/com/zhihu/android/app/App.kt"><code>yyyyy-cdoe/KmBase/app/src/main/java/com/zhihu/android/app/App.kt</code></a></li></ul>
+        <p>补充工程证据：<a href="../../../../yyyyy-cdoe/KmBase/app/build.gradle"><code>yyyyy-cdoe/KmBase/app/build.gradle</code></a>、<a href="../../../../yyyyy-cdoe/KmBase/build.gradle"><code>yyyyy-cdoe/KmBase/build.gradle</code></a>、<a href="../../../../yyyyy-cdoe/KmBase/gradlew"><code>yyyyy-cdoe/KmBase/gradlew</code></a>、<a href="../../../../yyyyy-cdoe/KmBase/km-video-base/build.gradle"><code>yyyyy-cdoe/KmBase/km-video-base/build.gradle</code></a>、<a href="../../../../yyyyy-cdoe/KmBase/kmarket-ui/build.gradle"><code>yyyyy-cdoe/KmBase/kmarket-ui/build.gradle</code></a>、<a href="../../../../yyyyy-cdoe/KmBase/kmbase/build.gradle"><code>yyyyy-cdoe/KmBase/kmbase/build.gradle</code></a>。</p>
+
+        <hr>
+        <p><a href="../repositories.html">← 返回仓库索引</a> · <a href="../index.html">返回资料首页</a></p>
+      </article>
+      <aside class="page-toc" aria-label="本页目录"><div class="toc-title">本页目录</div><a class="toc-link level-2" href="#position">仓库定位与面试边界</a><a class="toc-link level-2" href="#checkout">当前检出与工程健康</a><a class="toc-link level-2" href="#structure">模块与目录结构</a><a class="toc-link level-2" href="#entry">真实入口</a><a class="toc-link level-2" href="#chain">关键调用链</a><a class="toc-link level-2" href="#tradeoff">技术亮点与取舍</a><a class="toc-link level-2" href="#risk">风险、缺口与排查顺序</a><a class="toc-link level-2" href="#talk">可直接复述</a><a class="toc-link level-2" href="#qa">追问与回答</a><a class="toc-link level-2" href="#evidence">源码证据</a></aside>
+    </div>
+    </main>
+  </div>
+  <script src="../assets/search-data.js"></script>
+  <script src="../assets/docs.js"></script>
+</body>
+</html>

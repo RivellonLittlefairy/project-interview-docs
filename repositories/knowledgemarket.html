@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="KnowledgeMarket Android 业务仓库源码证据、调用链与面试讲法">
+  <title>KnowledgeMarket｜Android 业务仓库分析</title>
+  <link rel="stylesheet" href="../assets/docs.css">
+  <script>try{const t=localStorage.getItem("interview-docs-theme");document.documentElement.dataset.theme=t||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light")}catch{}</script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <header class="topbar">
+    <button class="icon-button menu-button" type="button" data-menu-toggle aria-label="打开文档导航" aria-expanded="false">☰</button>
+    <a class="brand" href="../index.html"><span class="brand-mark">⌁</span><span>项目面试资料库</span></a>
+    <div class="search-shell"><label class="sr-only" for="global-search">搜索文档</label><input id="global-search" type="search" data-search-input placeholder="搜索仓库、技术或面试题…" autocomplete="off"><div class="search-results" data-search-results hidden></div></div>
+    <button class="icon-button" type="button" data-theme-toggle aria-label="切换深浅主题">◐</button>
+  </header>
+  <div class="drawer-backdrop" data-drawer-backdrop hidden></div>
+  <div class="docs-layout">
+    <nav class="sidebar" data-sidebar aria-label="文档导航">
+      <div class="sidebar-heading">仓库文档</div>
+      <section class="nav-group">
+        <h2 class="nav-group-title">返回</h2>
+        <a class="nav-link" href="../repositories.html">全部仓库</a>
+        <a class="nav-link" href="../index.html">资料首页</a>
+        <a class="nav-link" href="../10-android-business-repositories.html">业务仓聚合分析</a>
+      </section>
+      <p class="sidebar-note">离线源码证据 · 2026-07-25</p>
+    </nav>
+    <main class="article-shell" id="main-content">
+    <div class="breadcrumbs"><a href="../index.html">首页</a><span>/</span><a href="../repositories.html">仓库索引</a><span>/</span><span>KnowledgeMarket</span></div>
+    <div class="article-grid">
+      <article class="markdown-body">
+        <h1 id="knowledgemarket">KnowledgeMarket：知识市场发现、书架、已购与手稿阅读的聚合业务仓</h1>
+        <blockquote class="callout"><p>基于当前本地检出与真实源码路径整理。源码只能证明仓库中存在这些实现；所有个人职责、主导范围、上线结果和收益均为<strong>需本人确认</strong>，不得把团队框架、三方内核或上游仓库归为本人原创，也不在没有数据源时编造性能指标。</p></blockquote>
+
+        <h2 id="position">1. 仓库定位与面试边界</h2>
+        <p><code>yyyyy-cdoe/KnowledgeMarket</code> 的当前定位是<strong>知识市场发现、书架、已购与手稿阅读的聚合业务仓</strong>。主要技术形态为 Kotlin/Java、原生 Fragment、Hybrid、ViewModel/DataSource、Rx/LiveData 与多模块 Gradle。</p>
+        <p>面试应聚焦业务入口、状态编排、生命周期、异常兜底和组件集成。可以讲“我如何使用既有能力完成业务调用与排障”，但“本人实现/主导”的范围一律<strong>需本人确认</strong>，且应有 MR、commit、需求、评审或上线记录佐证。</p>
+
+        <h2 id="checkout">2. 当前检出、规模、构建入口、测试与 CI</h2>
+        <table><thead><tr><th>项目</th><th>当前证据</th></tr></thead><tbody>
+          <tr><td>分支</td><td><code>feat_sip_story_retention_popup</code></td></tr>
+          <tr><td>最后提交</td><td><code>77f150529c</code> · 2026-06-26 · 解下冲突</td></tr>
+          <tr><td>规模</td><td>1892 个 Git 跟踪文件；1094 个 Java/Kotlin 源码文件（当前扫描口径）</td></tr>
+          <tr><td>构建入口</td><td><code>app/build.gradle</code>、<code>audiobook/build.gradle</code>、<code>build.gradle</code>、<code>buildSrc/build.gradle</code>、<code>common-dep/build.gradle</code>、<code>gradlew</code>、<code>instabook/build.gradle</code>、<code>kmarket/build.gradle</code>、<code>kmarket-api/build.gradle</code>、<code>kmarket-home/build.gradle</code></td></tr>
+          <tr><td>CI</td><td><code>.gitlab-ci.yml</code>、<code>Jenkinsfile</code></td></tr>
+          <tr><td>测试判断</td><td>识别到 5 个测试文件（扫描结果最多展示 10 个），其中至少 3 个文件名指向具体业务/工具场景；仍需阅读断言后才能评价覆盖质量。</td></tr>
+        </tbody></table>
+        <p>建议的静态构建检查入口是 <code>./gradlew projects</code>、<code>./gradlew tasks</code> 和目标模块的 <code>test</code>/<code>lint</code>；当前文档未执行全量构建，内网制品、旧 Gradle/AGP、NDK 或渠道凭据可能是环境限制，不能把“未执行”写成“构建失败”。</p>
+
+        <h2 id="structure">3. 模块与目录结构</h2>
+        <p>Gradle settings 可识别模块：<code>:app</code>、<code>:common-dep</code>、<code>:kmlint</code>、<code>:kmarket</code>、<code>:kmarket-api</code>、<code>:kmarket-home</code>、<code>:instabook</code>、<code>:audiobook</code>、<code>:sku-manuscript</code>、<code>:personal</code>。</p>
+        <p>主要物理目录：<code>app/</code>、<code>audiobook/</code>、<code>buildSrc/</code>、<code>common-dep/</code>、<code>instabook/</code>、<code>kmarket/</code>、<code>kmarket-api/</code>、<code>kmarket-home/</code>、<code>kmlint/</code>、<code>personal/</code>、<code>sku-manuscript/</code>、<code>tools/</code>。</p>
+        <p>从命名可见实现模块与 API/示例模块的分层；调用方应优先依赖稳定 API，示例 <code>app</code> 只用于独立调试，不能误当成线上宿主入口。</p>
+
+        <h2 id="entry">4. 真实入口</h2>
+        <p>Manifest 抽样入口如下；其中 <code>app</code> 下的 Activity/Application 可能只是 demo 或宿主壳，业务集成仍需回到 API、Provider、Router 或实现类。</p>
+        <ul><li><code>app/src/main/AndroidManifest.xml :: application .App</code></li><li><code>app/src/main/AndroidManifest.xml :: activity .MainActivity</code></li><li><code>app/src/main/AndroidManifest.xml :: activity com.zhihu.android.debug_center.ui.DebugCenterActivity</code></li><li><code>app/src/main/AndroidManifest.xml :: activity .HomeActivity</code></li><li><code>app/src/main/AndroidManifest.xml :: activity com.zhihu.android.app.debug.capture.CaptureActivity</code></li><li><code>kmarket/src/main/AndroidManifest.xml :: receiver com.zhihu.android.app.market.receiver.MarketAudioReceiver</code></li></ul>
+        <p>源码阅读建议从 <a href="../../../../yyyyy-cdoe/KnowledgeMarket/kmarket-home/src/main/java/com/zhihu/android/app/market/newhome/ui/fragment/ContentMarketHomeFragment.kt"><code>yyyyy-cdoe/KnowledgeMarket/kmarket-home/src/main/java/com/zhihu/android/app/market/newhome/ui/fragment/ContentMarketHomeFragment.kt</code></a>、<a href="../../../../yyyyy-cdoe/KnowledgeMarket/kmarket-home/src/main/java/com/zhihu/android/app/market/newhome/ui/viewmodel/BookCityViewModel.kt"><code>yyyyy-cdoe/KnowledgeMarket/kmarket-home/src/main/java/com/zhihu/android/app/market/newhome/ui/viewmodel/BookCityViewModel.kt</code></a>、<a href="../../../../yyyyy-cdoe/KnowledgeMarket/kmarket-home/src/main/java/com/zhihu/android/app/market/newhome/datasource/DiscoverPinDataSource.kt"><code>yyyyy-cdoe/KnowledgeMarket/kmarket-home/src/main/java/com/zhihu/android/app/market/newhome/datasource/DiscoverPinDataSource.kt</code></a> 开始，再沿调用与依赖反向确认谁创建入口、谁持有状态、谁执行 IO。</p>
+
+                        <h2 id="chain">5. 关键调用链与边界</h2>
+        <h3>源码直接链路一：原生首页</h3>
+        <ol>
+          <li>ContentMarketHomeFragment 创建 NativeTabViewModel</li>
+          <li>Fragment 调 refreshInfo</li>
+          <li>NativeTabViewModel 直接创建 NewMarketService</li>
+          <li>结果写入 tabListInfoData/pagedListInfo 并由 Fragment 观察</li>
+        </ol>
+        <p><strong>边界说明：</strong>这条链不经过 BookCityViewModel 或 DiscoverPinDataSource。</p>
+        <h3>源码直接链路二：Pin Tab</h3>
+        <ol>
+          <li>VipPinChildFragment 用 Factory(selectedTab, …) 创建 VipPinViewModel</li>
+          <li>ViewModel 按 tab 选择 DiscoverPinDataSource、LikePinDataSource 或 HistoryPinDataSource</li>
+          <li>DataSource 基类使用 NewMarketService</li>
+        </ol>
+        <p><strong>边界说明：</strong>Pin 场景是独立入口，不是 ContentMarketHomeFragment 的下一跳。</p>
+        <h3>源码直接链路三：书城</h3>
+        <ol>
+          <li>BookCityContentFragment 创建 BookCityViewModel</li>
+          <li>BookCityViewModel 直接创建 NewMarketService</li>
+          <li>ViewModel 通过 listing 暴露分页状态</li>
+        </ol>
+        <p><strong>边界说明：</strong>书城和原生首页共用 Service 类型，但不是同一个 ViewModel 链。</p>
+<h2 id="tradeoff">6. 技术亮点与取舍</h2>
+        <h3>亮点</h3><p>同一仓库覆盖发现—详情入口—阅读/收听—书架—已购的业务闭环，并以 API 模块对外暴露契约。</p>
+        <h3>取舍</h3><p>聚合便于端到端协作，但多代首页、原生/Hybrid 和 Rx/LiveData 并存提高维护成本。</p>
+        <p>面试时不要把“使用了某框架”本身当亮点。更有价值的是说清楚为什么这样划分状态与生命周期、失败如何降级、版本/协议如何兼容，以及出现竞态时如何用真实调用链定位。</p>
+
+                        <h2 id="risk">7. 仓库专属风险与排查顺序</h2>
+        <p>下面的顺序按本仓真实状态 owner、服务与生命周期组织；前一步没有证据时，不跳到渲染层猜测。</p>
+        <ol>
+          <li><strong>第 1 步。</strong>首页异常先确认当前页面是原生首页、Pin Tab 还是书城，三个入口不能共用同一断点结论。</li>
+          <li><strong>第 2 步。</strong>原生首页沿 ContentMarketHomeFragment.refreshInfo → NativeTabViewModel → NewMarketService 查 tabListInfoData。</li>
+          <li><strong>第 3 步。</strong>Pin Tab 检查 Factory 的 selectedTab 和实际选中的 DataSource，再看基类 Service 请求。</li>
+          <li><strong>第 4 步。</strong>书城只看 BookCityContentFragment、BookCityViewModel.listing 和 NewMarketService 的分页状态。</li>
+        </ol>
+        <h2 id="talk">8. 可直接复述的讲法</h2>
+        <h3>30 秒版本</h3>
+        <blockquote><p>KnowledgeMarket 不是一条首页大链，而是三个直接路径：原生首页走 ContentMarketHomeFragment → NativeTabViewModel；Pin Tab 走 VipPinChildFragment → VipPinViewModel → 对应 DataSource；书城走 BookCityContentFragment → BookCityViewModel。它们可以共用 NewMarketService，但不能互相串接。 个人参与范围<strong>需本人确认</strong>。</p></blockquote>
+        <h3>2 分钟版本</h3>
+        <blockquote><p>我会先按页面场景拆 KnowledgeMarket。ContentMarketHomeFragment 调 NativeTabViewModel.refreshInfo，ViewModel 直接用 NewMarketService 并暴露 tabListInfoData；VipPinChildFragment 通过 Factory 把 selectedTab 交给 VipPinViewModel，后者选择 Discover、Like 或 History DataSource；BookCityContentFragment 则单独持有 BookCityViewModel 和 listing。拆开后，无数据问题能直接落到正确 owner。多入口共享 Service 降低接口重复，但状态与分页模型不同，强行复用一条链反而会误导。 若要把其中某个调用点写成个人成果，仍需本人确认并提供可核验记录。</p></blockquote>
+        <h2 id="qa">9. 仓库专属追问与回答</h2>
+        <h3>1. 问：ContentMarketHomeFragment 会创建 BookCityViewModel 吗？</h3><p><strong>答：</strong>已核对的原生首页链创建的是 NativeTabViewModel，书城 ViewModel 属于 BookCityContentFragment。</p>
+        <h3>2. 问：Pin Tab 怎样选择 DataSource？</h3><p><strong>答：</strong>VipPinViewModel 根据 Factory 传入的 selectedTab 选择 Discover、Like 或 History DataSource。</p>
+        <h3>3. 问：三个场景为什么可以共用 NewMarketService？</h3><p><strong>答：</strong>Service 是接口层复用，页面状态 owner 和分页策略仍可分别实现。</p>
+        <h3>4. 问：怎样避免排查串场？</h3><p><strong>答：</strong>日志必须带页面类型、tab 类型和 ViewModel 身份，再沿对应的直接链定位。</p>
+        <h3>5. 问：面试中怎样说明自己在这个仓库里的贡献边界？</h3><p><strong>答：</strong>只陈述自己能用需求单、MR、commit 或评审记录证明的 knowledgemarket 调用点；公共框架、团队装配体系和历史代码不据为己有。无法核验的个人动作、结果和指标统一标为“需本人确认”。</p>
+<h2 id="evidence">10. 源码证据</h2>
+        <p>以下路径均在当前工作区真实存在；它们证明实现与工程结构，不自动证明个人贡献。</p>
+        <ul><li><a href="../../../../yyyyy-cdoe/KnowledgeMarket/kmarket-home/src/main/java/com/zhihu/android/app/market/newhome/ui/fragment/ContentMarketHomeFragment.kt"><code>yyyyy-cdoe/KnowledgeMarket/kmarket-home/src/main/java/com/zhihu/android/app/market/newhome/ui/fragment/ContentMarketHomeFragment.kt</code></a></li><li><a href="../../../../yyyyy-cdoe/KnowledgeMarket/kmarket-home/src/main/java/com/zhihu/android/app/market/newhome/ui/viewmodel/BookCityViewModel.kt"><code>yyyyy-cdoe/KnowledgeMarket/kmarket-home/src/main/java/com/zhihu/android/app/market/newhome/ui/viewmodel/BookCityViewModel.kt</code></a></li><li><a href="../../../../yyyyy-cdoe/KnowledgeMarket/kmarket-home/src/main/java/com/zhihu/android/app/market/newhome/datasource/DiscoverPinDataSource.kt"><code>yyyyy-cdoe/KnowledgeMarket/kmarket-home/src/main/java/com/zhihu/android/app/market/newhome/datasource/DiscoverPinDataSource.kt</code></a></li><li><a href="../../../../yyyyy-cdoe/KnowledgeMarket/kmarket-home/src/main/java/com/zhihu/android/app/market/newhome/ui/service/NewMarketService.java"><code>yyyyy-cdoe/KnowledgeMarket/kmarket-home/src/main/java/com/zhihu/android/app/market/newhome/ui/service/NewMarketService.java</code></a></li><li><a href="../../../../yyyyy-cdoe/KnowledgeMarket/kmarket-home/src/main/java/com/zhihu/android/app/market/shelf/Shelf2Fragment.kt"><code>yyyyy-cdoe/KnowledgeMarket/kmarket-home/src/main/java/com/zhihu/android/app/market/shelf/Shelf2Fragment.kt</code></a></li><li><a href="../../../../yyyyy-cdoe/KnowledgeMarket/app/src/app/java/com/zhihu/android/app/ModuleInitializerImpl.kt"><code>yyyyy-cdoe/KnowledgeMarket/app/src/app/java/com/zhihu/android/app/ModuleInitializerImpl.kt</code></a></li><li><a href="../../../../yyyyy-cdoe/KnowledgeMarket/app/src/app/java/com/zhihu/android/app/Tab.java"><code>yyyyy-cdoe/KnowledgeMarket/app/src/app/java/com/zhihu/android/app/Tab.java</code></a></li></ul>
+        <p>补充工程证据：<a href="../../../../yyyyy-cdoe/KnowledgeMarket/app/build.gradle"><code>yyyyy-cdoe/KnowledgeMarket/app/build.gradle</code></a>、<a href="../../../../yyyyy-cdoe/KnowledgeMarket/audiobook/build.gradle"><code>yyyyy-cdoe/KnowledgeMarket/audiobook/build.gradle</code></a>、<a href="../../../../yyyyy-cdoe/KnowledgeMarket/build.gradle"><code>yyyyy-cdoe/KnowledgeMarket/build.gradle</code></a>、<a href="../../../../yyyyy-cdoe/KnowledgeMarket/buildSrc/build.gradle"><code>yyyyy-cdoe/KnowledgeMarket/buildSrc/build.gradle</code></a>、<a href="../../../../yyyyy-cdoe/KnowledgeMarket/common-dep/build.gradle"><code>yyyyy-cdoe/KnowledgeMarket/common-dep/build.gradle</code></a>、<a href="../../../../yyyyy-cdoe/KnowledgeMarket/gradlew"><code>yyyyy-cdoe/KnowledgeMarket/gradlew</code></a>。</p>
+
+        <hr>
+        <p><a href="../repositories.html">← 返回仓库索引</a> · <a href="../index.html">返回资料首页</a></p>
+      </article>
+      <aside class="page-toc" aria-label="本页目录"><div class="toc-title">本页目录</div><a class="toc-link level-2" href="#position">仓库定位与面试边界</a><a class="toc-link level-2" href="#checkout">当前检出与工程健康</a><a class="toc-link level-2" href="#structure">模块与目录结构</a><a class="toc-link level-2" href="#entry">真实入口</a><a class="toc-link level-2" href="#chain">关键调用链</a><a class="toc-link level-2" href="#tradeoff">技术亮点与取舍</a><a class="toc-link level-2" href="#risk">风险、缺口与排查顺序</a><a class="toc-link level-2" href="#talk">可直接复述</a><a class="toc-link level-2" href="#qa">追问与回答</a><a class="toc-link level-2" href="#evidence">源码证据</a></aside>
+    </div>
+    </main>
+  </div>
+  <script src="../assets/search-data.js"></script>
+  <script src="../assets/docs.js"></script>
+</body>
+</html>

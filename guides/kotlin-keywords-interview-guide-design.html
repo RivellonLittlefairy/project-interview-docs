@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Kotlin 关键字面试复习指南 · 设计规格</title>
+  <style>
+    :root {
+      --bg: #f5f3ee;
+      --surface: #fffdf8;
+      --text: #20231f;
+      --muted: #687068;
+      --line: #dcd8ce;
+      --brand: #6d4aff;
+      --brand-soft: #eee9ff;
+      --accent: #0b806f;
+      --warn: #a15c00;
+      --shadow: 0 18px 52px rgba(44, 38, 26, .08);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #121411;
+        --surface: #1b1e1a;
+        --text: #f2f1eb;
+        --muted: #abb2aa;
+        --line: #343a33;
+        --brand: #a993ff;
+        --brand-soft: #2b2548;
+        --accent: #62d6c0;
+        --warn: #f0b467;
+        --shadow: 0 18px 52px rgba(0, 0, 0, .26);
+      }
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+        "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      line-height: 1.72;
+    }
+    main { width: min(1040px, calc(100% - 32px)); margin: 0 auto; padding: 42px 0 88px; }
+    .hero, section {
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+    .hero {
+      position: relative;
+      overflow: hidden;
+      padding: clamp(30px, 7vw, 72px);
+      background:
+        radial-gradient(circle at 90% 10%, color-mix(in srgb, var(--brand) 22%, transparent), transparent 35%),
+        var(--surface);
+    }
+    .eyebrow { color: var(--brand); font-weight: 800; letter-spacing: .12em; font-size: 12px; }
+    h1 { margin: 12px 0 16px; max-width: 800px; font-size: clamp(34px, 6vw, 64px); line-height: 1.08; letter-spacing: -.05em; }
+    h2 { margin: 0 0 14px; font-size: clamp(25px, 4vw, 34px); letter-spacing: -.025em; }
+    h3 { margin: 0 0 8px; font-size: 18px; }
+    p { margin: 8px 0 14px; }
+    .lead { max-width: 760px; color: var(--muted); font-size: 18px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
+    .chip { padding: 6px 10px; border-radius: 999px; background: var(--brand-soft); color: var(--brand); font-size: 13px; font-weight: 750; }
+    section { margin-top: 22px; padding: clamp(24px, 5vw, 44px); }
+    .muted { color: var(--muted); }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .card { padding: 19px; border: 1px solid var(--line); border-radius: 15px; background: color-mix(in srgb, var(--surface) 93%, var(--brand) 7%); }
+    .number { display: inline-grid; place-items: center; width: 30px; height: 30px; margin-bottom: 10px; border-radius: 9px; background: var(--brand); color: white; font-weight: 800; }
+    table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+    th, td { padding: 12px 13px; border: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { background: var(--brand-soft); color: var(--brand); }
+    code { padding: .13em .4em; border-radius: 5px; background: var(--brand-soft); color: var(--brand); font-family: "Cascadia Code", Consolas, monospace; }
+    ul, ol { padding-left: 22px; }
+    li + li { margin-top: 7px; }
+    .decision { border-left: 4px solid var(--accent); padding: 12px 16px; background: color-mix(in srgb, var(--accent) 9%, var(--surface)); border-radius: 0 12px 12px 0; }
+    .warning { border-left-color: var(--warn); background: color-mix(in srgb, var(--warn) 9%, var(--surface)); }
+    footer { padding: 28px 8px; color: var(--muted); text-align: center; font-size: 13px; }
+    @media (max-width: 700px) {
+      main { width: min(100% - 20px, 1040px); padding-top: 10px; }
+      .grid { grid-template-columns: 1fr; }
+      .hero, section { border-radius: 16px; }
+      .table-wrap { overflow-x: auto; }
+      table { min-width: 680px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header class="hero">
+      <div class="eyebrow">DESIGN SPEC · 2026-08-15</div>
+      <h1>Kotlin 关键字<br>面试复习指南</h1>
+      <p class="lead">一份面向 Android 客户端面试的完整关键字知识地图。它既能从头系统复习，也能在面试前作为快速检索手册。</p>
+      <div class="chips">
+        <span class="chip">完整收录</span>
+        <span class="chip">按频率分层</span>
+        <span class="chip">Java 对照</span>
+        <span class="chip">Android 场景</span>
+        <span class="chip">单文件离线</span>
+      </div>
+    </header>
+
+    <section id="goal">
+      <h2>01 · 目标与边界</h2>
+      <div class="grid">
+        <article class="card">
+          <h3>目标读者</h3>
+          <p class="muted">正在准备 Android 客户端面试，已具备基本 Java/Kotlin 编程经验，希望从语言基础开始系统查漏补缺的开发者。</p>
+        </article>
+        <article class="card">
+          <h3>成功标准</h3>
+          <p class="muted">主要关键字能讲清语义、使用方式、Java 差异、Android 场景和面试追问；低频内容也能被搜索和定位。</p>
+        </article>
+      </div>
+      <div class="decision">
+        <strong>范围决策：</strong>覆盖 Kotlin 2.x 的硬关键字、软关键字、修饰符、注解使用点目标、特殊标识符和保留内容。实验性或版本敏感语法单独标注，不与稳定语法混写。
+      </div>
+    </section>
+
+    <section id="architecture">
+      <h2>02 · 内容架构</h2>
+      <div class="grid">
+        <article class="card"><span class="number">1</span><h3>速览与学习路线</h3><p class="muted">完整总表、分类图例、频率等级、学习进度和建议复习顺序。</p></article>
+        <article class="card"><span class="number">2</span><h3>高频基础</h3><p class="muted">声明、控制流、函数、类、对象及异常处理等日常必用关键字。</p></article>
+        <article class="card"><span class="number">3</span><h3>类型与空安全</h3><p class="muted">类型检查、类型转换、区间判断、空值及相关易错点。</p></article>
+        <article class="card"><span class="number">4</span><h3>面向对象</h3><p class="muted">继承、接口、密封层次、数据类、枚举、值类、伴生对象和内部类。</p></article>
+        <article class="card"><span class="number">5</span><h3>可见性与初始化</h3><p class="muted">访问控制、构造流程、常量和延迟初始化。</p></article>
+        <article class="card"><span class="number">6</span><h3>函数与泛型</h3><p class="muted">内联、非局部返回、具体化类型、操作符、型变、约束和可变参数。</p></article>
+        <article class="card"><span class="number">7</span><h3>协程与异步</h3><p class="muted">重点拆解 <code>suspend</code>，并串联内联函数和跨边界控制流。</p></article>
+        <article class="card"><span class="number">8</span><h3>委托与 DSL</h3><p class="muted">类委托、属性委托、访问器、Backing Field、接收者和 Compose DSL。</p></article>
+        <article class="card"><span class="number">9</span><h3>多平台与低频语法</h3><p class="muted">expect/actual、external、dynamic、typealias 及注解使用点目标。</p></article>
+        <article class="card"><span class="number">10</span><h3>特殊标识与保留内容</h3><p class="muted">it、下划线、反引号标识符、标签返回和为未来保留的词。</p></article>
+        <article class="card"><span class="number">11</span><h3>Java 对照专题</h3><p class="muted">静态成员、单例、匿名类、受检异常、型变和 switch/when。</p></article>
+        <article class="card"><span class="number">12</span><h3>题库与字母索引</h3><p class="muted">高频面试题、易错判断题和覆盖全部条目的 A–Z 索引。</p></article>
+      </div>
+    </section>
+
+    <section id="taxonomy">
+      <h2>03 · 分类与深度</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>层级</th><th>内容</th><th>讲解深度</th><th>典型条目</th></tr></thead>
+          <tbody>
+            <tr><td>★★★★★ 必会</td><td>客户端日常和面试高频</td><td>编译语义、完整示例、Java 对照、Android 场景、追问</td><td><code>val</code>、<code>var</code>、<code>object</code>、<code>when</code>、<code>suspend</code>、<code>inline</code></td></tr>
+            <tr><td>★★★ 常用</td><td>常见但并非每段代码出现</td><td>语义、示例、典型误区、面试关联</td><td><code>sealed</code>、<code>reified</code>、<code>by</code>、<code>lateinit</code></td></tr>
+            <tr><td>★ 了解</td><td>平台特定、编译器上下文或低频</td><td>准确定义、最短示例、使用边界</td><td><code>dynamic</code>、注解使用点目标、保留内容</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="muted">频率只控制篇幅，不控制是否收录。所有条目都进入搜索、分类筛选和字母索引。</p>
+    </section>
+
+    <section id="card-model">
+      <h2>04 · 关键字卡片模型</h2>
+      <ol>
+        <li><strong>身份信息：</strong>名称、类别、稳定性、适用平台、面试频率。</li>
+        <li><strong>一句话定义：</strong>先给能直接复述的结论。</li>
+        <li><strong>语法示例：</strong>小而完整，避免与当前概念无关的噪声。</li>
+        <li><strong>真实语义：</strong>解释编译器如何理解它，必要时指出字节码/JVM 层表现。</li>
+        <li><strong>Java 对照：</strong>说明对应写法以及看似相似但行为不同的地方。</li>
+        <li><strong>Android 场景：</strong>优先使用协程、Compose、ViewModel、Repository、Flow 和 DSL。</li>
+        <li><strong>误区：</strong>列出常见编译错误、运行时风险和错误类比。</li>
+        <li><strong>面试追问：</strong>给出问题、答题骨架和可继续深挖的相关关键字。</li>
+      </ol>
+    </section>
+
+    <section id="interaction">
+      <h2>05 · 页面与交互</h2>
+      <div class="grid">
+        <article class="card"><h3>导航</h3><p class="muted">桌面端固定侧栏；移动端抽屉目录；当前章节高亮；支持返回顶部和锚点直达。</p></article>
+        <article class="card"><h3>检索</h3><p class="muted">全文搜索，按类别、频率和稳定性筛选，并提供“仅看高频”快捷模式。</p></article>
+        <article class="card"><h3>阅读</h3><p class="muted">章节折叠、代码横向滚动、浅色/深色主题、相关关键字跳转。</p></article>
+        <article class="card"><h3>进度</h3><p class="muted">利用 localStorage 保存已读卡片和主题选择；关闭或刷新页面后仍保留。</p></article>
+      </div>
+      <p class="decision"><strong>视觉方向：</strong>偏编辑部式学习手册，而不是花哨的演示页。正文强调层级、扫描效率和长时间阅读舒适度，代码与面试结论使用清晰但克制的颜色区分。</p>
+    </section>
+
+    <section id="implementation">
+      <h2>06 · 技术实现</h2>
+      <ul>
+        <li>最终产物为 <code>docs/kotlin-keywords-interview-guide.html</code>。</li>
+        <li>HTML、CSS、JavaScript 全部内嵌，UTF-8 编码，无 CDN、字体或网络依赖。</li>
+        <li>使用语义化 HTML；核心正文在 JavaScript 不可用时仍然能够阅读。</li>
+        <li>关键字清单作为页面内结构化数据存在，驱动计数、搜索、筛选和覆盖检查。</li>
+        <li>响应式断点覆盖桌面、平板和手机；窄屏允许代码块及宽表格横向滚动。</li>
+        <li>交互脚本只增强阅读体验，不把正文依赖于运行时模板渲染。</li>
+      </ul>
+    </section>
+
+    <section id="quality">
+      <h2>07 · 验收与质量控制</h2>
+      <div class="grid">
+        <article class="card"><h3>内容覆盖</h3><p class="muted">分类清单与文档卡片双向核对，检查遗漏、重复和归类冲突。</p></article>
+        <article class="card"><h3>技术验证</h3><p class="muted">检查 HTML 结构、脚本语法、搜索筛选、主题切换、锚点和进度持久化。</p></article>
+        <article class="card"><h3>视觉验证</h3><p class="muted">分别以桌面与移动视口渲染并检查溢出、遮挡、字号和目录可用性。</p></article>
+        <article class="card"><h3>知识准确性</h3><p class="muted">明确 Kotlin 2.x 基线；对实验、平台特定和版本敏感内容显示标签。</p></article>
+      </div>
+      <div class="decision warning">
+        <strong>非目标：</strong>不把文档扩展成完整 Kotlin 教程，不系统讲标准库 API，也不展开 Android 架构全貌；这些内容只在解释关键字时作为必要上下文出现。
+      </div>
+    </section>
+
+    <section id="deliverable">
+      <h2>08 · 交付定义</h2>
+      <p>交付一份无需安装、双击即可阅读的单文件 HTML。它应同时满足三种使用方式：</p>
+      <ul>
+        <li><strong>系统复习：</strong>按照章节顺序从基础走到低频语法。</li>
+        <li><strong>面试冲刺：</strong>筛选五星高频内容并快速阅读答题结论。</li>
+        <li><strong>即时查询：</strong>通过搜索或字母索引定位任一关键字。</li>
+      </ul>
+    </section>
+
+    <footer>Kotlin 关键字面试复习指南 · 设计规格 · 面向 Android 客户端</footer>
+  </main>
+</body>
+</html>

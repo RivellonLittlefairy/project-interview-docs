@@ -1,0 +1,983 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="全工作区覆盖复核：基于当前工作区源码证据整理的项目面试资料">
+  <title>全工作区覆盖与交叉证据最终复核｜项目面试资料</title>
+  <link rel="stylesheet" href="assets/docs.css">
+  <script>
+    try {
+      const savedTheme = localStorage.getItem("interview-docs-theme");
+      const preferredDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      document.documentElement.dataset.theme = savedTheme || (preferredDark ? "dark" : "light");
+    } catch {}
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <header class="topbar">
+    <button class="icon-button menu-button" type="button" data-menu-toggle aria-label="打开文档导航" aria-expanded="false">☰</button>
+    <a class="brand" href="index.html"><span class="brand-mark">⌁</span><span>项目面试资料库</span></a>
+    <div class="search-shell">
+      <label class="sr-only" for="global-search">搜索所有文档</label>
+      <input id="global-search" type="search" data-search-input placeholder="搜索仓库、技术或面试题…" autocomplete="off">
+      <span class="search-shortcut">Ctrl K</span>
+      <div class="search-results" data-search-results hidden></div>
+    </div>
+    <button class="icon-button" type="button" data-theme-toggle aria-label="切换深浅主题">◐</button>
+  </header>
+  <div class="drawer-backdrop" data-drawer-backdrop hidden></div>
+  <div class="docs-layout">
+    <nav class="sidebar" data-sidebar aria-label="全站文档导航">
+      <div class="sidebar-heading">文档导航</div>
+      
+        <section class="nav-group">
+          <h2 class="nav-group-title">逐仓文档</h2>
+          <a class="nav-link" href="repositories.html">66 个仓库独立分析</a>
+        </section>
+        <section class="nav-group">
+          <h2 class="nav-group-title">开始使用</h2>
+          <a class="nav-link" href="index.html">总览与导航</a>
+<a class="nav-link" href="50-interview-project-summary.html">五条主讲项目线</a>
+<a class="nav-link" href="70-resume-and-star-stories.html">简历与 STAR</a>
+<a class="nav-link" href="60-interview-question-bank.html">70 道面试题</a>
+        </section>
+
+        <section class="nav-group">
+          <h2 class="nav-group-title">仓库分析</h2>
+          <a class="nav-link" href="00-repository-inventory.html">全量仓库盘点</a>
+<a class="nav-link" href="10-android-business-repositories.html">Android 业务仓库</a>
+<a class="nav-link" href="20-android-infrastructure-media.html">基础设施与媒体</a>
+<a class="nav-link" href="30-cross-platform-rn-web.html">RN 与 Web</a>
+<a class="nav-link" href="31-tools-samples-and-assets.html">工具、样例与资产</a>
+        </section>
+
+        <section class="nav-group">
+          <h2 class="nav-group-title">质量复核</h2>
+          <a class="nav-link" href="40-android-docs-evidence-review.html">Android 证据复核</a>
+<a class="nav-link active" href="41-full-workspace-coverage-review.html" aria-current="page">全工作区覆盖复核</a>
+        </section>
+
+        <section class="nav-group">
+          <h2 class="nav-group-title">辅助材料</h2>
+          <a class="nav-link" href="ANALYSIS-TEMPLATE.html">仓库分析模板</a>
+<a class="nav-link" href="2026-07-24-all-repositories-analysis-plan.html">原始执行计划</a>
+        </section>
+
+        <section class="nav-group">
+          <h2 class="nav-group-title">Android 专题</h2>
+          <a class="nav-link" href="android-storage-guide.html">Android 存储方案</a>
+        </section>
+      <p class="sidebar-note">离线资料 · 证据快照 2026-07-24</p>
+    </nav>
+    <main class="article-shell" id="main-content">
+      <div class="breadcrumbs"><a href="index.html">首页</a><span>/</span><span>质量复核</span><span>/</span><span>全工作区覆盖复核</span></div>
+      
+      <article class="markdown-body">
+        <h1 id="全工作区覆盖与交叉证据最终复核">全工作区覆盖与交叉证据最终复核</h1>
+<blockquote class="callout"><p>复核时间：2026-07-24<br>基准：<code>00-repository-inventory.md</code> 的 66 个有效 Git 仓库。<br>复核对象：<code>10-android-business-repositories.md</code>、<code>20-android-infrastructure-media.md</code>、<code>30-cross-platform-rn-web.md</code>、<code>31-tools-samples-and-assets.md</code>、<code>40-android-docs-evidence-review.md</code>，并对照 <code>C:\Users\msf\Desktop\code</code> 当前磁盘快照。<br>本文只记录问题和结论，不修改上述文档。</p>
+</blockquote>
+<h2 id="1-最终结论">1. 最终结论</h2>
+<ul>
+<li><strong>Git 仓库覆盖完整</strong>：<code>10</code> 的 23 个章节 + <code>20</code> 的 33 个章节 + <code>30</code> 的 1 个有效 Git 仓库 + <code>31</code> 的 10 个仓库，共 67 个仓库章节；唯一并集为 <strong>66 个仓库</strong>。</li>
+<li><strong>唯一重复是 <code>Kmaudio</code></strong>：它在 <code>10</code> 第 11 节按业务播放器分析，在 <code>20</code> 第 21 节按媒体基础设施分析；两个章节只对应一个磁盘仓库。</li>
+<li><strong>无遗漏、无越界、无大小写错配</strong>：以 <code>00</code> 的 66 条有效仓库路径做区分大小写比较，<code>missing = 0</code>、<code>extra = 0</code>、<code>case mismatch = 0</code>。</li>
+<li><strong>磁盘基准成立</strong>：当前实际存在 67 个 <code>.git</code> 标记，其中 66 个路径均通过 <code>git rev-parse --is-inside-work-tree</code>，根目录空 <code>.git</code> 不通过；<code>yyyyy-cdoe</code> 下是 65 个有效仓库，另有根级 <code>html-anything</code> 1 个有效仓库。</li>
+<li><strong>覆盖质量分布</strong>：按唯一仓库取最高覆盖档位，深入 24、标准 33、简要 8、仅盘点 1，共 66。<code>Kmaudio</code> 保留“<code>10</code> 深入 / <code>20</code> 标准”的双视角标注。</li>
+<li><strong>源码证据门禁通过</strong>：初查抽取的 40 条唯一源码路径及关键符号仍为 40/40 命中；最终回归进一步确认 <code>30</code> 证据表的 29 个路径出现全部存在，<code>31</code> 的 48 个完整路径全部存在。</li>
+<li><strong>个人归因门禁通过</strong>：<code>30</code> 未条件化第一人称风险为 0；<code>31</code> 有 19 处“需本人确认”门禁，未条件化第一人称风险为 0。源码事实、项目归属和个人贡献已明确分层。</li>
+<li><strong>敏感信息门禁通过</strong>：未在 <code>30</code>/<code>31</code> 中发现实际 Token、密码、密钥、Webhook、私网 host/IP 或凭据值。</li>
+<li><strong>P1/P2 已收口</strong>：初查发现的 13 处个人归因风险、<code>40</code> 的陈旧状态以及 <code>30</code>/<code>31</code> 的证据路径缩写均已修订并通过独立回归。</li>
+</ul>
+<p>结论状态：<strong>最终通过，可进入综合面试材料。</strong></p>
+<h2 id="2-66-仓并集证明">2. 66 仓并集证明</h2>
+<table>
+<thead>
+<tr>
+<th>来源</th>
+<th align="right">仓库章节数</th>
+<th align="right">文档内唯一数</th>
+<th align="right">对前序集合新增唯一仓库</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>10</code></td>
+<td align="right">23</td>
+<td align="right">23</td>
+<td align="right">23</td>
+<td>Android 业务与主工程</td>
+</tr>
+<tr>
+<td><code>20</code></td>
+<td align="right">33</td>
+<td align="right">33</td>
+<td align="right">32</td>
+<td><code>Kmaudio</code> 与 <code>10</code> 重复一次</td>
+</tr>
+<tr>
+<td><code>30</code></td>
+<td align="right">1 个有效 Git 仓库</td>
+<td align="right">1</td>
+<td align="right">1</td>
+<td><code>html-anything</code>；非 Git <code>pikachu</code> 另记</td>
+</tr>
+<tr>
+<td><code>31</code></td>
+<td align="right">10</td>
+<td align="right">10</td>
+<td align="right">10</td>
+<td>工具、个人样例、上游工程</td>
+</tr>
+<tr>
+<td><strong>合计</strong></td>
+<td align="right"><strong>67 个章节</strong></td>
+<td align="right">—</td>
+<td align="right"><strong>66</strong></td>
+<td>唯一重复仅 <code>Kmaudio</code></td>
+</tr>
+</tbody></table>
+<p>集合计算：</p>
+<div class="code-block">
+      <div class="code-toolbar"><span>text</span><button type="button" data-copy-code>复制</button></div>
+      <pre><code class="language-text">|10 ∪ 20| = 23 + 33 - 1(Kmaudio) = 55
+|10 ∪ 20 ∪ 30| = 55 + 1(html-anything) = 56
+|10 ∪ 20 ∪ 30 ∪ 31| = 56 + 10 = 66</code></pre>
+    </div>
+<p>区分大小写的磁盘/文档集合比较结果：</p>
+<div class="code-block">
+      <div class="code-toolbar"><span>text</span><button type="button" data-copy-code>复制</button></div>
+      <pre><code class="language-text">inventory(00) = 66
+document sections = 67
+document unique repositories = 66
+duplicate groups = Kmaudio × 2
+missing from documents = 0
+extra in documents = 0
+case mismatches = 0</code></pre>
+    </div>
+<h2 id="3-全仓覆盖矩阵">3. 全仓覆盖矩阵</h2>
+<h3 id="3-1-10-承接的-23-个仓库">3.1 <code>10</code> 承接的 23 个仓库</h3>
+<table>
+<thead>
+<tr>
+<th>仓库</th>
+<th>覆盖档位</th>
+<th>所属文档章节</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>yyyyy-cdoe/VipAndroid</code></td>
+<td>深入</td>
+<td><code>10</code> §1</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/KnowledgeMarket</code></td>
+<td>深入</td>
+<td><code>10</code> §2</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/km_home_base</code></td>
+<td>深入</td>
+<td><code>10</code> §3</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/VipHome</code></td>
+<td>深入</td>
+<td><code>10</code> §4</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/VipProfile</code></td>
+<td>标准</td>
+<td><code>10</code> §5</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/VipGrowth</code></td>
+<td>标准</td>
+<td><code>10</code> §6</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/Premium</code></td>
+<td>标准</td>
+<td><code>10</code> §7</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/VipReader</code></td>
+<td>深入</td>
+<td><code>10</code> §8</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/VipManuscript</code></td>
+<td>深入</td>
+<td><code>10</code> §9</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/VipKmAudio</code></td>
+<td>标准</td>
+<td><code>10</code> §10</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/Kmaudio</code></td>
+<td>深入 / 标准</td>
+<td><code>10</code> §11（业务）；<code>20</code> §21（媒体，重复不另计）</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/KmDetailPage</code></td>
+<td>深入</td>
+<td><code>10</code> §12</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/KmBase</code></td>
+<td>标准</td>
+<td><code>10</code> §13</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/LiteKnowledgeMarket</code></td>
+<td>标准</td>
+<td><code>10</code> §14</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/VipPassport</code></td>
+<td>深入</td>
+<td><code>10</code> §15</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/Account</code></td>
+<td>标准</td>
+<td><code>10</code> §16</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/VipComment</code></td>
+<td>深入</td>
+<td><code>10</code> §17</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/Comment</code></td>
+<td>深入</td>
+<td><code>10</code> §18</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/Feed</code></td>
+<td>深入</td>
+<td><code>10</code> §19</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/km-attention</code></td>
+<td>标准</td>
+<td><code>10</code> §20</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/Vipchannelcard</code></td>
+<td>标准</td>
+<td><code>10</code> §21</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/Common</code></td>
+<td>标准</td>
+<td><code>10</code> §22</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/kmcommon</code></td>
+<td>标准</td>
+<td><code>10</code> §23</td>
+</tr>
+</tbody></table>
+<h3 id="3-2-20-承接的-32-个新增仓库">3.2 <code>20</code> 承接的 32 个新增仓库</h3>
+<blockquote class="callout"><p><code>20</code> 实有 33 个仓库章节；下表不重复列 <code>Kmaudio</code>，其双视角位置已在上表标明。</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>仓库</th>
+<th>覆盖档位</th>
+<th>所属文档章节</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>yyyyy-cdoe/DevKit</code></td>
+<td>深入</td>
+<td><code>20</code> §1</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/Dependencies</code></td>
+<td>简要</td>
+<td><code>20</code> §2</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/Net</code></td>
+<td>深入</td>
+<td><code>20</code> §3</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/VipNet</code></td>
+<td>标准</td>
+<td><code>20</code> §4</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/Netdns</code></td>
+<td>深入</td>
+<td><code>20</code> §5</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/ZRouter</code></td>
+<td>深入</td>
+<td><code>20</code> §6</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/Bootstrap</code></td>
+<td>简要</td>
+<td><code>20</code> §7</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/Futureve</code></td>
+<td>标准</td>
+<td><code>20</code> §8</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/FutureveGlobal</code></td>
+<td>标准</td>
+<td><code>20</code> §9</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/Mercury</code></td>
+<td>标准</td>
+<td><code>20</code> §10</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/VipMercury</code></td>
+<td>标准</td>
+<td><code>20</code> §11</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/mercury-core</code></td>
+<td>深入</td>
+<td><code>20</code> §12</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/KmReporter</code></td>
+<td>简要</td>
+<td><code>20</code> §13</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/Share</code></td>
+<td>标准</td>
+<td><code>20</code> §14</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/ShareCore</code></td>
+<td>标准</td>
+<td><code>20</code> §15</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/Media</code></td>
+<td>标准</td>
+<td><code>20</code> §16</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/mediax</code></td>
+<td>标准</td>
+<td><code>20</code> §17</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/VideoEntity</code></td>
+<td>标准</td>
+<td><code>20</code> §18</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/Audio</code></td>
+<td>标准</td>
+<td><code>20</code> §19</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/Zhplayer</code></td>
+<td>标准</td>
+<td><code>20</code> §20</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/Picture</code></td>
+<td>标准</td>
+<td><code>20</code> §22</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/Picasa</code></td>
+<td>标准</td>
+<td><code>20</code> §23</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/photos</code></td>
+<td>仅盘点</td>
+<td><code>20</code> §24</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/Camera</code></td>
+<td>简要</td>
+<td><code>20</code> §25</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/barrage</code></td>
+<td>简要</td>
+<td><code>20</code> §26</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/BlurView</code></td>
+<td>简要</td>
+<td><code>20</code> §27</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/bottomnav</code></td>
+<td>标准</td>
+<td><code>20</code> §28</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/ZhEditor</code></td>
+<td>标准</td>
+<td><code>20</code> §29</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/ZIM</code></td>
+<td>标准</td>
+<td><code>20</code> §30</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/VipPrerender</code></td>
+<td>标准</td>
+<td><code>20</code> §31</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/ReaderSDK-CMake</code></td>
+<td>深入</td>
+<td><code>20</code> §32</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/VipCommon</code></td>
+<td>深入</td>
+<td><code>20</code> §33</td>
+</tr>
+</tbody></table>
+<h3 id="3-3-30-31-承接的-11-个仓库">3.3 <code>30</code>/<code>31</code> 承接的 11 个仓库</h3>
+<table>
+<thead>
+<tr>
+<th>仓库</th>
+<th>覆盖档位</th>
+<th>所属文档章节</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>html-anything</code></td>
+<td>深入</td>
+<td><code>30</code> §§12—22</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/Purrfolio</code></td>
+<td>深入</td>
+<td><code>31</code> §1</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/mcp-financial-calculator</code></td>
+<td>深入</td>
+<td><code>31</code> §2</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/meter</code></td>
+<td>深入</td>
+<td><code>31</code> §3</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/ZhihuLite</code></td>
+<td>深入</td>
+<td><code>31</code> §4</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/moonlight-android</code></td>
+<td>标准</td>
+<td><code>31</code> §5</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/cuda-samples</code></td>
+<td>标准</td>
+<td><code>31</code> §6</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/km-android-tools</code></td>
+<td>标准</td>
+<td><code>31</code> §7</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/VIP-Skills</code></td>
+<td>标准</td>
+<td><code>31</code> §8</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/obsidian-skills</code></td>
+<td>简要</td>
+<td><code>31</code> §9</td>
+</tr>
+<tr>
+<td><code>yyyyy-cdoe/8J52SRPW6X_Matchfile</code></td>
+<td>简要</td>
+<td><code>31</code> §10</td>
+</tr>
+</tbody></table>
+<h2 id="4-非-git-空仓与资产口径">4. 非 Git、空仓与资产口径</h2>
+<h3 id="4-1-根级-pikachu">4.1 根级 <code>pikachu</code></h3>
+<ul>
+<li><code>C:\Users\msf\Desktop\code\pikachu</code> 存在，但没有 <code>.git</code>，不进入 66 个 Git 仓库并集。</li>
+<li><code>30</code> 对它属于<strong>深入覆盖</strong>：§§2—10 覆盖定位、入口、AI 生图、轮询、分页、Jotai、错误/安全、checkout 边界和面试追问；§11 给出 12 条证据结论。</li>
+<li>当前磁盘复核仍是 76 个 <code>pages/*</code> 目录、18 个 <code>packages/*</code> 目录、1770 个 TS/TSX 文件、2 个测试文件和 1 个快照；React Native 版本为 0.72.10。</li>
+<li>文档正确记录了不完整 checkout：声明的 <code>prn/*</code> 与 <code>.yarn/</code> 缺失，<code>prnn/</code> 为空；不能把当前无法 Bundle 直接归因于业务代码。</li>
+<li><code>pages/entry</code>、<code>pages/entry-lite</code>、<code>pages/entry-zhi</code> 三套入口都存在；它们不是根目录下的同名目录。</li>
+<li><code>yyyyy-cdoe/pikachu</code> 是另一个无 <code>.git</code> 的残片，只见 <code>.cursor</code>、<code>.husky</code>、<code>.yarn</code>、<code>types</code>、<code>.sentryclirc</code> 等，不应和根级深入分析对象合并，也不应计成独立仓库。</li>
+</ul>
+<h3 id="4-2-根空-git">4.2 根空 <code>.git</code></h3>
+<ul>
+<li><code>C:\Users\msf\Desktop\code\.git</code> 存在且当前为空。</li>
+<li><code>git status</code> / <code>git rev-parse</code> 均不能把工作区根识别为 Git 仓库。</li>
+<li>因此 <code>00</code> 的“67 个 <code>.git</code> 标记 = 66 个有效仓库 + 1 个无效根标记”口径正确。</li>
+</ul>
+<h3 id="4-3-photos">4.3 <code>photos</code></h3>
+<ul>
+<li><code>yyyyy-cdoe/photos</code> 是有效 Git 仓库，必须计入 66。</li>
+<li>除 Git 元数据外，工作树当前只有 <code>LICENSE</code>，没有可分析实现；<code>20</code> §24 和 <code>40</code> 将其标成“仅盘点”正确。</li>
+<li>它不能被包装为 Android Runtime 库、图片业务实现或个人项目。</li>
+</ul>
+<h3 id="4-4-xxxxx-html">4.4 <code>xxxxx-html</code></h3>
+<ul>
+<li><code>C:\Users\msf\Desktop\code\xxxxx-html</code> 存在但没有 <code>.git</code>，不进入 66。</li>
+<li>当前有 64 个 HTML 文件、3,633,408 字节：顶层 4 个，<code>basic-components/</code> 60 个。<code>31</code> §11 的“约 3.63 MB”采用十进制 MB 时成立。</li>
+<li>它是离线文档资产，不是源码仓库；文档已明确要求回到当前源码和 commit 复核，资产口径正确。</li>
+</ul>
+<h2 id="5-30-31-源码证据抽查">5. <code>30</code>/<code>31</code> 源码证据抽查</h2>
+<p>抽查原则：路径必须在当前磁盘存在，并至少命中表述中的关键类、函数、配置或行为符号。以下是初查抽取的 <strong>40 条唯一路径，40/40 通过</strong>；最终回归时再次确认这些路径均存在。</p>
+<table>
+<thead>
+<tr>
+<th align="right">#</th>
+<th>文档/项目</th>
+<th>源码证据路径</th>
+<th>核对结果</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="right">1</td>
+<td><code>30</code> / pikachu</td>
+<td><code>pikachu/pages/entry/src/pages.mjs</code></td>
+<td>路径和页面映射命中</td>
+</tr>
+<tr>
+<td align="right">2</td>
+<td><code>30</code> / pikachu</td>
+<td><code>pikachu/pages/entry/src/getRNPageLoaders.ts</code></td>
+<td><code>getRNPageLoaders</code> 命中</td>
+</tr>
+<tr>
+<td align="right">3</td>
+<td><code>30</code> / pikachu</td>
+<td><code>pikachu/pages/entry/src/index.tsx</code></td>
+<td>注册/检测/启动计时符号命中</td>
+</tr>
+<tr>
+<td align="right">4</td>
+<td><code>30</code> / pikachu</td>
+<td><code>pikachu/pages/GenerateAIImage/src/Entry.tsx</code></td>
+<td><code>handleGenerate</code> 命中</td>
+</tr>
+<tr>
+<td align="right">5</td>
+<td><code>30</code> / pikachu</td>
+<td><code>pikachu/pages/GenerateAIImageResult/src/Entry.tsx</code></td>
+<td>轮询、停止和回传函数命中</td>
+</tr>
+<tr>
+<td align="right">6</td>
+<td><code>30</code> / pikachu</td>
+<td><code>pikachu/pages/AIImageSelection/src/components/AIImageList/index.tsx</code></td>
+<td>首次请求/翻页函数命中</td>
+</tr>
+<tr>
+<td align="right">7</td>
+<td><code>30</code> / pikachu</td>
+<td><code>pikachu/packages/shared/src/jotai/AIImageSelectionAtom/aiImageSelectionAtom.ts</code></td>
+<td>atom 命中</td>
+</tr>
+<tr>
+<td align="right">8</td>
+<td><code>30</code> / pikachu</td>
+<td><code>pikachu/package.json</code></td>
+<td>workspace 与 Bundle 脚本命中</td>
+</tr>
+<tr>
+<td align="right">9</td>
+<td><code>30</code> / pikachu</td>
+<td><code>pikachu/joker.yml</code></td>
+<td>单测配置命中</td>
+</tr>
+<tr>
+<td align="right">10</td>
+<td><code>30</code> / html-anything</td>
+<td><code>html-anything/pnpm-workspace.yaml</code></td>
+<td><code>cli</code>、<code>e2e</code>、<code>next</code> 命中</td>
+</tr>
+<tr>
+<td align="right">11</td>
+<td><code>30</code> / html-anything</td>
+<td><code>html-anything/next/src/lib/agents/detect.ts</code></td>
+<td>20 个 agent、扫描函数命中</td>
+</tr>
+<tr>
+<td align="right">12</td>
+<td><code>30</code> / html-anything</td>
+<td><code>html-anything/next/src/lib/agents/argv.ts</code></td>
+<td>protocol、unsupported error、argv 命中</td>
+</tr>
+<tr>
+<td align="right">13</td>
+<td><code>30</code> / html-anything</td>
+<td><code>html-anything/next/src/lib/agents/invoke.ts</code></td>
+<td><code>invokeAgent</code> / <code>spawn</code> 命中</td>
+</tr>
+<tr>
+<td align="right">14</td>
+<td><code>30</code> / html-anything</td>
+<td><code>html-anything/next/src/app/api/convert/route.ts</code></td>
+<td><code>POST</code> 与 SSE 命中</td>
+</tr>
+<tr>
+<td align="right">15</td>
+<td><code>30</code> / html-anything</td>
+<td><code>html-anything/next/src/lib/use-convert.ts</code></td>
+<td>task controller / cancel 命中</td>
+</tr>
+<tr>
+<td align="right">16</td>
+<td><code>30</code> / html-anything</td>
+<td><code>html-anything/next/src/lib/store.ts</code></td>
+<td><code>appendHtmlFor</code> 命中</td>
+</tr>
+<tr>
+<td align="right">17</td>
+<td><code>30</code> / html-anything</td>
+<td><code>html-anything/next/src/components/preview-pane.tsx</code></td>
+<td>320 ms 与 iframe sandbox 命中</td>
+</tr>
+<tr>
+<td align="right">18</td>
+<td><code>30</code> / html-anything</td>
+<td><code>html-anything/next/src/middleware.ts</code></td>
+<td>middleware / matcher 命中</td>
+</tr>
+<tr>
+<td align="right">19</td>
+<td><code>30</code> / html-anything</td>
+<td><code>html-anything/next/src/lib/security/host-validation.ts</code></td>
+<td><code>isAllowedHost</code> 命中</td>
+</tr>
+<tr>
+<td align="right">20</td>
+<td><code>30</code> / html-anything</td>
+<td><code>html-anything/next/src/lib/skills/install.ts</code></td>
+<td>tar 预检命中</td>
+</tr>
+<tr>
+<td align="right">21</td>
+<td><code>30</code> / html-anything</td>
+<td><code>html-anything/.github/workflows/ci.yml</code></td>
+<td>Next/e2e CI 命中</td>
+</tr>
+<tr>
+<td align="right">22</td>
+<td><code>30</code> / html-anything</td>
+<td><code>html-anything/scripts/guard.ts</code></td>
+<td>workspace guard 命中</td>
+</tr>
+<tr>
+<td align="right">23</td>
+<td><code>31</code> / Purrfolio</td>
+<td><code>yyyyy-cdoe/Purrfolio/src/Purrfolio.App/App.xaml.cs</code></td>
+<td>DI 注册命中</td>
+</tr>
+<tr>
+<td align="right">24</td>
+<td><code>31</code> / Purrfolio</td>
+<td><code>yyyyy-cdoe/Purrfolio/src/Purrfolio.Core/Utilities/XirrCalculator.cs</code></td>
+<td><code>Calculate</code> / <code>Bisect</code> 命中</td>
+</tr>
+<tr>
+<td align="right">25</td>
+<td><code>31</code> / Purrfolio</td>
+<td><code>yyyyy-cdoe/Purrfolio/src/Purrfolio.Infrastructure/Repositories/SqliteInvestmentRepository.cs</code></td>
+<td>async / DbContext 命中</td>
+</tr>
+<tr>
+<td align="right">26</td>
+<td><code>31</code> / Purrfolio</td>
+<td><code>yyyyy-cdoe/Purrfolio/tests/Purrfolio.Core.Tests/XirrCalculatorTests.cs</code></td>
+<td>xUnit 测试命中</td>
+</tr>
+<tr>
+<td align="right">27</td>
+<td><code>31</code> / MCP</td>
+<td><code>yyyyy-cdoe/mcp-financial-calculator/src/index.js</code></td>
+<td>MCP server / stdio transport 命中</td>
+</tr>
+<tr>
+<td align="right">28</td>
+<td><code>31</code> / MCP</td>
+<td><code>yyyyy-cdoe/mcp-financial-calculator/src/tools/index.js</code></td>
+<td>工具注册入口命中</td>
+</tr>
+<tr>
+<td align="right">29</td>
+<td><code>31</code> / MCP</td>
+<td><code>yyyyy-cdoe/mcp-financial-calculator/src/tools/basic.js</code></td>
+<td>工具注册命中</td>
+</tr>
+<tr>
+<td align="right">30</td>
+<td><code>31</code> / MCP</td>
+<td><code>yyyyy-cdoe/mcp-financial-calculator/src/tools/cashflow.js</code></td>
+<td>工具注册命中</td>
+</tr>
+<tr>
+<td align="right">31</td>
+<td><code>31</code> / MCP</td>
+<td><code>yyyyy-cdoe/mcp-financial-calculator/src/tools/tvm.js</code></td>
+<td>工具注册命中</td>
+</tr>
+<tr>
+<td align="right">32</td>
+<td><code>31</code> / MCP</td>
+<td><code>yyyyy-cdoe/mcp-financial-calculator/src/tools/metrics.js</code></td>
+<td>工具注册命中</td>
+</tr>
+<tr>
+<td align="right">33</td>
+<td><code>31</code> / MCP</td>
+<td><code>yyyyy-cdoe/mcp-financial-calculator/src/schemas.js</code></td>
+<td><code>isStrictIsoDate</code> 命中</td>
+</tr>
+<tr>
+<td align="right">34</td>
+<td><code>31</code> / MCP</td>
+<td><code>yyyyy-cdoe/mcp-financial-calculator/src/lib/finance.js</code></td>
+<td><code>solveRateByRoot</code> 命中</td>
+</tr>
+<tr>
+<td align="right">35</td>
+<td><code>31</code> / MCP</td>
+<td><code>yyyyy-cdoe/mcp-financial-calculator/test/finance.test.js</code></td>
+<td>测试定义命中</td>
+</tr>
+<tr>
+<td align="right">36</td>
+<td><code>31</code> / MCP</td>
+<td><code>yyyyy-cdoe/mcp-financial-calculator/test/schemas.test.js</code></td>
+<td>测试定义命中</td>
+</tr>
+<tr>
+<td align="right">37</td>
+<td><code>31</code> / meter</td>
+<td><code>yyyyy-cdoe/meter/app/src/main/java/com/example/meter/MainActivity.kt</code></td>
+<td>Activity 命中</td>
+</tr>
+<tr>
+<td align="right">38</td>
+<td><code>31</code> / meter</td>
+<td><code>yyyyy-cdoe/meter/app/src/main/java/com/example/meter/data/EarningsCalculator.kt</code></td>
+<td>计算器命中</td>
+</tr>
+<tr>
+<td align="right">39</td>
+<td><code>31</code> / meter</td>
+<td><code>yyyyy-cdoe/meter/app/src/main/java/com/example/meter/data/HolidayRepository.kt</code></td>
+<td>仓储命中</td>
+</tr>
+<tr>
+<td align="right">40</td>
+<td><code>31</code> / meter</td>
+<td><code>yyyyy-cdoe/meter/app/src/main/java/com/example/meter/data/EarningsPreferences.kt</code></td>
+<td>加密存储/日志相关符号命中</td>
+</tr>
+</tbody></table>
+<p>补充数字核对：</p>
+<ul>
+<li><code>html-anything</code> 当前 <code>AGENTS</code> 数为 20，workspace package 数为 3，预览 debounce 为 320 ms。</li>
+<li>README 写 75 个 skill；真实目录 <code>html-anything/next/src/lib/templates/skills</code> 下有 81 个包含 <code>SKILL.md</code> 的目录。</li>
+<li><code>30</code> 第 588 行现已使用真实仓库相对路径 <code>next/src/lib/templates/skills</code>。</li>
+<li>最终路径门禁：<ul>
+<li><code>30</code> 两个证据表共 29 个路径出现，29/29 存在；其中 22 个唯一物理路径。证据表中“同上”、<code>...</code> 和通配符路径均为 0。</li>
+<li><code>31</code> 共提取 48 个完整工作区/仓库相对路径，48/48 存在；证据索引中的“同上”、<code>...</code>、通配符和省略父目录均为 0。</li>
+</ul>
+</li>
+</ul>
+<h2 id="6-个人贡献与敏感信息">6. 个人贡献与敏感信息</h2>
+<h3 id="6-1-p1-修订闭环-个人归因">6.1 P1 修订闭环：个人归因</h3>
+<p>初查曾发现 1 类 P1、13 处位置：<code>30</code> 的跨端参与/源码阅读话术，以及 <code>31</code> 对 Purrfolio、MCP、meter、ZhihuLite、VIP-Skills、上游学习和 <code>xxxxx-html</code> 所有权的直接第一人称认领。问题本质是“总体边界提示不能自动条件化后续每个可复述段落”。</p>
+<p>当前修订结果：</p>
+<table>
+<thead>
+<tr>
+<th>文档</th>
+<th>初查发现</th>
+<th>当前门禁</th>
+<th>最终回归</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>30</code></td>
+<td>2 处直接认领及若干 STAR/汇总话术需要逐段约束</td>
+<td>每个相关可复述段落使用“【需本人确认】/仅当本人确实……”；STAR 只保留真实范围占位</td>
+<td>未条件化第一人称风险 <strong>0</strong></td>
+</tr>
+<tr>
+<td><code>31</code></td>
+<td>11 处项目归属、公司贡献、学习经历或资产所有权直接认领</td>
+<td>总则明确条件式模板；项目表、10 个可复述模板和 3 条组合线均要求本人确认与 commit/PR/MR/实验记录</td>
+<td>“需本人确认” <strong>19 处</strong>；未条件化第一人称风险 <strong>0</strong></td>
+</tr>
+</tbody></table>
+<p>保留的使用边界：</p>
+<ul>
+<li>条件式模板不等于经历已经确认；综合材料可以收录模板，但候选人在背诵或写简历前仍需填写真实负责范围与证据。</li>
+<li>“我会如何改进/排查”可以作为方案能力表达，不能被改写成已实施成果。</li>
+<li>源码存在、当前测试通过和本地副本存在，均不能单独证明作者身份或个人贡献。</li>
+</ul>
+<h3 id="6-2-敏感值检查">6.2 敏感值检查</h3>
+<ul>
+<li>对 <code>30</code>/<code>31</code> 扫描了 URL、IPv4、token/password/secret/api-key 赋值形态、常见云密钥/访问令牌前缀、Webhook 和长编码串。</li>
+<li>未发现实际凭据值、机器人地址、内网 host/IP、证书内容或配置值泄露。</li>
+<li><code>30</code> 的 <code>127.0.0.1</code>、<code>0.0.0.0</code>、<code>localhost</code>、<code>[::1]</code> 是公开的 loopback/绑定安全示例，不是敏感地址。</li>
+<li><code>30</code> 对 <code>.sentryclirc</code>、<code>31</code> 对团队脚本和 Matchfile 仓只描述“存在风险”和整改方法，没有复制原值，处理正确。</li>
+</ul>
+<h2 id="7-交叉文档一致性与链接">7. 交叉文档一致性与链接</h2>
+<h3 id="7-1-已通过">7.1 已通过</h3>
+<ul>
+<li>数字一致：<code>00</code> 为 66 个有效仓库；<code>10</code>/<code>20</code> 是 56 个章节、55 个唯一仓库；加 <code>30</code> 的 <code>html-anything</code> 和 <code>31</code> 的 10 仓后为 66。</li>
+<li>大小写一致：库存和章节均使用 <code>Kmaudio</code>，没有残留 <code>KmAudio</code> 作为仓库名；<code>VipKmAudio</code> 是另一个真实仓库。</li>
+<li>项目类型的专题拆分可解释：<code>Common</code> 在 <code>00</code> 归基础库、在 <code>10</code> 按跨业务能力讲；Futureve/媒体/Hybrid 等在 <code>20</code> 按专题讲，不等于库存分类错误。</li>
+<li><code>Bootstrap</code> 在 <code>00</code> 已是 UI 控件库；<code>Picasa</code> 在 <code>00</code> 已是媒体选择、拍摄、处理和上传门面，与源码复核结论一致。</li>
+<li><code>Dependencies</code>、<code>KmReporter</code>、<code>photos</code> 均已降级为配置仓、TypeScript 报表工具、空实现仓，没有伪装成 Android Runtime 库。</li>
+</ul>
+<h3 id="7-2-p2-修订闭环-状态和路径">7.2 P2 修订闭环：状态和路径</h3>
+<table>
+<thead>
+<tr>
+<th>初查问题</th>
+<th>当前修订</th>
+<th>最终回归</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>40</code> 分类表仍把 Net/Zhplayer 已修正问题写成待修</td>
+<td>当前明确写为“两处 API 名已按源码修正”和“预播放器函数名已按源码修正”</td>
+<td>通过</td>
+</tr>
+<tr>
+<td><code>40</code> 后文仍建议回修 <code>00</code> 的 Bootstrap/Picasa 分类</td>
+<td>当前明确写为“已按源码回修/分类已同步收口”</td>
+<td>通过</td>
+</tr>
+<tr>
+<td><code>30</code> 第 588 行把 skill 目录简写为 <code>templates/skills</code></td>
+<td>已展开为 <code>next/src/lib/templates/skills</code></td>
+<td>通过</td>
+</tr>
+<tr>
+<td><code>30</code> 证据表曾使用“同上”</td>
+<td>两个“同上”均已展开成真实路径</td>
+<td>29/29 路径出现存在，缩写 0</td>
+</tr>
+<tr>
+<td><code>31</code> 证据索引曾省略父目录、使用 <code>...</code>/通配符或依赖上文</td>
+<td>已全部展开成工作区根/仓库根开始的真实路径</td>
+<td>48/48 路径存在，缩写 0</td>
+</tr>
+</tbody></table>
+<p>初查 P2 共 4 类；按“40 状态、30 路径、31 路径”分别回归后，当前开放 P2 为 <strong>0</strong>。</p>
+<h3 id="7-3-markdown-本地相对链接">7.3 Markdown 本地相对链接</h3>
+<ul>
+<li>六份受检 Markdown 中，共检出 <strong>0 个 Markdown 链接</strong>，因此本轮结果是“本地相对链接 0、断链 0”。</li>
+<li>文档间目前靠反引号文件名引用，不存在坏链接，但也没有可点击导航。给综合材料建立目录时，建议再补相对链接并运行一次链接检查。</li>
+</ul>
+<h2 id="8-问题优先级与准入判断">8. 问题优先级与准入判断</h2>
+<table>
+<thead>
+<tr>
+<th>优先级</th>
+<th align="right">数量</th>
+<th>问题</th>
+<th>准入影响</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>P0</td>
+<td align="right">0</td>
+<td>无覆盖遗漏、仓库错认、敏感值泄露或源码证据整体失真</td>
+<td>无</td>
+</tr>
+<tr>
+<td>P1</td>
+<td align="right">0 开放（历史 1 类、13 处，已收口）</td>
+<td><code>30</code>/<code>31</code> 当前未条件化第一人称风险为 0</td>
+<td>通过</td>
+</tr>
+<tr>
+<td>P2</td>
+<td align="right">0 开放（历史 4 类，已收口）</td>
+<td><code>40</code> 状态和 <code>30</code>/<code>31</code> 证据路径已完成回归</td>
+<td>通过</td>
+</tr>
+<tr>
+<td>P3</td>
+<td align="right">1 类</td>
+<td>六份文档之间没有 Markdown 可点击相对链接</td>
+<td>体验问题，不阻止内容准入</td>
+</tr>
+</tbody></table>
+<p>最终准入结论：</p>
+<ol>
+<li><strong>最终通过，可进入综合面试材料</strong>：66/66 覆盖、项目类型、大小写、源码证据、个人归因和敏感值门禁全部通过。</li>
+<li>历史 P1/P2 已在本文保留发现与修订记录，当前没有阻塞性待办。</li>
+<li><code>31</code> 的 19 处“需本人确认”和 <code>30</code> 的逐段条件提示必须在后续汇总中原样保留；“最终通过”不代表候选人的具体经历已经由源码证明。</li>
+<li>唯一剩余项是 P3 的文档导航体验：当前本地 Markdown 相对链接为 0、断链为 0，可在制作总目录时选择性补充，不影响准入。</li>
+</ol>
+
+      </article>
+      
+    <nav class="page-pager" aria-label="文档翻页">
+      <a href="40-android-docs-evidence-review.html"><small>← 上一篇</small><span>Android 证据复核</span></a>
+      <a class="next" href="ANALYSIS-TEMPLATE.html"><small>下一篇 →</small><span>仓库分析模板</span></a>
+    </nav>
+      <footer class="article-footer">
+        本站由 Markdown 源文档离线生成。涉及个人职责、动作和结果的内容，请只使用本人可核验的部分。
+      </footer>
+    </main>
+    <aside class="page-toc" aria-label="本页目录">
+      <div class="toc-heading">本页目录</div>
+      <a class="toc-link level-2" href="#1-最终结论">1. 最终结论</a>
+<a class="toc-link level-2" href="#2-66-仓并集证明">2. 66 仓并集证明</a>
+<a class="toc-link level-2" href="#3-全仓覆盖矩阵">3. 全仓覆盖矩阵</a>
+<a class="toc-link level-3" href="#3-1-10-承接的-23-个仓库">3.1 10 承接的 23 个仓库</a>
+<a class="toc-link level-3" href="#3-2-20-承接的-32-个新增仓库">3.2 20 承接的 32 个新增仓库</a>
+<a class="toc-link level-3" href="#3-3-30-31-承接的-11-个仓库">3.3 30 / 31 承接的 11 个仓库</a>
+<a class="toc-link level-2" href="#4-非-git-空仓与资产口径">4. 非 Git、空仓与资产口径</a>
+<a class="toc-link level-3" href="#4-1-根级-pikachu">4.1 根级 pikachu</a>
+<a class="toc-link level-3" href="#4-2-根空-git">4.2 根空 .git</a>
+<a class="toc-link level-3" href="#4-3-photos">4.3 photos</a>
+<a class="toc-link level-3" href="#4-4-xxxxx-html">4.4 xxxxx-html</a>
+<a class="toc-link level-2" href="#5-30-31-源码证据抽查">5. 30 / 31 源码证据抽查</a>
+<a class="toc-link level-2" href="#6-个人贡献与敏感信息">6. 个人贡献与敏感信息</a>
+<a class="toc-link level-3" href="#6-1-p1-修订闭环-个人归因">6.1 P1 修订闭环：个人归因</a>
+<a class="toc-link level-3" href="#6-2-敏感值检查">6.2 敏感值检查</a>
+<a class="toc-link level-2" href="#7-交叉文档一致性与链接">7. 交叉文档一致性与链接</a>
+<a class="toc-link level-3" href="#7-1-已通过">7.1 已通过</a>
+<a class="toc-link level-3" href="#7-2-p2-修订闭环-状态和路径">7.2 P2 修订闭环：状态和路径</a>
+<a class="toc-link level-3" href="#7-3-markdown-本地相对链接">7.3 Markdown 本地相对链接</a>
+<a class="toc-link level-2" href="#8-问题优先级与准入判断">8. 问题优先级与准入判断</a>
+      <a class="back-to-top" href="#">↑ 返回顶部</a>
+    </aside>
+  </div>
+  <script src="assets/search-data.js"></script>
+  <script src="assets/docs.js"></script>
+</body>
+</html>

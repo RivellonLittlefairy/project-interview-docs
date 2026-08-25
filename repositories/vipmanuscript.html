@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="VipManuscript Android 业务仓库源码证据、调用链与面试讲法">
+  <title>VipManuscript｜Android 业务仓库分析</title>
+  <link rel="stylesheet" href="../assets/docs.css">
+  <script>try{const t=localStorage.getItem("interview-docs-theme");document.documentElement.dataset.theme=t||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light")}catch{}</script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <header class="topbar">
+    <button class="icon-button menu-button" type="button" data-menu-toggle aria-label="打开文档导航" aria-expanded="false">☰</button>
+    <a class="brand" href="../index.html"><span class="brand-mark">⌁</span><span>项目面试资料库</span></a>
+    <div class="search-shell"><label class="sr-only" for="global-search">搜索文档</label><input id="global-search" type="search" data-search-input placeholder="搜索仓库、技术或面试题…" autocomplete="off"><div class="search-results" data-search-results hidden></div></div>
+    <button class="icon-button" type="button" data-theme-toggle aria-label="切换深浅主题">◐</button>
+  </header>
+  <div class="drawer-backdrop" data-drawer-backdrop hidden></div>
+  <div class="docs-layout">
+    <nav class="sidebar" data-sidebar aria-label="文档导航">
+      <div class="sidebar-heading">仓库文档</div>
+      <section class="nav-group">
+        <h2 class="nav-group-title">返回</h2>
+        <a class="nav-link" href="../repositories.html">全部仓库</a>
+        <a class="nav-link" href="../index.html">资料首页</a>
+        <a class="nav-link" href="../10-android-business-repositories.html">业务仓聚合分析</a>
+      </section>
+      <p class="sidebar-note">离线源码证据 · 2026-07-25</p>
+    </nav>
+    <main class="article-shell" id="main-content">
+    <div class="breadcrumbs"><a href="../index.html">首页</a><span>/</span><a href="../repositories.html">仓库索引</a><span>/</span><span>VipManuscript</span></div>
+    <div class="article-grid">
+      <article class="markdown-body">
+        <h1 id="vipmanuscript">VipManuscript：盐言手稿阅读、双向目录、评论、礼物与互动组件</h1>
+        <blockquote class="callout"><p>基于当前本地检出与真实源码路径整理。源码只能证明仓库中存在这些实现；所有个人职责、主导范围、上线结果和收益均为<strong>需本人确认</strong>，不得把团队框架、三方内核或上游仓库归为本人原创，也不在没有数据源时编造性能指标。</p></blockquote>
+
+        <h2 id="position">1. 仓库定位与面试边界</h2>
+        <p><code>yyyyy-cdoe/VipManuscript</code> 的当前定位是<strong>盐言手稿阅读、双向目录、评论、礼物与互动组件</strong>。主要技术形态为 Kotlin/Java、Mavericks/DevKit MVI、Paging3、协程、RxJava 与 Native/React/Hybrid。</p>
+        <p>面试应聚焦业务入口、状态编排、生命周期、异常兜底和组件集成。可以讲“我如何使用既有能力完成业务调用与排障”，但“本人实现/主导”的范围一律<strong>需本人确认</strong>，且应有 MR、commit、需求、评审或上线记录佐证。</p>
+
+        <h2 id="checkout">2. 当前检出、规模、构建入口、测试与 CI</h2>
+        <table><thead><tr><th>项目</th><th>当前证据</th></tr></thead><tbody>
+          <tr><td>分支</td><td><code>fix_ad_dialog</code></td></tr>
+          <tr><td>最后提交</td><td><code>9d4fac72</code> · 2026-05-29 · 添加端能力点截断拦截</td></tr>
+          <tr><td>规模</td><td>910 个 Git 跟踪文件；499 个 Java/Kotlin 源码文件（当前扫描口径）</td></tr>
+          <tr><td>构建入口</td><td><code>app/build.gradle</code>、<code>build.gradle</code>、<code>gradlew</code>、<code>settings.gradle</code>、<code>version.gradle</code>、<code>vip_manuscript/build.gradle</code>、<code>vip_manuscript-api/build.gradle</code></td></tr>
+          <tr><td>CI</td><td><code>.gitlab-ci.yml</code></td></tr>
+          <tr><td>测试判断</td><td>识别到 5 个测试文件，但文件名均偏 Example/模板；只能证明测试目录存在，不能证明核心链路已被保护。</td></tr>
+        </tbody></table>
+        <p>建议的静态构建检查入口是 <code>./gradlew projects</code>、<code>./gradlew tasks</code> 和目标模块的 <code>test</code>/<code>lint</code>；当前文档未执行全量构建，内网制品、旧 Gradle/AGP、NDK 或渠道凭据可能是环境限制，不能把“未执行”写成“构建失败”。</p>
+
+        <h2 id="structure">3. 模块与目录结构</h2>
+        <p>Gradle settings 可识别模块：<code>:app</code>。</p>
+        <p>主要物理目录：<code>app/</code>、<code>vip_manuscript/</code>、<code>vip_manuscript-api/</code>。</p>
+        <p>该仓的 settings 以单宿主或动态映射为主，真实业务能力可能通过组件制品或物理子目录装配，不能仅按 include 数量判断复杂度。</p>
+
+        <h2 id="entry">4. 真实入口</h2>
+        <p>Manifest 抽样入口如下；其中 <code>app</code> 下的 Activity/Application 可能只是 demo 或宿主壳，业务集成仍需回到 API、Provider、Router 或实现类。</p>
+        <ul><li><code>app/src/main/AndroidManifest.xml :: application .App</code></li><li><code>app/src/main/AndroidManifest.xml :: activity .MainActivity</code></li><li><code>app/src/main/AndroidManifest.xml :: activity com.zhihu.android.debug_center.ui.DebugCenterActivity</code></li><li><code>vip_manuscript/src/main/AndroidManifest.xml :: activity com.zhihu.android.vip.manuscript.ManuscriptHostActivity</code></li><li><code>vip_manuscript/src/main/AndroidManifest.xml :: activity com.zhihu.android.vip.manuscript.ManuscriptTransHostActivity</code></li></ul>
+        <p>源码阅读建议从 <a href="../../../../yyyyy-cdoe/VipManuscript/vip_manuscript/src/main/java/com/zhihu/android/vip/manuscript/manuscript/catalog/native_catalog/recommend/actor/NativeManuscriptAuthorFragment.kt"><code>yyyyy-cdoe/VipManuscript/vip_manuscript/src/main/java/com/zhihu/android/vip/manuscript/manuscript/catalog/native_catalog/recommend/actor/NativeManuscriptAuthorFragment.kt</code></a>、<a href="../../../../yyyyy-cdoe/VipManuscript/vip_manuscript/src/main/java/com/zhihu/android/vip/manuscript/manuscript/catalog/ManuscriptBillboardViewModel.kt"><code>yyyyy-cdoe/VipManuscript/vip_manuscript/src/main/java/com/zhihu/android/vip/manuscript/manuscript/catalog/ManuscriptBillboardViewModel.kt</code></a>、<a href="../../../../yyyyy-cdoe/VipManuscript/vip_manuscript/src/main/java/com/zhihu/android/vip/manuscript/manuscript/comment/list/ManuscriptCommentListFragment.kt"><code>yyyyy-cdoe/VipManuscript/vip_manuscript/src/main/java/com/zhihu/android/vip/manuscript/manuscript/comment/list/ManuscriptCommentListFragment.kt</code></a> 开始，再沿调用与依赖反向确认谁创建入口、谁持有状态、谁执行 IO。</p>
+
+                        <h2 id="chain">5. 关键调用链与边界</h2>
+        <h3>源码直接链路：文稿目录双向分页</h3>
+        <ol>
+          <li>NativeManuscriptAuthorFragment.requestData 调 ManuscriptBillboardViewModel.refresh</li>
+          <li>refresh 调 pager.invalidate 创建新的 ManuscriptBillboardSource</li>
+          <li>onRefresh 调 ManuscriptCatalogService.getCatalogV2</li>
+          <li>进入选中章节附近时可显式请求 previousUrl 并把响应前插</li>
+          <li>onLoadBefore 使用 previousUrl，onLoadMore 使用 nextUrl</li>
+          <li>resolvePreKey/resolveNextKey 暴露双向分页</li>
+          <li>pager.flow 合并 isLikeFlow 与 isShelfFlow 后 copy(catalogData = it)</li>
+          <li>Fragment 通过 collectFrom(viewModel, BillboardState::catalogData) 收集</li>
+        </ol>
+        <p><strong>边界说明：</strong>Pager 构造只负责提供 Source 与作用域；围绕目标章节的定位和拼接发生在 ManuscriptBillboardSource 内。</p>
+<h2 id="tradeoff">6. 技术亮点与取舍</h2>
+        <h3>亮点</h3><p>从任意目标章节进入的双向 Paging 比普通首尾分页更复杂，并与阅读、评论、礼物事件协作。</p>
+        <h3>取舍</h3><p>目标上下文和局部互动体验更好，但双向翻页、首刷拼接、局部状态合并与一次性事件处理成本高。</p>
+        <p>面试时不要把“使用了某框架”本身当亮点。更有价值的是说清楚为什么这样划分状态与生命周期、失败如何降级、版本/协议如何兼容，以及出现竞态时如何用真实调用链定位。</p>
+
+                        <h2 id="risk">7. 仓库专属风险与排查顺序</h2>
+        <p>下面的顺序按本仓真实状态 owner、服务与生命周期组织；前一步没有证据时，不跳到渲染层猜测。</p>
+        <ol>
+          <li><strong>第 1 步。</strong>先确认 Fragment.requestData 是否进入 ViewModel.refresh，以及 pager.invalidate 是否创建新 Source。</li>
+          <li><strong>第 2 步。</strong>首刷围绕指定章节异常时记录 getCatalogV2 响应中的 previousUrl/nextUrl 和额外 previous 请求。</li>
+          <li><strong>第 3 步。</strong>上翻或下翻失败分别检查 onLoadBefore/previousUrl 与 onLoadMore/nextUrl，不混用 key。</li>
+          <li><strong>第 4 步。</strong>列表有数据但页面不动时核对 BillboardState.catalogData、like/shelf flow 合并和 Fragment collectFrom。</li>
+        </ol>
+        <h2 id="talk">8. 可直接复述的讲法</h2>
+        <h3>30 秒版本</h3>
+        <blockquote><p>VipManuscript 的目录是双向分页。Fragment.requestData 调 ViewModel.refresh，pager.invalidate 创建 ManuscriptBillboardSource；Source 用 previousUrl 和 nextUrl 处理前后加载，最终写入 BillboardState.catalogData。目标章节附近的数据拼接也由 Source 在刷新阶段完成。 个人参与范围<strong>需本人确认</strong>。</p></blockquote>
+        <h3>2 分钟版本</h3>
+        <blockquote><p>NativeManuscriptAuthorFragment.requestData 进入 ManuscriptBillboardViewModel.refresh，refresh 让 pager.invalidate。新 Source 的 onRefresh 调 ManuscriptCatalogService.getCatalogV2；如果要落在选中章节附近，还可能显式请求 previousUrl 并前插。之后 onLoadBefore 走 previousUrl，onLoadMore 走 nextUrl，key 由 resolvePreKey/resolveNextKey 提供。pager.flow 再合并点赞和书架 flow，copy 到 catalogData，Fragment 用 collectFrom 收集。双向体验好，但首刷拼接、两个方向和局部状态合并都需独立验证。 若要把其中某个调用点写成个人成果，仍需本人确认并提供可核验记录。</p></blockquote>
+        <h2 id="qa">9. 仓库专属追问与回答</h2>
+        <h3>1. 问：状态字段叫 data 还是 catalogData？</h3><p><strong>答：</strong>BillboardState 使用 catalogData，Fragment 也按 BillboardState::catalogData 收集。</p>
+        <h3>2. 问：目标章节附近的数据在哪里定位？</h3><p><strong>答：</strong>围绕章节的处理发生在 Source 的刷新和 previousUrl 请求逻辑，不依赖 Pager 构造参数。</p>
+        <h3>3. 问：首刷为什么可能额外请求 previousUrl？</h3><p><strong>答：</strong>进入选中章节附近时，Source 会显式获取上一段并前插，以补足目标章节之前的上下文。</p>
+        <h3>4. 问：双向分页怎样分别测试？</h3><p><strong>答：</strong>固定首刷响应后，独立驱动 previousUrl 和 nextUrl，验证前插/后追加顺序及错误重试。</p>
+        <h3>5. 问：面试中怎样说明自己在这个仓库里的贡献边界？</h3><p><strong>答：</strong>只陈述自己能用需求单、MR、commit 或评审记录证明的 vipmanuscript 调用点；公共框架、团队装配体系和历史代码不据为己有。无法核验的个人动作、结果和指标统一标为“需本人确认”。</p>
+<h2 id="evidence">10. 源码证据</h2>
+        <p>以下路径均在当前工作区真实存在；它们证明实现与工程结构，不自动证明个人贡献。</p>
+        <ul><li><a href="../../../../yyyyy-cdoe/VipManuscript/vip_manuscript/src/main/java/com/zhihu/android/vip/manuscript/manuscript/catalog/native_catalog/recommend/actor/NativeManuscriptAuthorFragment.kt"><code>yyyyy-cdoe/VipManuscript/vip_manuscript/src/main/java/com/zhihu/android/vip/manuscript/manuscript/catalog/native_catalog/recommend/actor/NativeManuscriptAuthorFragment.kt</code></a></li><li><a href="../../../../yyyyy-cdoe/VipManuscript/vip_manuscript/src/main/java/com/zhihu/android/vip/manuscript/manuscript/catalog/ManuscriptBillboardViewModel.kt"><code>yyyyy-cdoe/VipManuscript/vip_manuscript/src/main/java/com/zhihu/android/vip/manuscript/manuscript/catalog/ManuscriptBillboardViewModel.kt</code></a></li><li><a href="../../../../yyyyy-cdoe/VipManuscript/vip_manuscript/src/main/java/com/zhihu/android/vip/manuscript/manuscript/comment/list/ManuscriptCommentListFragment.kt"><code>yyyyy-cdoe/VipManuscript/vip_manuscript/src/main/java/com/zhihu/android/vip/manuscript/manuscript/comment/list/ManuscriptCommentListFragment.kt</code></a></li><li><a href="../../../../yyyyy-cdoe/VipManuscript/vip_manuscript/src/main/java/com/zhihu/android/vip/manuscript/manuscript/gift/GiftSendFragment.kt"><code>yyyyy-cdoe/VipManuscript/vip_manuscript/src/main/java/com/zhihu/android/vip/manuscript/manuscript/gift/GiftSendFragment.kt</code></a></li><li><a href="../../../../yyyyy-cdoe/VipManuscript/app/src/main/java/com/zhihu/android/module/task/T_AppOnCreate.java"><code>yyyyy-cdoe/VipManuscript/app/src/main/java/com/zhihu/android/module/task/T_AppOnCreate.java</code></a></li><li><a href="../../../../yyyyy-cdoe/VipManuscript/app/src/main/java/com/zhihu/android/vip_manuscript/app/App.java"><code>yyyyy-cdoe/VipManuscript/app/src/main/java/com/zhihu/android/vip_manuscript/app/App.java</code></a></li><li><a href="../../../../yyyyy-cdoe/VipManuscript/app/src/main/java/com/zhihu/android/vip_manuscript/app/MainActivity.java"><code>yyyyy-cdoe/VipManuscript/app/src/main/java/com/zhihu/android/vip_manuscript/app/MainActivity.java</code></a></li></ul>
+        <p>补充工程证据：<a href="../../../../yyyyy-cdoe/VipManuscript/app/build.gradle"><code>yyyyy-cdoe/VipManuscript/app/build.gradle</code></a>、<a href="../../../../yyyyy-cdoe/VipManuscript/build.gradle"><code>yyyyy-cdoe/VipManuscript/build.gradle</code></a>、<a href="../../../../yyyyy-cdoe/VipManuscript/gradlew"><code>yyyyy-cdoe/VipManuscript/gradlew</code></a>、<a href="../../../../yyyyy-cdoe/VipManuscript/settings.gradle"><code>yyyyy-cdoe/VipManuscript/settings.gradle</code></a>、<a href="../../../../yyyyy-cdoe/VipManuscript/version.gradle"><code>yyyyy-cdoe/VipManuscript/version.gradle</code></a>、<a href="../../../../yyyyy-cdoe/VipManuscript/vip_manuscript/build.gradle"><code>yyyyy-cdoe/VipManuscript/vip_manuscript/build.gradle</code></a>。</p>
+
+        <hr>
+        <p><a href="../repositories.html">← 返回仓库索引</a> · <a href="../index.html">返回资料首页</a></p>
+      </article>
+      <aside class="page-toc" aria-label="本页目录"><div class="toc-title">本页目录</div><a class="toc-link level-2" href="#position">仓库定位与面试边界</a><a class="toc-link level-2" href="#checkout">当前检出与工程健康</a><a class="toc-link level-2" href="#structure">模块与目录结构</a><a class="toc-link level-2" href="#entry">真实入口</a><a class="toc-link level-2" href="#chain">关键调用链</a><a class="toc-link level-2" href="#tradeoff">技术亮点与取舍</a><a class="toc-link level-2" href="#risk">风险、缺口与排查顺序</a><a class="toc-link level-2" href="#talk">可直接复述</a><a class="toc-link level-2" href="#qa">追问与回答</a><a class="toc-link level-2" href="#evidence">源码证据</a></aside>
+    </div>
+    </main>
+  </div>
+  <script src="../assets/search-data.js"></script>
+  <script src="../assets/docs.js"></script>
+</body>
+</html>

@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Kmaudio Android 业务仓库源码证据、调用链与面试讲法">
+  <title>Kmaudio｜Android 业务仓库分析</title>
+  <link rel="stylesheet" href="../assets/docs.css">
+  <script>try{const t=localStorage.getItem("interview-docs-theme");document.documentElement.dataset.theme=t||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light")}catch{}</script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <header class="topbar">
+    <button class="icon-button menu-button" type="button" data-menu-toggle aria-label="打开文档导航" aria-expanded="false">☰</button>
+    <a class="brand" href="../index.html"><span class="brand-mark">⌁</span><span>项目面试资料库</span></a>
+    <div class="search-shell"><label class="sr-only" for="global-search">搜索文档</label><input id="global-search" type="search" data-search-input placeholder="搜索仓库、技术或面试题…" autocomplete="off"><div class="search-results" data-search-results hidden></div></div>
+    <button class="icon-button" type="button" data-theme-toggle aria-label="切换深浅主题">◐</button>
+  </header>
+  <div class="drawer-backdrop" data-drawer-backdrop hidden></div>
+  <div class="docs-layout">
+    <nav class="sidebar" data-sidebar aria-label="文档导航">
+      <div class="sidebar-heading">仓库文档</div>
+      <section class="nav-group">
+        <h2 class="nav-group-title">返回</h2>
+        <a class="nav-link" href="../repositories.html">全部仓库</a>
+        <a class="nav-link" href="../index.html">资料首页</a>
+        <a class="nav-link" href="../10-android-business-repositories.html">业务仓聚合分析</a>
+      </section>
+      <p class="sidebar-note">离线源码证据 · 2026-07-25</p>
+    </nav>
+    <main class="article-shell" id="main-content">
+    <div class="breadcrumbs"><a href="../index.html">首页</a><span>/</span><a href="../repositories.html">仓库索引</a><span>/</span><span>Kmaudio</span></div>
+    <div class="article-grid">
+      <article class="markdown-body">
+        <h1 id="kmaudio">Kmaudio：多 SKU 知识音频播放器与业务数据适配层</h1>
+        <blockquote class="callout"><p>基于当前本地检出与真实源码路径整理。源码只能证明仓库中存在这些实现；所有个人职责、主导范围、上线结果和收益均为<strong>需本人确认</strong>，不得把团队框架、三方内核或上游仓库归为本人原创，也不在没有数据源时编造性能指标。</p></blockquote>
+
+        <h2 id="position">1. 仓库定位与面试边界</h2>
+        <p><code>yyyyy-cdoe/Kmaudio</code> 的当前定位是<strong>多 SKU 知识音频播放器与业务数据适配层</strong>。主要技术形态为 Kotlin/Java、全局播放协调器、DataSource、资源鉴权、目录与播放列表。</p>
+        <p>面试应聚焦业务入口、状态编排、生命周期、异常兜底和组件集成。可以讲“我如何使用既有能力完成业务调用与排障”，但“本人实现/主导”的范围一律<strong>需本人确认</strong>，且应有 MR、commit、需求、评审或上线记录佐证。</p>
+
+        <h2 id="checkout">2. 当前检出、规模、构建入口、测试与 CI</h2>
+        <table><thead><tr><th>项目</th><th>当前证据</th></tr></thead><tbody>
+          <tr><td>分支</td><td><code>develop</code></td></tr>
+          <tr><td>最后提交</td><td><code>d1dcfd5</code> · 2025-01-17 · Athena2.0 update version：10.40.0.0 --&gt; 10.40.0.0, operated by wanghui02</td></tr>
+          <tr><td>规模</td><td>288 个 Git 跟踪文件；124 个 Java/Kotlin 源码文件（当前扫描口径）</td></tr>
+          <tr><td>构建入口</td><td><code>app/build.gradle</code>、<code>build.gradle</code>、<code>gradlew</code>、<code>kmaudio/build.gradle</code>、<code>kmaudio-api/build.gradle</code>、<code>settings.gradle</code>、<code>version.gradle</code></td></tr>
+          <tr><td>CI</td><td><code>.gitlab-ci.yml</code></td></tr>
+          <tr><td>测试判断</td><td>识别到 5 个测试文件，但文件名均偏 Example/模板；只能证明测试目录存在，不能证明核心链路已被保护。</td></tr>
+        </tbody></table>
+        <p>建议的静态构建检查入口是 <code>./gradlew projects</code>、<code>./gradlew tasks</code> 和目标模块的 <code>test</code>/<code>lint</code>；当前文档未执行全量构建，内网制品、旧 Gradle/AGP、NDK 或渠道凭据可能是环境限制，不能把“未执行”写成“构建失败”。</p>
+
+        <h2 id="structure">3. 模块与目录结构</h2>
+        <p>Gradle settings 可识别模块：<code>:app</code>。</p>
+        <p>主要物理目录：<code>app/</code>、<code>kmaudio/</code>、<code>kmaudio-api/</code>。</p>
+        <p>该仓的 settings 以单宿主或动态映射为主，真实业务能力可能通过组件制品或物理子目录装配，不能仅按 include 数量判断复杂度。</p>
+
+        <h2 id="entry">4. 真实入口</h2>
+        <p>Manifest 抽样入口如下；其中 <code>app</code> 下的 Activity/Application 可能只是 demo 或宿主壳，业务集成仍需回到 API、Provider、Router 或实现类。</p>
+        <ul><li><code>app/src/main/AndroidManifest.xml :: application .App</code></li><li><code>app/src/main/AndroidManifest.xml :: activity .MainActivity</code></li><li><code>kmaudio/src/main/AndroidManifest.xml :: activity .player.ui.activity.KMPlayerActivity</code></li></ul>
+        <p>源码阅读建议从 <a href="../../../../yyyyy-cdoe/Kmaudio/kmaudio/src/main/java/com/zhihu/android/kmaudio/player/KMPlayerInterfaceImpl.kt"><code>yyyyy-cdoe/Kmaudio/kmaudio/src/main/java/com/zhihu/android/kmaudio/player/KMPlayerInterfaceImpl.kt</code></a>、<a href="../../../../yyyyy-cdoe/Kmaudio/kmaudio/src/main/java/com/zhihu/android/kmaudio/player/KMPlayer.kt"><code>yyyyy-cdoe/Kmaudio/kmaudio/src/main/java/com/zhihu/android/kmaudio/player/KMPlayer.kt</code></a>、<a href="../../../../yyyyy-cdoe/Kmaudio/kmaudio/src/main/java/com/zhihu/android/kmaudio/player/ui/fragment/KMPlayerFragment.kt"><code>yyyyy-cdoe/Kmaudio/kmaudio/src/main/java/com/zhihu/android/kmaudio/player/ui/fragment/KMPlayerFragment.kt</code></a> 开始，再沿调用与依赖反向确认谁创建入口、谁持有状态、谁执行 IO。</p>
+
+                        <h2 id="chain">5. 关键调用链与边界</h2>
+        <h3>源码直接链路：KM 播放请求</h3>
+        <ol>
+          <li>KMPlayerInterfaceImpl.play 调用 KMPlayer.play</li>
+          <li>KMPlayer.play 进入 load</li>
+          <li>load 创建或复用 PlayerDataSource</li>
+          <li>KMPlayer 通过 subscribeData 观察数据源</li>
+          <li>数据就绪后调用 loadDataToWalkman</li>
+        </ol>
+        <p><strong>边界说明：</strong>ResourceService、BusinessService 属于资源或业务详情的相邻能力，不能插入这条已验证的每次播放链。</p>
+<h2 id="tradeoff">6. 技术亮点与取舍</h2>
+        <h3>亮点</h3><p>资源接口与业务接口分离，多内容类型差异落在 DataSource，播放内核保持稳定。</p>
+        <h3>取舍</h3><p>全局协调支持跨页面连续播放，但列表、业务 DataSource 与引擎三份状态必须严格对齐。</p>
+        <p>面试时不要把“使用了某框架”本身当亮点。更有价值的是说清楚为什么这样划分状态与生命周期、失败如何降级、版本/协议如何兼容，以及出现竞态时如何用真实调用链定位。</p>
+
+                        <h2 id="risk">7. 仓库专属风险与排查顺序</h2>
+        <p>下面的顺序按本仓真实状态 owner、服务与生命周期组织；前一步没有证据时，不跳到渲染层猜测。</p>
+        <ol>
+          <li><strong>第 1 步。</strong>先记录 KMPlayerInterfaceImpl.play 的 type、id、trackId，排除内容身份错误。</li>
+          <li><strong>第 2 步。</strong>进入 KMPlayer.load 确认 PlayerDataSource 是复用还是新建，并核对复用 key。</li>
+          <li><strong>第 3 步。</strong>检查 subscribeData 的订阅是否仍存活、是否收到资源或错误。</li>
+          <li><strong>第 4 步。</strong>数据已到但未播放时在 loadDataToWalkman 前后核对转换结果和底层会话，不跳去查无直接调用证据的 Service。</li>
+        </ol>
+        <h2 id="talk">8. 可直接复述的讲法</h2>
+        <h3>30 秒版本</h3>
+        <blockquote><p>Kmaudio 的直接播放链是 KMPlayerInterfaceImpl.play → KMPlayer.play → load → 创建或复用 PlayerDataSource → subscribeData → loadDataToWalkman。ResourceService 和 BusinessService 是相邻业务能力，但不是这条每次播放链的固定中间层。 个人参与范围<strong>需本人确认</strong>。</p></blockquote>
+        <h3>2 分钟版本</h3>
+        <blockquote><p>从业务接口进入后，KMPlayerInterfaceImpl.play 直接转给 KMPlayer.play。KMPlayer 在 load 中按当前内容创建或复用 PlayerDataSource，再通过 subscribeData 等待结果，最后交给 loadDataToWalkman。排障重点是播放参数、DataSource 复用 key、订阅生命周期和下发给底层的数据。这样的 DataSource 抽象方便支持多内容类型，但复用不当会把旧内容或旧订阅带进新会话。 若要把其中某个调用点写成个人成果，仍需本人确认并提供可核验记录。</p></blockquote>
+        <h2 id="qa">9. 仓库专属追问与回答</h2>
+        <h3>1. 问：PlayerDataSource 为什么要复用？</h3><p><strong>答：</strong>可减少重复创建和请求，但必须用准确的内容身份校验，否则会复用到错误会话。</p>
+        <h3>2. 问：ResourceService 是 play 的下一跳吗？</h3><p><strong>答：</strong>已核对的直接链没有这一步；它只能作为某些资源能力的相邻实现说明。</p>
+        <h3>3. 问：有资源数据但播放器没响怎么查？</h3><p><strong>答：</strong>看 subscribeData 是否触发、转换是否成功以及 loadDataToWalkman 是否把数据交给正确会话。</p>
+        <h3>4. 问：Kmaudio 最小竞态测试是什么？</h3><p><strong>答：</strong>连续快速 play 两个不同 id，保证旧 DataSource 回调不能覆盖新会话，并验证复用同 id 的行为。</p>
+        <h3>5. 问：面试中怎样说明自己在这个仓库里的贡献边界？</h3><p><strong>答：</strong>只陈述自己能用需求单、MR、commit 或评审记录证明的 kmaudio 调用点；公共框架、团队装配体系和历史代码不据为己有。无法核验的个人动作、结果和指标统一标为“需本人确认”。</p>
+<h2 id="evidence">10. 源码证据</h2>
+        <p>以下路径均在当前工作区真实存在；它们证明实现与工程结构，不自动证明个人贡献。</p>
+        <ul><li><a href="../../../../yyyyy-cdoe/Kmaudio/kmaudio/src/main/java/com/zhihu/android/kmaudio/player/KMPlayerInterfaceImpl.kt"><code>yyyyy-cdoe/Kmaudio/kmaudio/src/main/java/com/zhihu/android/kmaudio/player/KMPlayerInterfaceImpl.kt</code></a></li><li><a href="../../../../yyyyy-cdoe/Kmaudio/kmaudio/src/main/java/com/zhihu/android/kmaudio/player/KMPlayer.kt"><code>yyyyy-cdoe/Kmaudio/kmaudio/src/main/java/com/zhihu/android/kmaudio/player/KMPlayer.kt</code></a></li><li><a href="../../../../yyyyy-cdoe/Kmaudio/kmaudio/src/main/java/com/zhihu/android/kmaudio/player/ui/fragment/KMPlayerFragment.kt"><code>yyyyy-cdoe/Kmaudio/kmaudio/src/main/java/com/zhihu/android/kmaudio/player/ui/fragment/KMPlayerFragment.kt</code></a></li><li><a href="../../../../yyyyy-cdoe/Kmaudio/kmaudio/src/main/java/com/zhihu/android/kmaudio/player/datasource/BusinessService.kt"><code>yyyyy-cdoe/Kmaudio/kmaudio/src/main/java/com/zhihu/android/kmaudio/player/datasource/BusinessService.kt</code></a></li><li><a href="../../../../yyyyy-cdoe/Kmaudio/kmaudio/src/main/java/com/zhihu/android/kmaudio/player/engine/ResourceService.kt"><code>yyyyy-cdoe/Kmaudio/kmaudio/src/main/java/com/zhihu/android/kmaudio/player/engine/ResourceService.kt</code></a></li><li><a href="../../../../yyyyy-cdoe/Kmaudio/app/src/main/java/com/zhihu/android/kmaudio/app/App.java"><code>yyyyy-cdoe/Kmaudio/app/src/main/java/com/zhihu/android/kmaudio/app/App.java</code></a></li><li><a href="../../../../yyyyy-cdoe/Kmaudio/app/src/main/java/com/zhihu/android/kmaudio/app/MainActivity.java"><code>yyyyy-cdoe/Kmaudio/app/src/main/java/com/zhihu/android/kmaudio/app/MainActivity.java</code></a></li></ul>
+        <p>补充工程证据：<a href="../../../../yyyyy-cdoe/Kmaudio/app/build.gradle"><code>yyyyy-cdoe/Kmaudio/app/build.gradle</code></a>、<a href="../../../../yyyyy-cdoe/Kmaudio/build.gradle"><code>yyyyy-cdoe/Kmaudio/build.gradle</code></a>、<a href="../../../../yyyyy-cdoe/Kmaudio/gradlew"><code>yyyyy-cdoe/Kmaudio/gradlew</code></a>、<a href="../../../../yyyyy-cdoe/Kmaudio/kmaudio/build.gradle"><code>yyyyy-cdoe/Kmaudio/kmaudio/build.gradle</code></a>、<a href="../../../../yyyyy-cdoe/Kmaudio/kmaudio-api/build.gradle"><code>yyyyy-cdoe/Kmaudio/kmaudio-api/build.gradle</code></a>、<a href="../../../../yyyyy-cdoe/Kmaudio/settings.gradle"><code>yyyyy-cdoe/Kmaudio/settings.gradle</code></a>。</p>
+
+        <hr>
+        <p><a href="../repositories.html">← 返回仓库索引</a> · <a href="../index.html">返回资料首页</a></p>
+      </article>
+      <aside class="page-toc" aria-label="本页目录"><div class="toc-title">本页目录</div><a class="toc-link level-2" href="#position">仓库定位与面试边界</a><a class="toc-link level-2" href="#checkout">当前检出与工程健康</a><a class="toc-link level-2" href="#structure">模块与目录结构</a><a class="toc-link level-2" href="#entry">真实入口</a><a class="toc-link level-2" href="#chain">关键调用链</a><a class="toc-link level-2" href="#tradeoff">技术亮点与取舍</a><a class="toc-link level-2" href="#risk">风险、缺口与排查顺序</a><a class="toc-link level-2" href="#talk">可直接复述</a><a class="toc-link level-2" href="#qa">追问与回答</a><a class="toc-link level-2" href="#evidence">源码证据</a></aside>
+    </div>
+    </main>
+  </div>
+  <script src="../assets/search-data.js"></script>
+  <script src="../assets/docs.js"></script>
+</body>
+</html>

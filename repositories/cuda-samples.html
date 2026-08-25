@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>cuda-samples：NVIDIA CUDA 官方样例集</title>
+  <link rel="stylesheet" href="../assets/docs.css">
+  <script defer src="../assets/search-data.js"></script>
+  <script defer src="../assets/docs.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <header class="topbar">
+    <button class="icon-button menu-button" type="button" data-menu-toggle aria-label="打开文档导航" aria-expanded="false">☰</button>
+    <a class="brand" href="../index.html"><span class="brand-mark">⌁</span><span>项目面试资料库</span></a>
+    <div class="search-shell">
+      <label class="sr-only" for="global-search">搜索所有文档</label>
+      <input id="global-search" type="search" data-search-input placeholder="搜索仓库、技术或面试题…" autocomplete="off">
+      <span class="search-shortcut">Ctrl K</span>
+      <div class="search-results" data-search-results hidden></div>
+    </div>
+    <button class="icon-button" type="button" data-theme-toggle aria-label="切换深浅主题">◐</button>
+  </header>
+  <div class="drawer-backdrop" data-drawer-backdrop hidden></div>
+  <div class="docs-layout">
+    <nav class="sidebar" data-sidebar aria-label="全站文档导航">
+      <div class="sidebar-heading">文档导航</div>
+      <section class="nav-group">
+        <h2 class="nav-group-title">逐仓文档</h2>
+        <a class="nav-link active" href="../repositories.html">仓库独立分析</a>
+      </section>
+      <section class="nav-group">
+        <h2 class="nav-group-title">开始使用</h2>
+        <a class="nav-link" href="../index.html">总览与导航</a>
+      </section>
+      <section class="nav-group">
+        <h2 class="nav-group-title">来源分析</h2>
+        <a class="nav-link" href="../00-repository-inventory.html">全量仓库盘点</a>
+        <a class="nav-link" href="../30-cross-platform-rn-web.html">RN 与 Web</a>
+        <a class="nav-link" href="../31-tools-samples-and-assets.html">工具、样例与资产</a>
+      </section>
+      <p class="sidebar-note">离线资料 · 源码证据快照</p>
+    </nav>
+    <main class="article-shell" id="main-content">
+      <div class="breadcrumbs"><a href="../index.html">首页</a><span>/</span><a href="../repositories.html">仓库索引</a><span>/</span><span>cuda-samples</span></div>
+      <article class="markdown-body">
+      <h1>cuda-samples：NVIDIA CUDA 官方样例集</h1>
+      <p><strong>定位标签：</strong>上游开源 / 仅可作为学习材料</p>
+      <nav class="toc" aria-label="本页目录">
+        <strong>本页目录</strong>
+        <ol>
+          <li><a href="#identity">定位与归属边界</a></li>
+          <li><a href="#checkout">检出与构建信息</a></li>
+          <li><a href="#structure">结构与核心入口</a></li>
+          <li><a href="#workflow">关键工作流</a></li>
+          <li><a href="#tradeoffs">亮点与取舍</a></li>
+          <li><a href="#risks">风险、测试与排查</a></li>
+          <li><a href="#pitch">面试讲法</a></li>
+          <li><a href="#questions">追问与回答</a></li>
+          <li><a href="#evidence">源码证据</a></li>
+        </ol>
+      </nav>
+      <section id="identity"><h2>定位与归属边界</h2><ul><li>README 与许可证表明这是 NVIDIA CUDA Toolkit 官方样例集，覆盖入门、概念、特性、库、领域、性能与平台样例。</li><li>不得包装为个人项目。若有本人实验或上游补丁，其环境、命令、结果和 PR 均<strong>需本人确认</strong>；否则只说源码学习。</li><li>样例展示 API 与模式，不等于生产实现或严谨 benchmark。</li></ul></section>
+      <section id="checkout"><h2>检出与构建信息</h2><ul><li>库存记录：分支 <code>master</code>，提交 <code>8a9e2c83</code>（2025-05-22），CUDA/C++ 大型仓。</li><li>构建入口：根与 <code>Samples/CMakeLists.txt</code>，README 要求 CUDA Toolkit 12.9、CMake 3.20+、C/C++/CUDA 17 和匹配 GPU/driver。</li><li>未执行全量构建：当前任务没有可确认的 GPU、driver、Toolkit 组合；<code>run_tests.py</code> 本身只是 sanity runner。</li></ul></section>
+      <section id="structure"><h2>结构与核心入口</h2><ul><li><code>Samples/0_Introduction</code>：最小 API 与 kernel 入门。</li><li><code>Samples/2_Concepts_and_Techniques</code>、<code>3_CUDA_Features</code>：共享内存、stream、graph 等模式。</li><li><code>Samples/4_CUDA_Libraries</code>、<code>5_Domain_Specific</code>、<code>6_Performance</code>：库、领域和性能示例。</li><li><code>run_tests.py</code> + <code>test_args.json</code>：发现可执行文件、按 GPU 条件过滤、并行运行和汇总退出码。</li></ul></section>
+      <section id="workflow"><h2>关键工作流</h2><ol><li>以 vectorAdd 为例：host 初始化 → <code>cudaMalloc</code> → H2D → kernel launch → D2H → CPU 校验 → free。</li><li>matrixMul 展示 shared-memory tiling 与计时，但输入、预热和硬件适配均是样例设定。</li><li>CUDA Graph 样例把 memcpy、memset、kernel 和 host callback 固化为可重复 DAG，减少重复 launch 编排成本。</li><li>测试 runner 读取样例参数和最小 GPU 数，设置单例超时，汇总通过/跳过/失败。</li></ol></section>
+      <section id="tradeoffs"><h2>亮点与取舍</h2><ul><li>亮点是完整能力地图和大量可编译样例；代价是硬件、Toolkit、架构与可选库组合庞大。</li><li>Graph 适合重复稳定 DAG；图频繁变化或单 kernel 已很重时收益可能有限。</li><li>样例优先可读性与特性展示，不应直接得出生产性能结论。</li></ul></section>
+      <section id="risks"><h2>风险、测试与排查</h2><ul><li>不能编造吞吐、延迟或加速比；性能结论必须写 GPU、driver、Toolkit、shape、精度、预热、计时边界与 Nsight/日志来源。</li><li>官方 runner 是 sanity check，不覆盖数值边界、设备矩阵或生产回归。</li><li>排查顺序：<code>nvidia-smi</code>/driver → <code>nvcc</code>/Toolkit → CMake 架构 → 可选库依赖 → 单样例构建 → CUDA error 与结果校验。</li></ul></section>
+      <section id="experiment-design">
+        <h2>单样例实验设计与错误定位</h2>
+        <p>学习 CUDA samples 时，建议从一个最小样例建立可复现实验单，而不是直接全量编译。以 vectorAdd 为例，先记录 GPU 型号、compute capability、driver、Toolkit、编译器和 CMake 生成参数；只构建目标可执行文件，运行前后检查每个 CUDA API 的返回值和 kernel launch error，再把 device 输出与 CPU reference 按容差逐项比较。随后把元素个数改成不能整除 block size 的值，确认边界判断有效；再分别测只含 kernel 的 event 时间和包含 H2D/D2H 的端到端时间，避免把两种指标混为一谈。</p>
+        <p>matrixMul 的共享内存版本适合观察 tile size、占用率和访存模式，但不能因为样例比朴素实现快就推导生产收益。更严谨的实验会固定矩阵 shape 与数据类型，完成预热，重复多轮并报告中位数和分位数，同时与 cuBLAS 对照；用 Nsight Compute 查看 achieved occupancy、global load efficiency、shared-memory bank conflict 和 warp stall 原因。如果结果错误，先缩小 shape 并开启同步错误检查，再验证 leading dimension、tile 边界和同步点，而不是先调 block size。</p>
+        <p>CUDA Graph 样例则要把“构图成本”和“重复执行成本”分开计时。手工 node 与 stream capture 两条路径应生成语义相同的 DAG，并验证 memcpy、kernel、host callback 的依赖顺序。只有当图被重复执行足够多次且拓扑稳定时，launch 开销摊薄才有意义；若每轮 shape、指针或节点关系变化，需要频繁重建/更新 graph，收益可能被抵消。实验结论必须附完整命令和原始日志，未实际运行时只描述源码机制。</p>
+      </section>
+      <section id="pitch">
+        <h2>面试讲法</h2>
+        <h3>30 秒版本</h3><blockquote><p>这是 NVIDIA 官方 CUDA 样例，不是本人项目。它按能力层次展示 host/device 内存、kernel、共享内存、stream、Graph 与 CUDA 库；run_tests 只做 sanity check。没有明确 GPU 环境和实验记录时，我只讲源码学习，不报性能数字。</p></blockquote>
+        <h3>2 分钟版本</h3><blockquote><p>我会用它建立 CUDA 能力地图：vectorAdd 讲最小数据搬运和 kernel 闭环，matrixMul 讲 shared-memory tiling 及 benchmark 边界，simpleCudaGraphs 讲把重复 DAG 固化来摊薄 CPU launch 成本。构建依赖匹配的 GPU、driver、Toolkit 与架构参数；官方 runner 能筛样例、设超时和汇总退出码，但不是严谨性能套件。若本人做过实验，才补充日期、硬件、命令、样本和 Nsight 数据，否则明确暂无个人贡献或可核验指标。</p></blockquote>
+      </section>
+      <section id="questions"><h2>追问与回答</h2>
+    <details open>
+      <summary>问题1：为什么 matrixMul 不能直接当 benchmark？</summary>
+      <p>输入形状、预热、校验、计时范围和硬件适配都是样例设定，生产评估还要对照 cuBLAS 与端到端搬运。</p>
+    </details>
+    <details>
+      <summary>问题2：CUDA Graph 解决什么？</summary>
+      <p>减少重复多 kernel/memcpy DAG 的 CPU launch 编排开销。</p>
+    </details>
+    <details>
+      <summary>问题3：shared memory 的主要代价？</summary>
+      <p>容量有限、占用影响并发，访问模式不当会有 bank conflict，还需处理边界和同步。</p>
+    </details>
+    <details>
+      <summary>问题4：怎样验证 kernel 正确？</summary>
+      <p>固定输入与 CPU reference 对比，检查 CUDA API/launch error，并覆盖非整块尺寸和数值容差。</p>
+    </details>
+    <details>
+      <summary>问题5：为什么没跑全量测试？</summary>
+      <p>缺少已确认的匹配 GPU、driver 和 Toolkit；在这种条件下声称运行结果是不可靠的。</p>
+    </details></section>
+      <section id="evidence">
+        <h2>源码证据</h2>
+        
+        <ol><li><code>yyyyy-cdoe/cuda-samples/README.md</code></li><li><code>yyyyy-cdoe/cuda-samples/Samples/CMakeLists.txt</code></li><li><code>yyyyy-cdoe/cuda-samples/run_tests.py</code></li><li><code>yyyyy-cdoe/cuda-samples/test_args.json</code></li><li><code>yyyyy-cdoe/cuda-samples/Samples/6_Performance/UnifiedMemoryPerf/matrixMultiplyPerf.cu</code></li></ol>
+        <p>证据口径：路径来自当前工作区源码与权威库存；个人贡献仍需本人确认，未由路径本身推断。</p>
+      </section>
+      <p><a href="../repositories.html">返回仓库索引</a> · <a href="../index.html">返回文档首页</a></p>
+      </article>
+    </main>
+  </div>
+</body>
+</html>

@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Audio Android 业务仓库源码证据、调用链与面试讲法">
+  <title>Audio｜Android 业务仓库分析</title>
+  <link rel="stylesheet" href="../assets/docs.css">
+  <script>try{const t=localStorage.getItem("interview-docs-theme");document.documentElement.dataset.theme=t||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light")}catch{}</script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <header class="topbar">
+    <button class="icon-button menu-button" type="button" data-menu-toggle aria-label="打开文档导航" aria-expanded="false">☰</button>
+    <a class="brand" href="../index.html"><span class="brand-mark">⌁</span><span>项目面试资料库</span></a>
+    <div class="search-shell"><label class="sr-only" for="global-search">搜索文档</label><input id="global-search" type="search" data-search-input placeholder="搜索仓库、技术或面试题…" autocomplete="off"><div class="search-results" data-search-results hidden></div></div>
+    <button class="icon-button" type="button" data-theme-toggle aria-label="切换深浅主题">◐</button>
+  </header>
+  <div class="drawer-backdrop" data-drawer-backdrop hidden></div>
+  <div class="docs-layout">
+    <nav class="sidebar" data-sidebar aria-label="文档导航">
+      <div class="sidebar-heading">仓库文档</div>
+      <section class="nav-group">
+        <h2 class="nav-group-title">返回</h2>
+        <a class="nav-link" href="../repositories.html">全部仓库</a>
+        <a class="nav-link" href="../index.html">资料首页</a>
+        <a class="nav-link" href="../10-android-business-repositories.html">业务仓聚合分析</a>
+      </section>
+      <p class="sidebar-note">离线源码证据 · 2026-07-25</p>
+    </nav>
+    <main class="article-shell" id="main-content">
+    <div class="breadcrumbs"><a href="../index.html">首页</a><span>/</span><a href="../repositories.html">仓库索引</a><span>/</span><span>Audio</span></div>
+    <div class="article-grid">
+      <article class="markdown-body">
+        <h1 id="audio">Audio：跨页面后台音频播放、通知与悬浮窗业务组件</h1>
+        <blockquote class="callout"><p>基于当前本地检出与真实源码路径整理。源码只能证明仓库中存在这些实现；所有个人职责、主导范围、上线结果和收益均为<strong>需本人确认</strong>，不得把团队框架、三方内核或上游仓库归为本人原创，也不在没有数据源时编造性能指标。</p></blockquote>
+
+        <h2 id="position">1. 仓库定位与面试边界</h2>
+        <p><code>yyyyy-cdoe/Audio</code> 的当前定位是<strong>跨页面后台音频播放、通知与悬浮窗业务组件</strong>。主要技术形态为 Java/Kotlin、前台 Service、播放引擎适配、通知、AudioFocus 与生命周期观察。</p>
+        <p>面试应聚焦业务入口、状态编排、生命周期、异常兜底和组件集成。可以讲“我如何使用既有能力完成业务调用与排障”，但“本人实现/主导”的范围一律<strong>需本人确认</strong>，且应有 MR、commit、需求、评审或上线记录佐证。</p>
+
+        <h2 id="checkout">2. 当前检出、规模、构建入口、测试与 CI</h2>
+        <table><thead><tr><th>项目</th><th>当前证据</th></tr></thead><tbody>
+          <tr><td>分支</td><td><code>fix_bug</code></td></tr>
+          <tr><td>最后提交</td><td><code>9239895</code> · 2025-02-17 · 修复音频过期重新拉 url 时，字幕丢失问题</td></tr>
+          <tr><td>规模</td><td>270 个 Git 跟踪文件；156 个 Java/Kotlin 源码文件（当前扫描口径）</td></tr>
+          <tr><td>构建入口</td><td><code>app/build.gradle</code>、<code>audio/build.gradle</code>、<code>audio-api/build.gradle</code>、<code>build.gradle</code>、<code>gradlew</code>、<code>settings.gradle</code>、<code>version.gradle</code></td></tr>
+          <tr><td>CI</td><td><code>.gitlab-ci.yml</code></td></tr>
+          <tr><td>测试判断</td><td>识别到 2 个测试文件，但文件名均偏 Example/模板；只能证明测试目录存在，不能证明核心链路已被保护。</td></tr>
+        </tbody></table>
+        <p>建议的静态构建检查入口是 <code>./gradlew projects</code>、<code>./gradlew tasks</code> 和目标模块的 <code>test</code>/<code>lint</code>；当前文档未执行全量构建，内网制品、旧 Gradle/AGP、NDK 或渠道凭据可能是环境限制，不能把“未执行”写成“构建失败”。</p>
+
+        <h2 id="structure">3. 模块与目录结构</h2>
+        <p>Gradle settings 可识别模块：<code>:audio-api</code>、<code>:app</code>。</p>
+        <p>主要物理目录：<code>app/</code>、<code>audio/</code>、<code>audio-api/</code>。</p>
+        <p>从命名可见实现模块与 API/示例模块的分层；调用方应优先依赖稳定 API，示例 <code>app</code> 只用于独立调试，不能误当成线上宿主入口。</p>
+
+        <h2 id="entry">4. 真实入口</h2>
+        <p>Manifest 抽样入口如下；其中 <code>app</code> 下的 Activity/Application 可能只是 demo 或宿主壳，业务集成仍需回到 API、Provider、Router 或实现类。</p>
+        <ul><li><code>app/src/main/AndroidManifest.xml :: activity com.zhihu.android.player.MainActivity</code></li><li><code>audio/src/main/AndroidManifest.xml :: activity com.zhihu.android.player.walkman.activity.TrampolineActivity</code></li><li><code>audio/src/main/AndroidManifest.xml :: service com.zhihu.android.player.walkman.player.AudioPlayService</code></li><li><code>audio/src/main/AndroidManifest.xml :: service com.zhihu.android.xplayer.service.AudioService</code></li><li><code>audio/src/main/AndroidManifest.xml :: provider com.zhihu.android.floatview.provider.FloatViewProvider</code></li></ul>
+        <p>源码阅读建议从 <a href="../../../../yyyyy-cdoe/Audio/audio/src/main/java/com/zhihu/android/xplayer/XPlayer.kt"><code>yyyyy-cdoe/Audio/audio/src/main/java/com/zhihu/android/xplayer/XPlayer.kt</code></a>、<a href="../../../../yyyyy-cdoe/Audio/audio/src/main/java/com/zhihu/android/xplayer/Player.kt"><code>yyyyy-cdoe/Audio/audio/src/main/java/com/zhihu/android/xplayer/Player.kt</code></a>、<a href="../../../../yyyyy-cdoe/Audio/audio/src/main/java/com/zhihu/android/player/walkman/player/AudioPlayService.java"><code>yyyyy-cdoe/Audio/audio/src/main/java/com/zhihu/android/player/walkman/player/AudioPlayService.java</code></a> 开始，再沿调用与依赖反向确认谁创建入口、谁持有状态、谁执行 IO。</p>
+
+                        <h2 id="chain">5. 关键调用链与边界</h2>
+        <h3>源码直接链路：新播放服务</h3>
+        <ol>
+          <li>业务调用 XPlayer</li>
+          <li>XPlayer 通过 AudioService.startService 启动或连接新播放服务</li>
+          <li>AudioService 持有跨页面播放会话</li>
+        </ol>
+        <p><strong>边界说明：</strong>这是新一代路径，排查时以 AudioService 的会话与通知状态为准。</p>
+        <h3>独立遗留机制：AudioPlayService</h3>
+        <ol>
+          <li>旧调用方进入 AudioPlayService</li>
+          <li>遗留 Service 自己维护播放与通知</li>
+        </ol>
+        <p><strong>边界说明：</strong>AudioPlayService 不是 XPlayer → AudioService.startService 链上的中间节点，文档不再混写两代实现。</p>
+<h2 id="tradeoff">6. 技术亮点与取舍</h2>
+        <h3>亮点</h3><p>用 Service 而不是页面 ViewModel 作为后台播放会话 owner，通知和悬浮入口只是状态投影。</p>
+        <h3>取舍</h3><p>跨页面持续播放提升体验，但音频焦点、进程重建、通知一致性和 release 后回调更难治理。</p>
+        <p>面试时不要把“使用了某框架”本身当亮点。更有价值的是说清楚为什么这样划分状态与生命周期、失败如何降级、版本/协议如何兼容，以及出现竞态时如何用真实调用链定位。</p>
+
+                        <h2 id="risk">7. 仓库专属风险与排查顺序</h2>
+        <p>下面的顺序按本仓真实状态 owner、服务与生命周期组织；前一步没有证据时，不跳到渲染层猜测。</p>
+        <ol>
+          <li><strong>第 1 步。</strong>先确认调用方使用 XPlayer 还是遗留 AudioPlayService，两代日志和状态源不能混看。</li>
+          <li><strong>第 2 步。</strong>新路径从 XPlayer 的播放参数追到 AudioService.startService，核对 service 是否真正启动及 Intent 数据是否完整。</li>
+          <li><strong>第 3 步。</strong>页面有进度但通知不一致时，以 AudioService 当前会话为真值检查订阅和通知刷新。</li>
+          <li><strong>第 4 步。</strong>退出页面仍播放属于服务生命周期；只有会话 id 错乱或 stop 未生效才继续查引用和释放。</li>
+        </ol>
+        <h2 id="talk">8. 可直接复述的讲法</h2>
+        <h3>30 秒版本</h3>
+        <blockquote><p>Audio 仓里最容易讲错的是把两代服务串起来。新路径是 XPlayer 直接走 AudioService.startService；AudioPlayService 属于遗留实现。我的排障第一步不是看播放器 View，而是先识别调用方属于哪一代，再检查对应服务里的会话 id、播放状态和通知同步。 个人参与范围<strong>需本人确认</strong>。</p></blockquote>
+        <h3>2 分钟版本</h3>
+        <blockquote><p>这个仓库同时保留新旧音频体系。源码能直接证明 XPlayer 调用 AudioService.startService，新服务负责跨页面会话；AudioPlayService 则服务于另一批遗留调用方。把它们拆开后，问题会清晰很多：新路径检查 XPlayer 参数和 AudioService 会话，旧路径只沿 AudioPlayService 自己的状态机。复用 Service 能让页面切换不断播，但代价是通知、页面订阅与真正播放器状态之间需要严格的一致性协议。 若要把其中某个调用点写成个人成果，仍需本人确认并提供可核验记录。</p></blockquote>
+        <h2 id="qa">9. 仓库专属追问与回答</h2>
+        <h3>1. 问：为什么不能说 XPlayer 最终进入 AudioPlayService？</h3><p><strong>答：</strong>当前源码直接调用的是 AudioService.startService，没有证据显示 AudioPlayService 是这条新链的下一跳。</p>
+        <h3>2. 问：页面退出后音频继续播放一定是泄漏吗？</h3><p><strong>答：</strong>不一定，跨页面播放本来由 Service 承担；要看会话是否仍被业务需要以及 stop/release 契约是否执行。</p>
+        <h3>3. 问：通知进度和页面进度不同步看什么？</h3><p><strong>答：</strong>比较 AudioService 的单一会话状态、通知更新节奏和页面订阅生命周期，避免两个状态源各自计时。</p>
+        <h3>4. 问：怎样给两代播放器补回归？</h3><p><strong>答：</strong>分别建立新旧入口的契约测试，至少覆盖开始、暂停、切歌、通知操作和进程恢复，禁止跨代复用断言。</p>
+        <h3>5. 问：面试中怎样说明自己在这个仓库里的贡献边界？</h3><p><strong>答：</strong>只陈述自己能用需求单、MR、commit 或评审记录证明的 audio 调用点；公共框架、团队装配体系和历史代码不据为己有。无法核验的个人动作、结果和指标统一标为“需本人确认”。</p>
+<h2 id="evidence">10. 源码证据</h2>
+        <p>以下路径均在当前工作区真实存在；它们证明实现与工程结构，不自动证明个人贡献。</p>
+        <ul><li><a href="../../../../yyyyy-cdoe/Audio/audio/src/main/java/com/zhihu/android/xplayer/XPlayer.kt"><code>yyyyy-cdoe/Audio/audio/src/main/java/com/zhihu/android/xplayer/XPlayer.kt</code></a></li><li><a href="../../../../yyyyy-cdoe/Audio/audio/src/main/java/com/zhihu/android/xplayer/Player.kt"><code>yyyyy-cdoe/Audio/audio/src/main/java/com/zhihu/android/xplayer/Player.kt</code></a></li><li><a href="../../../../yyyyy-cdoe/Audio/audio/src/main/java/com/zhihu/android/player/walkman/player/AudioPlayService.java"><code>yyyyy-cdoe/Audio/audio/src/main/java/com/zhihu/android/player/walkman/player/AudioPlayService.java</code></a></li><li><a href="../../../../yyyyy-cdoe/Audio/audio/src/main/java/com/zhihu/android/xplayer/service/AudioService.kt"><code>yyyyy-cdoe/Audio/audio/src/main/java/com/zhihu/android/xplayer/service/AudioService.kt</code></a></li><li><a href="../../../../yyyyy-cdoe/Audio/audio/src/main/java/com/zhihu/android/floatview/FloatViewManager.kt"><code>yyyyy-cdoe/Audio/audio/src/main/java/com/zhihu/android/floatview/FloatViewManager.kt</code></a></li><li><a href="../../../../yyyyy-cdoe/Audio/app/src/main/java/com/zhihu/android/player/MainActivity.java"><code>yyyyy-cdoe/Audio/app/src/main/java/com/zhihu/android/player/MainActivity.java</code></a></li><li><a href="../../../../yyyyy-cdoe/Audio/audio/src/main/java/com/zhihu/android/audio/ReadLaterPlayListener.kt"><code>yyyyy-cdoe/Audio/audio/src/main/java/com/zhihu/android/audio/ReadLaterPlayListener.kt</code></a></li></ul>
+        <p>补充工程证据：<a href="../../../../yyyyy-cdoe/Audio/app/build.gradle"><code>yyyyy-cdoe/Audio/app/build.gradle</code></a>、<a href="../../../../yyyyy-cdoe/Audio/audio/build.gradle"><code>yyyyy-cdoe/Audio/audio/build.gradle</code></a>、<a href="../../../../yyyyy-cdoe/Audio/audio-api/build.gradle"><code>yyyyy-cdoe/Audio/audio-api/build.gradle</code></a>、<a href="../../../../yyyyy-cdoe/Audio/build.gradle"><code>yyyyy-cdoe/Audio/build.gradle</code></a>、<a href="../../../../yyyyy-cdoe/Audio/gradlew"><code>yyyyy-cdoe/Audio/gradlew</code></a>、<a href="../../../../yyyyy-cdoe/Audio/settings.gradle"><code>yyyyy-cdoe/Audio/settings.gradle</code></a>。</p>
+
+        <hr>
+        <p><a href="../repositories.html">← 返回仓库索引</a> · <a href="../index.html">返回资料首页</a></p>
+      </article>
+      <aside class="page-toc" aria-label="本页目录"><div class="toc-title">本页目录</div><a class="toc-link level-2" href="#position">仓库定位与面试边界</a><a class="toc-link level-2" href="#checkout">当前检出与工程健康</a><a class="toc-link level-2" href="#structure">模块与目录结构</a><a class="toc-link level-2" href="#entry">真实入口</a><a class="toc-link level-2" href="#chain">关键调用链</a><a class="toc-link level-2" href="#tradeoff">技术亮点与取舍</a><a class="toc-link level-2" href="#risk">风险、缺口与排查顺序</a><a class="toc-link level-2" href="#talk">可直接复述</a><a class="toc-link level-2" href="#qa">追问与回答</a><a class="toc-link level-2" href="#evidence">源码证据</a></aside>
+    </div>
+    </main>
+  </div>
+  <script src="../assets/search-data.js"></script>
+  <script src="../assets/docs.js"></script>
+</body>
+</html>

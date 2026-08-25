@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Futureve Android 业务仓库源码证据、调用链与面试讲法">
+  <title>Futureve｜Android 业务仓库分析</title>
+  <link rel="stylesheet" href="../assets/docs.css">
+  <script>try{const t=localStorage.getItem("interview-docs-theme");document.documentElement.dataset.theme=t||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light")}catch{}</script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <header class="topbar">
+    <button class="icon-button menu-button" type="button" data-menu-toggle aria-label="打开文档导航" aria-expanded="false">☰</button>
+    <a class="brand" href="../index.html"><span class="brand-mark">⌁</span><span>项目面试资料库</span></a>
+    <div class="search-shell"><label class="sr-only" for="global-search">搜索文档</label><input id="global-search" type="search" data-search-input placeholder="搜索仓库、技术或面试题…" autocomplete="off"><div class="search-results" data-search-results hidden></div></div>
+    <button class="icon-button" type="button" data-theme-toggle aria-label="切换深浅主题">◐</button>
+  </header>
+  <div class="drawer-backdrop" data-drawer-backdrop hidden></div>
+  <div class="docs-layout">
+    <nav class="sidebar" data-sidebar aria-label="文档导航">
+      <div class="sidebar-heading">仓库文档</div>
+      <section class="nav-group">
+        <h2 class="nav-group-title">返回</h2>
+        <a class="nav-link" href="../repositories.html">全部仓库</a>
+        <a class="nav-link" href="../index.html">资料首页</a>
+        <a class="nav-link" href="../10-android-business-repositories.html">业务仓聚合分析</a>
+      </section>
+      <p class="sidebar-note">离线源码证据 · 2026-07-25</p>
+    </nav>
+    <main class="article-shell" id="main-content">
+    <div class="breadcrumbs"><a href="../index.html">首页</a><span>/</span><a href="../repositories.html">仓库索引</a><span>/</span><span>Futureve</span></div>
+    <div class="article-grid">
+      <article class="markdown-body">
+        <h1 id="futureve">Futureve：知乎 Android 主 App 壳与多渠道组件装配工程</h1>
+        <blockquote class="callout"><p>基于当前本地检出与真实源码路径整理。源码只能证明仓库中存在这些实现；所有个人职责、主导范围、上线结果和收益均为<strong>需本人确认</strong>，不得把团队框架、三方内核或上游仓库归为本人原创，也不在没有数据源时编造性能指标。</p></blockquote>
+
+        <h2 id="position">1. 仓库定位与面试边界</h2>
+        <p><code>yyyyy-cdoe/Futureve</code> 的当前定位是<strong>知乎 Android 主 App 壳与多渠道组件装配工程</strong>。主要技术形态为 Java、Android/Gradle、多 flavor、动态 feature、启动任务与定制 third source。</p>
+        <p>面试应聚焦业务入口、状态编排、生命周期、异常兜底和组件集成。可以讲“我如何使用既有能力完成业务调用与排障”，但“本人实现/主导”的范围一律<strong>需本人确认</strong>，且应有 MR、commit、需求、评审或上线记录佐证。</p>
+
+        <h2 id="checkout">2. 当前检出、规模、构建入口、测试与 CI</h2>
+        <table><thead><tr><th>项目</th><th>当前证据</th></tr></thead><tbody>
+          <tr><td>分支</td><td><code>develop</code></td></tr>
+          <tr><td>最后提交</td><td><code>3acac4d1b9</code> · 2026-06-25 · auto merge release-10.103.0 into develop</td></tr>
+          <tr><td>规模</td><td>326 个 Git 跟踪文件；54 个 Java/Kotlin 源码文件（当前扫描口径）</td></tr>
+          <tr><td>构建入口</td><td><code>app/build.gradle</code>、<code>build.gradle</code>、<code>gradlew</code>、<code>Makefile</code>、<code>settings.gradle</code>、<code>version.gradle</code></td></tr>
+          <tr><td>CI</td><td><code>.gitlab-ci.yml</code></td></tr>
+          <tr><td>测试判断</td><td>识别到 6 个测试文件，但文件名均偏 Example/模板；只能证明测试目录存在，不能证明核心链路已被保护。</td></tr>
+        </tbody></table>
+        <p>建议的静态构建检查入口是 <code>./gradlew projects</code>、<code>./gradlew tasks</code> 和目标模块的 <code>test</code>/<code>lint</code>；当前文档未执行全量构建，内网制品、旧 Gradle/AGP、NDK 或渠道凭据可能是环境限制，不能把“未执行”写成“构建失败”。</p>
+
+        <h2 id="structure">3. 模块与目录结构</h2>
+        <p>Gradle settings 可识别模块：<code>:app</code>。</p>
+        <p>主要物理目录：<code>apkChecker/</code>、<code>app/</code>、<code>features/</code>、<code>META-INF/</code>、<code>resGuard/</code>、<code>rhea-trace/</code>、<code>script/</code>。</p>
+        <p>该仓的 settings 以单宿主或动态映射为主，真实业务能力可能通过组件制品或物理子目录装配，不能仅按 include 数量判断复杂度。</p>
+
+        <h2 id="entry">4. 真实入口</h2>
+        <p>Manifest 抽样入口如下；其中 <code>app</code> 下的 Activity/Application 可能只是 demo 或宿主壳，业务集成仍需回到 API、Provider、Router 或实现类。</p>
+        <ul><li><code>app/src/beta/AndroidManifest.xml :: application com.zhihu.android.app.ZhihuApplication</code></li><li><code>app/src/debug/AndroidManifest.xml :: application .app.DebugZhihuApplication</code></li><li><code>app/src/explore/AndroidManifest.xml :: application com.zhihu.android.app.ZhihuApplication</code></li><li><code>app/src/exploreHuawei/AndroidManifest.xml :: activity com.zhihu.android.app.ui.activity.LauncherActivity</code></li><li><code>app/src/exploreMarket/AndroidManifest.xml :: activity com.zhihu.android.app.ui.activity.LauncherActivity</code></li></ul>
+        <p>源码阅读建议从 <a href="../../../../yyyyy-cdoe/Futureve/app/src/main/java/com/zhihu/android/app/ZhihuApplication.java"><code>yyyyy-cdoe/Futureve/app/src/main/java/com/zhihu/android/app/ZhihuApplication.java</code></a>、<a href="../../../../yyyyy-cdoe/Futureve/app/src/main/java/com/zhihu/android/app/ConfigCreator.java"><code>yyyyy-cdoe/Futureve/app/src/main/java/com/zhihu/android/app/ConfigCreator.java</code></a>、<a href="../../../../yyyyy-cdoe/Futureve/features.json"><code>yyyyy-cdoe/Futureve/features.json</code></a> 开始，再沿调用与依赖反向确认谁创建入口、谁持有状态、谁执行 IO。</p>
+
+                        <h2 id="chain">5. 关键调用链与边界</h2>
+        <h3>源码直接链路：运行时启动</h3>
+        <ol>
+          <li>ZhihuApplication 进入 attachBaseContext/onCreate</li>
+          <li>ConfigCreator 写入 BuildConfig 等运行配置</li>
+          <li>ZhihuApplicationDelegate 承担后续初始化委托</li>
+        </ol>
+        <p><strong>边界说明：</strong>这是运行时路径，具体任务仍要沿 Delegate 内部证据继续确认。</p>
+        <h3>相邻但非运行链：feature 装配</h3>
+        <ol>
+          <li>settings.gradle 加载 settings_feature.gradle</li>
+          <li>settings_feature.gradle 再加载 dynamic_features.gradle</li>
+          <li>Gradle 根据配置决定 feature 是否进入产物</li>
+        </ol>
+        <p><strong>边界说明：</strong>构建脚本在编译期决定产物，不应画在 Application onCreate 后面。</p>
+<h2 id="tradeoff">6. 技术亮点与取舍</h2>
+        <h3>亮点</h3><p>源码数量不大但承担超级 App 的组件汇合、多渠道和动态能力交付，价值主要在构建控制面。</p>
+        <h3>取舍</h3><p>组件化缩小主壳业务源码，却把复杂度转移到依赖图、启动时序和定制三方源码维护。</p>
+        <p>面试时不要把“使用了某框架”本身当亮点。更有价值的是说清楚为什么这样划分状态与生命周期、失败如何降级、版本/协议如何兼容，以及出现竞态时如何用真实调用链定位。</p>
+
+                        <h2 id="risk">7. 仓库专属风险与排查顺序</h2>
+        <p>下面的顺序按本仓真实状态 owner、服务与生命周期组织；前一步没有证据时，不跳到渲染层猜测。</p>
+        <ol>
+          <li><strong>第 1 步。</strong>启动崩溃先按 attachBaseContext 与 onCreate 阶段区分，再看 ConfigCreator 和 ZhihuApplicationDelegate 的最后成功点。</li>
+          <li><strong>第 2 步。</strong>配置值异常时核对当前 flavor 的 BuildConfig 输入与 ConfigCreator 写入结果。</li>
+          <li><strong>第 3 步。</strong>某 feature 类不存在时先查 settings_feature.gradle 和 dynamic_features.gradle 的装配结果，而不是查运行时路由。</li>
+          <li><strong>第 4 步。</strong>构建包含模块但运行未初始化时，再分别检查产物依赖和 Delegate 任务，两条路径不要混用结论。</li>
+        </ol>
+        <h2 id="talk">8. 可直接复述的讲法</h2>
+        <h3>30 秒版本</h3>
+        <blockquote><p>Futureve 同时控制运行时启动和编译期 feature 装配。运行时是 ZhihuApplication 调 ConfigCreator 与 ZhihuApplicationDelegate；构建期则是 settings.gradle 继续加载 settings_feature.gradle 和 dynamic_features.gradle。把两条链拆开，才能判断问题是产物没带模块，还是模块存在但启动没初始化。 个人参与范围<strong>需本人确认</strong>。</p></blockquote>
+        <h3>2 分钟版本</h3>
+        <blockquote><p>这个宿主仓的关键不是某个页面，而是两个时间轴。编译期，settings.gradle 通过 settings_feature.gradle、dynamic_features.gradle 决定哪些 feature 被装入 APK；运行时，ZhihuApplication 在 attachBaseContext/onCreate 调 ConfigCreator 和 ZhihuApplicationDelegate 建立环境。feature 不存在要查 Gradle 装配，类存在但能力不可用才查启动委托。组件化利于裁剪和复用，但也带来构建配置与运行任务双重一致性成本。 若要把其中某个调用点写成个人成果，仍需本人确认并提供可核验记录。</p></blockquote>
+        <h2 id="qa">9. 仓库专属追问与回答</h2>
+        <h3>1. 问：dynamic_features.gradle 会在 Application.onCreate 后执行吗？</h3><p><strong>答：</strong>不会，它属于 Gradle 配置期；运行时只消费已经构建好的产物。</p>
+        <h3>2. 问：类找不到和初始化未执行怎样快速区分？</h3><p><strong>答：</strong>先看最终依赖与 APK 是否包含 feature；包含后再看 ZhihuApplicationDelegate 的任务日志。</p>
+        <h3>3. 问：ConfigCreator 的作用是什么？</h3><p><strong>答：</strong>它把 BuildConfig 等产品配置注入运行环境，不等同于执行所有业务初始化。</p>
+        <h3>4. 问：Futureve 应补哪类测试？</h3><p><strong>答：</strong>构建侧校验 feature 矩阵和依赖图，运行侧用启动阶段测试验证 ConfigCreator 与 Delegate 的先后契约。</p>
+        <h3>5. 问：面试中怎样说明自己在这个仓库里的贡献边界？</h3><p><strong>答：</strong>只陈述自己能用需求单、MR、commit 或评审记录证明的 futureve 调用点；公共框架、团队装配体系和历史代码不据为己有。无法核验的个人动作、结果和指标统一标为“需本人确认”。</p>
+<h2 id="evidence">10. 源码证据</h2>
+        <p>以下路径均在当前工作区真实存在；它们证明实现与工程结构，不自动证明个人贡献。</p>
+        <ul><li><a href="../../../../yyyyy-cdoe/Futureve/app/src/main/java/com/zhihu/android/app/ZhihuApplication.java"><code>yyyyy-cdoe/Futureve/app/src/main/java/com/zhihu/android/app/ZhihuApplication.java</code></a></li><li><a href="../../../../yyyyy-cdoe/Futureve/app/src/main/java/com/zhihu/android/app/ConfigCreator.java"><code>yyyyy-cdoe/Futureve/app/src/main/java/com/zhihu/android/app/ConfigCreator.java</code></a></li><li><a href="../../../../yyyyy-cdoe/Futureve/features.json"><code>yyyyy-cdoe/Futureve/features.json</code></a></li><li><a href="../../../../yyyyy-cdoe/Futureve/settings.gradle"><code>yyyyy-cdoe/Futureve/settings.gradle</code></a></li><li><a href="../../../../yyyyy-cdoe/Futureve/app/src/alpha/java/com/zhihu/android/DroidAPMLocalDelegate.java"><code>yyyyy-cdoe/Futureve/app/src/alpha/java/com/zhihu/android/DroidAPMLocalDelegate.java</code></a></li><li><a href="../../../../yyyyy-cdoe/Futureve/app/src/autoui/java/com/zhihu/android/autoui/AutoUIClick.java"><code>yyyyy-cdoe/Futureve/app/src/autoui/java/com/zhihu/android/autoui/AutoUIClick.java</code></a></li><li><a href="../../../../yyyyy-cdoe/Futureve/app/src/beta/java/com/zhihu/android/DroidAPMLocalDelegate.java"><code>yyyyy-cdoe/Futureve/app/src/beta/java/com/zhihu/android/DroidAPMLocalDelegate.java</code></a></li></ul>
+        <p>补充工程证据：<a href="../../../../yyyyy-cdoe/Futureve/app/build.gradle"><code>yyyyy-cdoe/Futureve/app/build.gradle</code></a>、<a href="../../../../yyyyy-cdoe/Futureve/build.gradle"><code>yyyyy-cdoe/Futureve/build.gradle</code></a>、<a href="../../../../yyyyy-cdoe/Futureve/features/LeLinkFeature/build.gradle"><code>yyyyy-cdoe/Futureve/features/LeLinkFeature/build.gradle</code></a>、<a href="../../../../yyyyy-cdoe/Futureve/features/ScannerFeature/build.gradle"><code>yyyyy-cdoe/Futureve/features/ScannerFeature/build.gradle</code></a>、<a href="../../../../yyyyy-cdoe/Futureve/features/VideoXFeature/build.gradle"><code>yyyyy-cdoe/Futureve/features/VideoXFeature/build.gradle</code></a>、<a href="../../../../yyyyy-cdoe/Futureve/gradlew"><code>yyyyy-cdoe/Futureve/gradlew</code></a>。</p>
+
+        <hr>
+        <p><a href="../repositories.html">← 返回仓库索引</a> · <a href="../index.html">返回资料首页</a></p>
+      </article>
+      <aside class="page-toc" aria-label="本页目录"><div class="toc-title">本页目录</div><a class="toc-link level-2" href="#position">仓库定位与面试边界</a><a class="toc-link level-2" href="#checkout">当前检出与工程健康</a><a class="toc-link level-2" href="#structure">模块与目录结构</a><a class="toc-link level-2" href="#entry">真实入口</a><a class="toc-link level-2" href="#chain">关键调用链</a><a class="toc-link level-2" href="#tradeoff">技术亮点与取舍</a><a class="toc-link level-2" href="#risk">风险、缺口与排查顺序</a><a class="toc-link level-2" href="#talk">可直接复述</a><a class="toc-link level-2" href="#qa">追问与回答</a><a class="toc-link level-2" href="#evidence">源码证据</a></aside>
+    </div>
+    </main>
+  </div>
+  <script src="../assets/search-data.js"></script>
+  <script src="../assets/docs.js"></script>
+</body>
+</html>

@@ -1,0 +1,806 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Android 证据复核：基于当前工作区源码证据整理的项目面试资料">
+  <title>Android 两份源码分析文档独立证据复核｜项目面试资料</title>
+  <link rel="stylesheet" href="assets/docs.css">
+  <script>
+    try {
+      const savedTheme = localStorage.getItem("interview-docs-theme");
+      const preferredDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      document.documentElement.dataset.theme = savedTheme || (preferredDark ? "dark" : "light");
+    } catch {}
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <header class="topbar">
+    <button class="icon-button menu-button" type="button" data-menu-toggle aria-label="打开文档导航" aria-expanded="false">☰</button>
+    <a class="brand" href="index.html"><span class="brand-mark">⌁</span><span>项目面试资料库</span></a>
+    <div class="search-shell">
+      <label class="sr-only" for="global-search">搜索所有文档</label>
+      <input id="global-search" type="search" data-search-input placeholder="搜索仓库、技术或面试题…" autocomplete="off">
+      <span class="search-shortcut">Ctrl K</span>
+      <div class="search-results" data-search-results hidden></div>
+    </div>
+    <button class="icon-button" type="button" data-theme-toggle aria-label="切换深浅主题">◐</button>
+  </header>
+  <div class="drawer-backdrop" data-drawer-backdrop hidden></div>
+  <div class="docs-layout">
+    <nav class="sidebar" data-sidebar aria-label="全站文档导航">
+      <div class="sidebar-heading">文档导航</div>
+      
+        <section class="nav-group">
+          <h2 class="nav-group-title">逐仓文档</h2>
+          <a class="nav-link" href="repositories.html">66 个仓库独立分析</a>
+        </section>
+        <section class="nav-group">
+          <h2 class="nav-group-title">开始使用</h2>
+          <a class="nav-link" href="index.html">总览与导航</a>
+<a class="nav-link" href="50-interview-project-summary.html">五条主讲项目线</a>
+<a class="nav-link" href="70-resume-and-star-stories.html">简历与 STAR</a>
+<a class="nav-link" href="60-interview-question-bank.html">70 道面试题</a>
+        </section>
+
+        <section class="nav-group">
+          <h2 class="nav-group-title">仓库分析</h2>
+          <a class="nav-link" href="00-repository-inventory.html">全量仓库盘点</a>
+<a class="nav-link" href="10-android-business-repositories.html">Android 业务仓库</a>
+<a class="nav-link" href="20-android-infrastructure-media.html">基础设施与媒体</a>
+<a class="nav-link" href="30-cross-platform-rn-web.html">RN 与 Web</a>
+<a class="nav-link" href="31-tools-samples-and-assets.html">工具、样例与资产</a>
+        </section>
+
+        <section class="nav-group">
+          <h2 class="nav-group-title">质量复核</h2>
+          <a class="nav-link active" href="40-android-docs-evidence-review.html" aria-current="page">Android 证据复核</a>
+<a class="nav-link" href="41-full-workspace-coverage-review.html">全工作区覆盖复核</a>
+        </section>
+
+        <section class="nav-group">
+          <h2 class="nav-group-title">辅助材料</h2>
+          <a class="nav-link" href="ANALYSIS-TEMPLATE.html">仓库分析模板</a>
+<a class="nav-link" href="2026-07-24-all-repositories-analysis-plan.html">原始执行计划</a>
+        </section>
+
+        <section class="nav-group">
+          <h2 class="nav-group-title">Android 专题</h2>
+          <a class="nav-link" href="android-storage-guide.html">Android 存储方案</a>
+        </section>
+      <p class="sidebar-note">离线资料 · 证据快照 2026-07-24</p>
+    </nav>
+    <main class="article-shell" id="main-content">
+      <div class="breadcrumbs"><a href="index.html">首页</a><span>/</span><span>质量复核</span><span>/</span><span>Android 证据复核</span></div>
+      
+      <article class="markdown-body">
+        <h1 id="android-两份源码分析文档独立证据复核">Android 两份源码分析文档独立证据复核</h1>
+<blockquote class="callout"><p>复核日期：2026-07-24<br>复核对象：<code>10-android-business-repositories.md</code>、<code>20-android-infrastructure-media.md</code><br>对照材料：<code>00-repository-inventory.md</code> 与 <code>C:\Users\msf\Desktop\code\yyyyy-cdoe</code> 当前检出源码<br>方法：只读核对仓库、模块、文件、类/对象/接口、函数和关键调用关系；未运行构建、测试或网络命令。</p>
+</blockquote>
+<h2 id="1-结论">1. 结论</h2>
+<ul>
+<li><strong>章节数通过</strong>：<code>10</code> 有 23 个仓库章节，<code>20</code> 有 33 个仓库章节；各自内部无重复标题、无编号缺口。</li>
+<li><strong>跨文档需去重</strong>：两份文档共有 56 个仓库章节，但 <code>Kmaudio</code> 同时出现在 <code>10</code> 第 11 节和 <code>20</code> 第 21 节，因此是 <strong>55 个唯一仓库</strong>。这是业务视角与媒体基础设施视角的允许重复，后续总览不能再按 56 个唯一仓库计数。</li>
+<li><strong><code>ZhihuLite</code> 不属于这两份文档的指定 23/33 集合</strong>：它在 <code>00</code> 中属于 Android 业务仓，需由工具/样例/其余仓库文档承接；不能据此宣称 <code>10</code>+<code>20</code> 已覆盖库存中的全部 Android 仓库。</li>
+<li><strong>源码证据整体可信</strong>：共抽查 102 条关键文件/类型/函数，<code>10</code> 为 50 条，<code>20</code> 为 52 条。初查发现的 3 条 API/函数名错误和 1 条 Net/VipNet 测试比较错误已在 <code>20</code> 当前版本修正。</li>
+<li><strong>没有 P0</strong>：未发现凭据原值、私钥、机器人地址、内网 HTTP 地址或明显伪造仓库。</li>
+<li><strong>证据路径问题已收口</strong>：<code>10</code> 初查的 29 处、<code>20</code> 初查的 13 处缩写路径均已展开；最终快照的反引号路径 <code>...</code> 计数为 0。</li>
+<li><strong>个人贡献口径已在当前版本收口</strong>：<code>10</code> 的 23 段 STAR 均已改成“条件式 STAR 模板（仅限真实经历）”，文档开头也明确“源码事实不等于个人经历”，要求本人补充真实职责和可核验结果。</li>
+</ul>
+<p>当前建议：<strong>通过</strong>。仅保留两项对 <code>00</code> 库存分类的非阻塞建议。</p>
+<h2 id="2-覆盖与分类口径">2. 覆盖与分类口径</h2>
+<h3 id="2-1-10-的-23-个仓库">2.1 <code>10</code> 的 23 个仓库</h3>
+<table>
+<thead>
+<tr>
+<th>仓库</th>
+<th>覆盖档位</th>
+<th>判断</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>VipAndroid</td>
+<td>深入</td>
+<td>组件装配、源码替换、依赖检查、SO 校验与构建边界均有源码点</td>
+</tr>
+<tr>
+<td>KnowledgeMarket</td>
+<td>深入</td>
+<td>首页、书架、草稿、已购四条链路</td>
+</tr>
+<tr>
+<td>km_home_base</td>
+<td>深入</td>
+<td>DevKit/Mavericks、Paging3、LoadState、Mediator 与真实页面调用</td>
+</tr>
+<tr>
+<td>VipHome</td>
+<td>深入</td>
+<td>Application、Launcher、MainActivity、启动监控与恢复</td>
+</tr>
+<tr>
+<td>VipProfile</td>
+<td>标准</td>
+<td>主页、缓存、编辑、风控入口；缺状态合并的进一步实现核对</td>
+</tr>
+<tr>
+<td>VipGrowth</td>
+<td>标准</td>
+<td>引导状态管理、启动接入、任务、隐私链</td>
+</tr>
+<tr>
+<td>Premium</td>
+<td>标准</td>
+<td>购买、支付辅助、挽留、权益入口；缺支付结果端到端证据</td>
+</tr>
+<tr>
+<td>VipReader</td>
+<td>深入</td>
+<td>EPUB 准备、解析、预解析、进度和阅读设置</td>
+</tr>
+<tr>
+<td>VipManuscript</td>
+<td>深入</td>
+<td>双向分页、定位、互动、评论/礼物</td>
+</tr>
+<tr>
+<td>VipKmAudio</td>
+<td>标准</td>
+<td>播放、购买、菜单/弹幕/广告</td>
+</tr>
+<tr>
+<td>Kmaudio</td>
+<td>深入</td>
+<td>入口、资源、播放列表、权益和下载</td>
+</tr>
+<tr>
+<td>KmDetailPage</td>
+<td>深入</td>
+<td>原生 Header/Bottom、Hybrid、播放器和评论桥接</td>
+</tr>
+<tr>
+<td>KmBase</td>
+<td>标准</td>
+<td>目录、书架、购买、评价/礼物/进度，多模块但实现深度有限</td>
+</tr>
+<tr>
+<td>LiteKnowledgeMarket</td>
+<td>标准</td>
+<td>模块别名、首页、书架、已购；与 KnowledgeMarket 大量同源</td>
+</tr>
+<tr>
+<td>VipPassport</td>
+<td>深入</td>
+<td>注册、验证码、社交绑定、Token</td>
+</tr>
+<tr>
+<td>Account</td>
+<td>标准</td>
+<td>认证、账号落盘、实名/活体、隐私权</td>
+</tr>
+<tr>
+<td>VipComment</td>
+<td>深入</td>
+<td>根/子/锚点分页、互动与发布</td>
+</tr>
+<tr>
+<td>Comment</td>
+<td>深入</td>
+<td>标准评论链、segment/AI、RN、草稿</td>
+</tr>
+<tr>
+<td>Feed</td>
+<td>深入</td>
+<td>远端/本地/预载/降级、Delegate、Tab</td>
+</tr>
+<tr>
+<td>km-attention</td>
+<td>标准</td>
+<td>容器、搜索、分类、书架关注</td>
+</tr>
+<tr>
+<td>Vipchannelcard</td>
+<td>标准</td>
+<td>卡片服务、关注、弹窗 Provider</td>
+</tr>
+<tr>
+<td>Common</td>
+<td>标准</td>
+<td>用户、上传、联系人、Action Portal</td>
+</tr>
+<tr>
+<td>kmcommon</td>
+<td>标准</td>
+<td>旧 MVVM/MVP、容器、预加载与互斥</td>
+</tr>
+</tbody></table>
+<p>统计：深入 12，标准 11，简要 0，仅盘点 0。</p>
+<h3 id="2-2-20-的-33-个仓库">2.2 <code>20</code> 的 33 个仓库</h3>
+<table>
+<thead>
+<tr>
+<th>仓库</th>
+<th>覆盖档位</th>
+<th>判断</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>DevKit</td>
+<td>深入</td>
+<td>框架实现、真实 HomePinTab 调用和已知边界均有证据</td>
+</tr>
+<tr>
+<td>Dependencies</td>
+<td>简要</td>
+<td>配置仓，准确说明非 Runtime；未逐条验证规则消费</td>
+</tr>
+<tr>
+<td>Net</td>
+<td>深入</td>
+<td>门面、Retrofit/OkHttp 装配、线程与 SSE；两处 API 名已按源码修正</td>
+</tr>
+<tr>
+<td>VipNet</td>
+<td>标准</td>
+<td>与 Net 的分叉和风险；当前已正确说明两边保留同组缓存测试</td>
+</tr>
+<tr>
+<td>Netdns</td>
+<td>深入</td>
+<td>DNS 组装、去重、缓存、探速与线程</td>
+</tr>
+<tr>
+<td>ZRouter</td>
+<td>深入</td>
+<td>mapper、拦截、fallback、Fragment 启动</td>
+</tr>
+<tr>
+<td>Bootstrap</td>
+<td>简要</td>
+<td>已纠正为 UI 控件库，但没有业务调用点</td>
+</tr>
+<tr>
+<td>Futureve</td>
+<td>标准</td>
+<td>App 壳、flavor、feature；调用深度有限</td>
+</tr>
+<tr>
+<td>FutureveGlobal</td>
+<td>标准</td>
+<td>全局网络、DNS 初始化和 Router Portal</td>
+</tr>
+<tr>
+<td>Mercury</td>
+<td>标准</td>
+<td>业务 Web 容器、插件和资源拦截</td>
+</tr>
+<tr>
+<td>VipMercury</td>
+<td>标准</td>
+<td>VIP 分支与链式 WebViewClient</td>
+</tr>
+<tr>
+<td>mercury-core</td>
+<td>深入</td>
+<td>H5Page、JsBridge、资源策略和 LRU</td>
+</tr>
+<tr>
+<td>KmReporter</td>
+<td>简要</td>
+<td>TypeScript 报表服务，非 Android SDK</td>
+</tr>
+<tr>
+<td>Share</td>
+<td>标准</td>
+<td>API/实现、RN 模型和短链</td>
+</tr>
+<tr>
+<td>ShareCore</td>
+<td>标准</td>
+<td>分享对象、渠道分发、系统 Intent 与渲染</td>
+</tr>
+<tr>
+<td>Media</td>
+<td>标准</td>
+<td>Tornado、插件 View、池、预加载和会话监控</td>
+</tr>
+<tr>
+<td>mediax</td>
+<td>标准</td>
+<td>TTVideoEngine 薄适配与地址过期恢复</td>
+</tr>
+<tr>
+<td>VideoEntity</td>
+<td>标准</td>
+<td>视频详情/OGV/弹幕/预载业务域</td>
+</tr>
+<tr>
+<td>Audio</td>
+<td>标准</td>
+<td>XPlayer、Service、通知和 engine</td>
+</tr>
+<tr>
+<td>Zhplayer</td>
+<td>标准</td>
+<td>facade、工厂、预播放器；预播放器函数名已按源码修正</td>
+</tr>
+<tr>
+<td>Kmaudio</td>
+<td>标准</td>
+<td>媒体视角有效，但与 <code>10</code> 重复</td>
+</tr>
+<tr>
+<td>Picture</td>
+<td>标准</td>
+<td>浏览、分区解码、下载、预取和监控</td>
+</tr>
+<tr>
+<td>Picasa</td>
+<td>标准</td>
+<td>选择/拍摄/处理/上传门面</td>
+</tr>
+<tr>
+<td>photos</td>
+<td>仅盘点</td>
+<td>当前只有 LICENSE，无实现</td>
+</tr>
+<tr>
+<td>Camera</td>
+<td>简要</td>
+<td>系统相机链式封装，源码很小</td>
+</tr>
+<tr>
+<td>barrage</td>
+<td>简要</td>
+<td>轻量弹幕库</td>
+</tr>
+<tr>
+<td>BlurView</td>
+<td>简要</td>
+<td>第三方模糊视图源码</td>
+</tr>
+<tr>
+<td>bottomnav</td>
+<td>标准</td>
+<td>动态 Tab、badge、主题和云配置</td>
+</tr>
+<tr>
+<td>ZhEditor</td>
+<td>标准</td>
+<td>Ability、UIComponent 与 ViewModel</td>
+</tr>
+<tr>
+<td>ZIM</td>
+<td>标准</td>
+<td>IM UI kit、列表操作与富文本</td>
+</tr>
+<tr>
+<td>VipPrerender</td>
+<td>标准</td>
+<td>预测、加载、缓存、消费、上报</td>
+</tr>
+<tr>
+<td>ReaderSDK-CMake</td>
+<td>深入</td>
+<td>Android CMake/JNI、wrapper、内核边界与并发</td>
+</tr>
+<tr>
+<td>VipCommon</td>
+<td>深入</td>
+<td>资源、预载、任务、浮层串行化</td>
+</tr>
+</tbody></table>
+<p>统计：深入 7，标准 19，简要 6，仅盘点 1。</p>
+<h2 id="3-抽查结果">3. 抽查结果</h2>
+<h3 id="3-1-10-业务-启动-阅读-评论-账号等-50-条">3.1 <code>10</code>：业务、启动、阅读、评论、账号等 50 条</h3>
+<p>以下列出其中 26 条高价值证据；另 24 条对 VipProfile、Premium、KmBase、LiteKnowledgeMarket、Vipchannelcard 等文件和函数的抽查也均命中。</p>
+<table>
+<thead>
+<tr>
+<th>领域</th>
+<th>抽查证据</th>
+<th>结果</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>主工程</td>
+<td><code>VipAndroid/app/build.gradle</code>：<code>VIP_APP_REMOVED_COMPONENTS</code>、<code>allComponents</code>、<code>dependencyReplace</code>、<code>handleSo</code></td>
+<td>通过</td>
+</tr>
+<tr>
+<td>源码联调</td>
+<td><code>VipAndroid/gradle/sourcecode.gradle</code>：读取根目录 <code>sourcecode.properties</code></td>
+<td>通过</td>
+</tr>
+<tr>
+<td>知识首页</td>
+<td><code>KnowledgeMarket/kmarket-home/src/main/java/com/zhihu/android/app/market/fragment/MarketParentFragment.java</code></td>
+<td>通过</td>
+</tr>
+<tr>
+<td>新首页</td>
+<td><code>KnowledgeMarket/kmarket-home/src/main/java/com/zhihu/android/app/market/newhome/ui/fragment/ContentMarketHomeFragment.kt</code></td>
+<td>通过</td>
+</tr>
+<tr>
+<td>书架</td>
+<td><code>KnowledgeMarket/kmarket-home/src/main/java/com/zhihu/android/app/market/shelf/Shelf2Fragment.kt</code></td>
+<td>通过</td>
+</tr>
+<tr>
+<td>草稿</td>
+<td><code>KnowledgeMarket/sku-manuscript/src/main/java/com/zhihu/android/app/sku/manuscript/draftpage/VerticalDraftFragment.kt</code></td>
+<td>通过</td>
+</tr>
+<tr>
+<td>Paging3 View</td>
+<td><code>km_home_base/km_home_base/src/main/java/com/zhihu/android/feature/km_home_base/discovery/HomePinTabFragment.kt</code></td>
+<td>通过</td>
+</tr>
+<tr>
+<td>Paging3 VM</td>
+<td><code>km_home_base/km_home_base/src/main/java/com/zhihu/android/feature/km_home_base/discovery/HomePinTabViewModel.kt</code>：<code>refresh</code>、<code>deleteItem</code></td>
+<td>通过</td>
+</tr>
+<tr>
+<td>启动 Delegate</td>
+<td><code>VipHome/home/src/main/java/com/zhihu/android/app/ZhihuApplicationDelegate.java</code></td>
+<td>通过</td>
+</tr>
+<tr>
+<td>Launcher</td>
+<td><code>VipHome/home/src/main/java/com/zhihu/android/app/ui/activity/LauncherActivity.java</code>：<code>handleLauncherDisplay</code></td>
+<td>通过</td>
+</tr>
+<tr>
+<td>个人页</td>
+<td><code>VipProfile/vip_profile/src/main/java/com/zhihu/android/vip_profile/vm/ProfileViewModel.kt</code>：<code>checkRequestData</code>、<code>requestUserInfo</code>、<code>replaceUserInfo</code></td>
+<td>通过</td>
+</tr>
+<tr>
+<td>增长引导</td>
+<td><code>VipGrowth/growth/src/main/java/com/zhihu/android/growth/ui/fragment/NewUserGuideV5Fragment.kt</code></td>
+<td>通过</td>
+</tr>
+<tr>
+<td>购买</td>
+<td><code>Premium/premium/src/main/java/com/zhihu/android/premium/viewmodel/VipPurchaseViewModel.kt</code>：<code>requestCancelDialogDataV2</code></td>
+<td>通过</td>
+</tr>
+<tr>
+<td>阅读</td>
+<td><code>VipReader/vip_reader/src/main/java/com/zhihu/android/vip/reader/business/EpubViewModel.kt</code>：<code>preParseAround</code>、<code>needSyncSectionProgress</code></td>
+<td>通过</td>
+</tr>
+<tr>
+<td>双向目录</td>
+<td><code>VipManuscript/vip_manuscript/src/main/java/com/zhihu/android/vip/manuscript/manuscript/catalog/ManuscriptBillboardViewModel.kt</code></td>
+<td>通过</td>
+</tr>
+<tr>
+<td>目标章节</td>
+<td><code>VipManuscript/vip_manuscript/src/main/java/com/zhihu/android/vip/manuscript/manuscript/catalog/native_catalog/recommend/actor/NativeManuscriptAuthorFragment.kt</code></td>
+<td>通过</td>
+</tr>
+<tr>
+<td>VIP 音频</td>
+<td><code>VipKmAudio/kmaudio/src/main/java/com/zhihu/android/kmaudio/player/audio/ui/AudioPlayerFragment.kt</code></td>
+<td>通过</td>
+</tr>
+<tr>
+<td>全局播放器</td>
+<td><code>Kmaudio/kmaudio/src/main/java/com/zhihu/android/kmaudio/player/KMPlayer.kt</code>：Kotlin <code>object</code>、<code>play</code>、<code>globalPlayListDataSource</code></td>
+<td>通过</td>
+</tr>
+<tr>
+<td>Hybrid 音频</td>
+<td><code>KmDetailPage/km_detail_page/src/main/java/com/zhihu/android/kmdetail/next/vm/SkuAudioHybridViewModel.kt</code></td>
+<td>通过</td>
+</tr>
+<tr>
+<td>注册</td>
+<td><code>VipPassport/vip_passport_ui/src/main/java/com/zhihu/android/app/modules/passport/register/view/RegisterFragment.kt</code>：<code>validateRegisterInfo</code></td>
+<td>通过</td>
+</tr>
+<tr>
+<td>Token</td>
+<td><code>VipPassport/vip_passport/src/main/java/com/zhihu/android/app/token/TokenManager.kt</code> 与 <code>TokenRepository.kt</code></td>
+<td>通过</td>
+</tr>
+<tr>
+<td>账号</td>
+<td><code>Account/account/src/main/java/com/zhihu/android/app/accounts/AccountManager.java</code> 与 <code>DataStoreManager.java</code></td>
+<td>通过</td>
+</tr>
+<tr>
+<td>VIP 评论</td>
+<td><code>VipComment/comment/src/main/java/com/zhihu/android/comment_for_v7/repository/RootCommentListRepository.kt</code></td>
+<td>通过</td>
+</tr>
+<tr>
+<td>RN 评论</td>
+<td><code>Comment/comment/src/main/java/com/zhihu/android/rncomment/OneRNCommentContainerFragment.kt</code></td>
+<td>通过</td>
+</tr>
+<tr>
+<td>Feed</td>
+<td><code>Feed/feed/src/main/java/com/zhihu/android/app/feed/ui2/feed/repo/FeedRepository.kt</code></td>
+<td>通过</td>
+</tr>
+<tr>
+<td>搜索/关注</td>
+<td><code>km-attention/attention/src/main/java/com/zhihu/android/attention/fragment/AttentionContainerFragment.kt</code></td>
+<td>通过</td>
+</tr>
+</tbody></table>
+<p>结论：<code>10</code> 的关键文件、类和函数未发现事实性 MISS；初查的路径缩写和个人贡献口径已在最终版本收口。</p>
+<h3 id="3-2-20-mvi-网络-路由-hybrid-媒体等-52-条">3.2 <code>20</code>：MVI、网络、路由、Hybrid、媒体等 52 条</h3>
+<p>以下列出其中 27 条代表性证据。</p>
+<table>
+<thead>
+<tr>
+<th>领域</th>
+<th>抽查证据</th>
+<th>结果</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>MVI</td>
+<td><code>DevKit/devkit/src/main/java/com/zhihu/android/devkit/mvx/MvxViewModel.kt</code>：两个受保护的 <code>collectState</code> 成员扩展</td>
+<td>通过</td>
+</tr>
+<tr>
+<td>Paging3</td>
+<td><code>DevKit/devkit/src/main/java/com/zhihu/android/devkit/paging/ResponsePagingSource.kt</code></td>
+<td>通过</td>
+</tr>
+<tr>
+<td>局部变换</td>
+<td><code>DevKit/devkit/src/main/java/com/zhihu/android/devkit/paging/PagerMediator.kt</code></td>
+<td>通过</td>
+</tr>
+<tr>
+<td>网络门面</td>
+<td><code>Net/net-api/src/main/java/com/zhihu/android/api/net/Net.java</code></td>
+<td>通过；当前文档已使用 <code>createService</code></td>
+</tr>
+<tr>
+<td>Retrofit</td>
+<td><code>Net/net/src/main/java/com/zhihu/android/net/common/NetProviderImpl.java</code></td>
+<td>通过；当前文档已使用 <code>initialize</code></td>
+</tr>
+<tr>
+<td>Client family</td>
+<td><code>Net/net/src/main/java/com/zhihu/android/net/common/OkHttpFamilyProviderImpl.java</code>：<code>inflateBuilder</code></td>
+<td>通过</td>
+</tr>
+<tr>
+<td>DNS 工厂</td>
+<td><code>Netdns/netdns/src/main/java/com/zhihu/android/net/dns/DnsFactory.java</code></td>
+<td>通过</td>
+</tr>
+<tr>
+<td>DNS 实现</td>
+<td><code>Netdns/netdns/src/main/java/com/zhihu/android/net/dns/zhihu/ZhihuDns.java</code></td>
+<td>通过</td>
+</tr>
+<tr>
+<td>IP 优选</td>
+<td><code>Netdns/netdns/src/main/java/com/zhihu/android/net/preferred/IPPreferred.kt</code></td>
+<td>通过</td>
+</tr>
+<tr>
+<td>路由门面</td>
+<td><code>ZRouter/zrouter/src/main/java/com/zhihu/android/app/router/ZRouter.java</code></td>
+<td>通过</td>
+</tr>
+<tr>
+<td>Mapper</td>
+<td><code>ZRouter/zrouter/src/main/java/com/zhihu/android/app/router/destination/MapperCreator.java</code></td>
+<td>通过</td>
+</tr>
+<tr>
+<td>Fragment 启动</td>
+<td><code>ZRouter/zrouter/src/main/java/com/zhihu/android/app/router/FragmentLauncher.java</code></td>
+<td>通过；它是接口，不是类</td>
+</tr>
+<tr>
+<td>UI 基础</td>
+<td><code>Bootstrap/bootstrap/src/main/java/com/zhihu/android/bootstrap/consecutive/ConsecutiveScrollerLayout.java</code></td>
+<td>通过</td>
+</tr>
+<tr>
+<td>主 App 壳</td>
+<td><code>Futureve/app/src/main/java/com/zhihu/android/app/ZhihuApplication.java</code></td>
+<td>通过</td>
+</tr>
+<tr>
+<td>全局网络</td>
+<td><code>FutureveGlobal/global/src/main/java/com/zhihu/android/app/util/netplugable/GlobalRequestDecorator.java</code></td>
+<td>通过</td>
+</tr>
+<tr>
+<td>Hybrid 页面</td>
+<td><code>Mercury/mercury/src/main/java/com/zhihu/android/app/ui/fragment/webview/WebViewFragment2.java</code></td>
+<td>通过</td>
+</tr>
+<tr>
+<td>H5 Page</td>
+<td><code>mercury-core/mercury-core/src/main/java/com/zhihu/android/app/mercury/web/H5PageImpl.java</code></td>
+<td>通过</td>
+</tr>
+<tr>
+<td>JSBridge</td>
+<td><code>mercury-core/mercury-core/src/main/java/com/zhihu/android/app/mercury/bridge/JsBridge.java</code></td>
+<td>通过</td>
+</tr>
+<tr>
+<td>分享</td>
+<td><code>ShareCore/sharecore/src/main/java/com/zhihu/android/library/sharecore/base/ShareContentSharer.kt</code></td>
+<td>通过；它是 Kotlin <code>object</code></td>
+</tr>
+<tr>
+<td>媒体 UI</td>
+<td><code>Media/player/src/main/java/com/zhihu/android/video/player2/widget/ZHPluginVideoView.java</code></td>
+<td>通过</td>
+</tr>
+<tr>
+<td>TT 适配</td>
+<td><code>mediax/mediax/src/main/java/com/zhihu/android/player/ttVideoEngine/TTVideoPlayerEngine.kt</code></td>
+<td>通过</td>
+</tr>
+<tr>
+<td>视频业务</td>
+<td><code>VideoEntity/video_entity/src/main/java/com/zhihu/android/video_entity/impl/ZVideoFragmentImpl.java</code></td>
+<td>通过</td>
+</tr>
+<tr>
+<td>音频会话</td>
+<td><code>Audio/audio/src/main/java/com/zhihu/android/xplayer/XPlayer.kt</code></td>
+<td>通过</td>
+</tr>
+<tr>
+<td>预播放器</td>
+<td><code>Zhplayer/zhplayer/src/main/java/com/zhihu/android/zhplayer/ZhPreplayerManager.kt</code></td>
+<td>通过；当前文档已使用 <code>preloadPlayer/getPreplayer</code></td>
+</tr>
+<tr>
+<td>图片入口</td>
+<td><code>Picture/picture/src/main/java/com/zhihu/android/images_viewer/ZHImagesViewerEntrance.kt</code></td>
+<td>通过；它是 Kotlin <code>object</code></td>
+</tr>
+<tr>
+<td>上传</td>
+<td><code>Picasa/picasa/src/main/java/com/zhihu/android/picasa/unify/MediaUploaderImpl.kt</code></td>
+<td>通过</td>
+</tr>
+<tr>
+<td>JNI</td>
+<td><code>ReaderSDK-CMake/Android/src/APPJni.cpp</code></td>
+<td>通过</td>
+</tr>
+</tbody></table>
+<h3 id="3-3-初查事实性-miss-的修订结果与-命名形态误报">3.3 初查事实性 MISS 的修订结果与“命名形态误报”</h3>
+<h4 id="已修正的事实性-miss">已修正的事实性 MISS</h4>
+<ol>
+<li><code>Net.create(Service.class)</code> 已改为真实门面 <code>Net.createService(Service.class)</code>，见 <code>Net/net-api/src/main/java/com/zhihu/android/api/net/Net.java:41</code>。</li>
+<li>不存在的 <code>NetProviderImpl.createRetrofit()</code> 已改为在 <code>initialize(...)</code> 中创建 <code>Retrofit.Builder</code> 并构建 Retrofit，见同文件约 203—228 行。</li>
+<li>不存在的 <code>ZhPreplayerManager.preplayer()</code> 已改为 <code>preloadPlayer(dataSource)</code> 创建/准备预播放器，<code>getPreplayer(dataSource)</code> 取出复用。</li>
+<li>“VipNet 缓存测试比 Net 更完整”已改为“两边保留同组缓存策略测试”；当前文档也如实记录 <code>Net/net/src/test</code> 33 个文件、<code>VipNet/net/src/test</code> 32 个。</li>
+</ol>
+<h4 id="不是事实性-miss">不是事实性 MISS</h4>
+<ul>
+<li><code>MvxViewModel.collectState</code> 不是顶层函数，而是 <code>MvxViewModel</code> 内对 <code>Flow&lt;T&gt;</code> 和 <code>Observable&lt;T&gt;</code> 定义的受保护成员扩展；文档写法可接受，若追求精确可注明“成员扩展”。</li>
+<li><code>FragmentLauncher</code> 是 Java <code>interface</code>。</li>
+<li><code>ShareContentSharer</code>、<code>ZHImagesViewerEntrance</code>、<code>ResourceCenter</code>、<code>KMPlayer</code> 是 Kotlin <code>object</code>。</li>
+<li>上述类型若仅用 <code>class Xxx</code> 搜索会假阴性，不能记为源码缺失。</li>
+</ul>
+<h2 id="4-修订闭环与剩余建议">4. 修订闭环与剩余建议</h2>
+<h3 id="已修正-证据路径占位式缩写">已修正：证据路径占位式缩写</h3>
+<ul>
+<li><code>10</code> 初查有 <strong>29 处</strong>反引号路径包含 <code>...</code>，例如：<ul>
+<li><code>kmarket-home/.../MarketParentFragment.java</code></li>
+<li><code>home/.../LauncherActivity.java</code></li>
+<li><code>vip_passport_ui/.../RegisterFragment.kt</code></li>
+<li><code>KnowledgeMarket/sku-manuscript/.../ManuscriptTraceStateMachineTest.kt</code></li>
+</ul>
+</li>
+<li><code>20</code> 初查有 <strong>13 处</strong>同类路径。</li>
+</ul>
+<p>两份文档当前均已展开为从 <code>yyyyy-cdoe/&lt;repo&gt;</code> 开始的真实相对路径，最终计数为 <code>10 = 0</code>、<code>20 = 0</code>。函数参数中的 <code>Pager(...)</code>、<code>forEach(async ...)</code> 不属于路径缩写。</p>
+<h3 id="已修正-23-个-star-的个人贡献口径">已修正：23 个 STAR 的个人贡献口径</h3>
+<p><code>10</code> 的所有 23 个仓库章节现均使用“条件式 STAR 模板（仅限真实经历）”，行号为：</p>
+<p><code>32、54、76、98、120、142、164、186、208、229、251、273、295、317、339、361、383、405、427、449、470、492、514</code>。</p>
+<p>当前统一模式是：</p>
+<ul>
+<li>先写“如果该调用点确实由你负责”；</li>
+<li>把框架能力限定为“使用/接入既有能力”；</li>
+<li>结果 R 明确要求本人补充真实指标或可核验验证结果；</li>
+<li>对首开、定位、性能、测试贡献等结果禁止直接认领。</li>
+</ul>
+<p>这项修改已通过当前文件复查。使用时仍必须让用户逐段确认；条件提示不能替代真实经历。<code>20</code> 的三条主线也已改成条件式模板，并要求填写真实动作、指标、口径、时间范围和数据来源。</p>
+<h3 id="已修正-net-vipnet-zhplayer-的四项事实问题">已修正：Net、VipNet、Zhplayer 的四项事实问题</h3>
+<p>当前版本已按第 3.3 节完成：</p>
+<ul>
+<li>已使用 <code>Net.createService</code></li>
+<li>已说明在 <code>initialize()</code> 内构建 Retrofit</li>
+<li>已改为 Net/VipNet 保留同组缓存策略测试</li>
+<li>已使用 <code>ZhPreplayerManager.preloadPlayer()</code> / <code>getPreplayer()</code></li>
+</ul>
+<h3 id="覆盖口径-标题和库存分类">覆盖口径、标题和库存分类</h3>
+<ul>
+<li><code>20</code> 的章节标题已改成“<code>Kmaudio</code>（同时在业务文档出现）”，覆盖边界也已统一使用当前目录名，不再保留 <code>KmAudio</code> 旧称。</li>
+<li><code>10</code> 与 <code>20</code> 的分类边界和 <code>00</code> 不完全相同，属于专题拆分而非库存错误：<ul>
+<li><code>Common</code> 在 <code>00</code> 属于基础设施，但在 <code>10</code> 按跨业务公共能力讲。</li>
+<li><code>Futureve</code>、<code>FutureveGlobal</code>、<code>Audio</code>、<code>Media</code>、<code>VipMercury</code>、<code>VipPrerender</code>、<code>ZhEditor</code> 在 <code>00</code> 属于 Android 业务，但在 <code>20</code> 按壳工程/基础设施/媒体专题讲。</li>
+<li><code>Dependencies</code>、<code>KmReporter</code>、<code>photos</code> 不属于有效 Android Runtime 库；<code>20</code> 已在正文中说明，最终总览仍需单独标注。</li>
+</ul>
+</li>
+<li><code>00</code> 的两项库存分类已按源码回修：<ul>
+<li><code>Bootstrap</code> 已从启动设施改为连续滚动、BottomSheet、GuideQueue 等 UI 控件库。</li>
+<li><code>Picasa</code> 已从图片加载/展示改为媒体选择、拍摄、处理与上传门面；图片浏览/大图仍归于 <code>Picture</code>。</li>
+</ul>
+</li>
+</ul>
+<h3 id="已通过-推断与事实的措辞">已通过：推断与事实的措辞</h3>
+<p>以下风险判断有源码基础，可以保留，但应维持“风险/建议”口径，不能改写为已发生事故或用户已经治理完成：</p>
+<ul>
+<li>DevKit 的 <code>Throwable</code>/取消语义、<code>getRefreshKey() == null</code> 与 <code>PagerMediator</code> 并发假设。</li>
+<li>Hybrid 的 bridge origin、callback map 和 WebView LRU 复用污染。</li>
+<li>阅读 JNI 的引用、Bitmap 所有权、全局锁和 fuzz 建议。</li>
+<li>预加载命中率、用户态隔离、内存/流量预算。</li>
+<li>评论、支付、播放器和 Feed 自动化测试不足。</li>
+</ul>
+<h2 id="5-通过项">5. 通过项</h2>
+<ul>
+<li>两份文档都明确区分框架作者与业务接入者；DevKit 被准确限定为 Mavericks 轻量 MVI，不是严格 Intent/Reducer MVI。</li>
+<li>HomePinTab 的 <code>State/PagingData</code>、adapter <code>CombinedLoadStates</code>、<code>refresh → invalidate</code>、<code>PagerMediator</code> 局部更新链路与源码一致。</li>
+<li>启动、阅读、评论、账号、Hybrid、路由、媒体、图片、JNI 等高价值入口均能在真实源码中找到，不是 README-only 描述。</li>
+<li><code>Bootstrap</code>、<code>photos</code>、<code>Dependencies</code>、<code>KmReporter</code> 能按真实属性降级描述，没有为了凑项目而伪造成 Android 核心实现。</li>
+<li><code>VipAndroid</code> 明确指出 README 过时，并以 Gradle 与源码替换脚本为准；其他核心章节也没有只复述 README。</li>
+<li>敏感信息扫描通过：只出现公开的应用内 scheme <code>zhihu://launcher</code>；未复制 Token、密码、密钥、SQL、机器人地址、具体内网 host/IP 或凭据值。</li>
+</ul>
+<h2 id="6-给主-agent-的最终交接">6. 给主 agent 的最终交接</h2>
+<ol>
+<li><strong>两份目标文档已通过本轮证据复核</strong>：路径、API 名、跨文档去重和个人贡献口径均已收口。</li>
+<li><strong>总览统一使用 56 个章节、55 个唯一仓库</strong>：<code>Kmaudio</code> 是业务/基础设施双视角，只计一个仓库；<code>ZhihuLite</code> 由其余仓库文档承接。</li>
+<li><strong>后续汇总必须保留条件式 STAR 边界</strong>：即使模板已条件化，在用户补充个人职责与结果前，也不应直接放进简历或作为真实经历背诵。</li>
+<li><strong><code>00</code> 分类已同步收口</strong>：<code>Bootstrap</code> 已标为 UI 控件库，<code>Picasa</code> 已标为媒体选择、处理与上传门面。</li>
+</ol>
+
+      </article>
+      
+    <nav class="page-pager" aria-label="文档翻页">
+      <a href="31-tools-samples-and-assets.html"><small>← 上一篇</small><span>工具、样例与资产</span></a>
+      <a class="next" href="41-full-workspace-coverage-review.html"><small>下一篇 →</small><span>全工作区覆盖复核</span></a>
+    </nav>
+      <footer class="article-footer">
+        本站由 Markdown 源文档离线生成。涉及个人职责、动作和结果的内容，请只使用本人可核验的部分。
+      </footer>
+    </main>
+    <aside class="page-toc" aria-label="本页目录">
+      <div class="toc-heading">本页目录</div>
+      <a class="toc-link level-2" href="#1-结论">1. 结论</a>
+<a class="toc-link level-2" href="#2-覆盖与分类口径">2. 覆盖与分类口径</a>
+<a class="toc-link level-3" href="#2-1-10-的-23-个仓库">2.1 10 的 23 个仓库</a>
+<a class="toc-link level-3" href="#2-2-20-的-33-个仓库">2.2 20 的 33 个仓库</a>
+<a class="toc-link level-2" href="#3-抽查结果">3. 抽查结果</a>
+<a class="toc-link level-3" href="#3-1-10-业务-启动-阅读-评论-账号等-50-条">3.1 10 ：业务、启动、阅读、评论、账号等 50 条</a>
+<a class="toc-link level-3" href="#3-2-20-mvi-网络-路由-hybrid-媒体等-52-条">3.2 20 ：MVI、网络、路由、Hybrid、媒体等 52 条</a>
+<a class="toc-link level-3" href="#3-3-初查事实性-miss-的修订结果与-命名形态误报">3.3 初查事实性 MISS 的修订结果与“命名形态误报”</a>
+<a class="toc-link level-2" href="#4-修订闭环与剩余建议">4. 修订闭环与剩余建议</a>
+<a class="toc-link level-3" href="#已修正-证据路径占位式缩写">已修正：证据路径占位式缩写</a>
+<a class="toc-link level-3" href="#已修正-23-个-star-的个人贡献口径">已修正：23 个 STAR 的个人贡献口径</a>
+<a class="toc-link level-3" href="#已修正-net-vipnet-zhplayer-的四项事实问题">已修正：Net、VipNet、Zhplayer 的四项事实问题</a>
+<a class="toc-link level-3" href="#覆盖口径-标题和库存分类">覆盖口径、标题和库存分类</a>
+<a class="toc-link level-3" href="#已通过-推断与事实的措辞">已通过：推断与事实的措辞</a>
+<a class="toc-link level-2" href="#5-通过项">5. 通过项</a>
+<a class="toc-link level-2" href="#6-给主-agent-的最终交接">6. 给主 agent 的最终交接</a>
+      <a class="back-to-top" href="#">↑ 返回顶部</a>
+    </aside>
+  </div>
+  <script src="assets/search-data.js"></script>
+  <script src="assets/docs.js"></script>
+</body>
+</html>

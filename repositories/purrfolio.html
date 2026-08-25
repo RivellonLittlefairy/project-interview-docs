@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Purrfolio：本地资产追踪 WinUI 应用</title>
+  <link rel="stylesheet" href="../assets/docs.css">
+  <script defer src="../assets/search-data.js"></script>
+  <script defer src="../assets/docs.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <header class="topbar">
+    <button class="icon-button menu-button" type="button" data-menu-toggle aria-label="打开文档导航" aria-expanded="false">☰</button>
+    <a class="brand" href="../index.html"><span class="brand-mark">⌁</span><span>项目面试资料库</span></a>
+    <div class="search-shell">
+      <label class="sr-only" for="global-search">搜索所有文档</label>
+      <input id="global-search" type="search" data-search-input placeholder="搜索仓库、技术或面试题…" autocomplete="off">
+      <span class="search-shortcut">Ctrl K</span>
+      <div class="search-results" data-search-results hidden></div>
+    </div>
+    <button class="icon-button" type="button" data-theme-toggle aria-label="切换深浅主题">◐</button>
+  </header>
+  <div class="drawer-backdrop" data-drawer-backdrop hidden></div>
+  <div class="docs-layout">
+    <nav class="sidebar" data-sidebar aria-label="全站文档导航">
+      <div class="sidebar-heading">文档导航</div>
+      <section class="nav-group">
+        <h2 class="nav-group-title">逐仓文档</h2>
+        <a class="nav-link active" href="../repositories.html">仓库独立分析</a>
+      </section>
+      <section class="nav-group">
+        <h2 class="nav-group-title">开始使用</h2>
+        <a class="nav-link" href="../index.html">总览与导航</a>
+      </section>
+      <section class="nav-group">
+        <h2 class="nav-group-title">来源分析</h2>
+        <a class="nav-link" href="../00-repository-inventory.html">全量仓库盘点</a>
+        <a class="nav-link" href="../30-cross-platform-rn-web.html">RN 与 Web</a>
+        <a class="nav-link" href="../31-tools-samples-and-assets.html">工具、样例与资产</a>
+      </section>
+      <p class="sidebar-note">离线资料 · 源码证据快照</p>
+    </nav>
+    <main class="article-shell" id="main-content">
+      <div class="breadcrumbs"><a href="../index.html">首页</a><span>/</span><a href="../repositories.html">仓库索引</a><span>/</span><span>purrfolio</span></div>
+      <article class="markdown-body">
+      <h1>Purrfolio：本地资产追踪 WinUI 应用</h1>
+      <p><strong>定位标签：</strong>个人项目候选 / 所有权需确认</p>
+      <nav class="toc" aria-label="本页目录">
+        <strong>本页目录</strong>
+        <ol>
+          <li><a href="#identity">定位与归属边界</a></li>
+          <li><a href="#checkout">检出与构建信息</a></li>
+          <li><a href="#structure">结构与核心入口</a></li>
+          <li><a href="#workflow">关键工作流</a></li>
+          <li><a href="#tradeoffs">亮点与取舍</a></li>
+          <li><a href="#risks">风险、测试与排查</a></li>
+          <li><a href="#pitch">面试讲法</a></li>
+          <li><a href="#questions">追问与回答</a></li>
+          <li><a href="#evidence">源码证据</a></li>
+        </ol>
+      </nav>
+      <section id="identity"><h2>定位与归属边界</h2><ul><li>WinUI 3 本地桌面 App，覆盖资产总览、永久组合偏离、固定收益 XIRR、派息日历、复利预测与截图 OCR 导入。</li><li>可以作为个人项目候选，但所有权、本人模块与结果<strong>需本人确认</strong>并提供 commit/PR 或演示。</li><li>当前仍是原型：不是专业投顾系统，真实行情、税费、付息规则与合规未完整覆盖。</li></ul></section>
+      <section id="checkout"><h2>检出与构建信息</h2><ul><li>库存记录：分支 <code>codex/minimax-ocr-import</code>，提交 <code>2d7d6aa</code>（2026-04-03），C#/.NET 小型仓。</li><li>构建入口：<code>Purrfolio.sln</code>，.NET 8、WinUI 3、CommunityToolkit.Mvvm、EF Core/SQLite、Win2D、xUnit。</li><li>聚合分析记录 2026-07-24 <code>dotnet test tests/Purrfolio.Core.Tests/Purrfolio.Core.Tests.csproj</code> 为 9/9 通过；伴随 NuGet 漏洞数据源不可达警告。</li></ul></section>
+      <section id="structure"><h2>结构与核心入口</h2><ul><li><code>src/Purrfolio.App</code>：Views/ViewModels、DI、通知与 OCR。</li><li><code>src/Purrfolio.Core</code>：领域模型、仓储接口、XIRR/组合偏离/派息/复利纯计算。</li><li><code>src/Purrfolio.Infrastructure</code>：EF Core DbContext 与 SQLite repository。</li><li><code>tests/Purrfolio.Core.Tests</code>：领域算法 xUnit 测试。</li></ul></section>
+      <section id="workflow"><h2>关键工作流</h2><ol><li>资产首页：异步流读 SQLite → 聚合市值 → 四类资产各 25% 目标偏离 → 复利预测 → observable UI。</li><li>固定收益：生成买入/票息/终值现金流 → XIRR Newton 求根，失败后二分 → 组合/单券/批次展示。</li><li>派息：按频率生成未来事件 → Windows notification 提醒。</li><li>OCR：图片提交外部模型 → 兼容响应外壳并归一字段 → 生成可编辑草稿 → 人工复核与校验后入库。</li></ol></section>
+      <section id="tradeoffs"><h2>亮点与取舍</h2><ul><li>App/Core/Infrastructure 分层让领域算法可脱离 UI/SQLite 测试。</li><li>XIRR 双算法提高数值稳定性；OCR 先草稿后人工确认，避免模型直接写库。</li><li>IAsyncEnumerable 便于流式读取/取消，但小数据量收益需性能数据证明。</li></ul></section>
+      <section id="risks"><h2>风险、测试与排查</h2><ul><li><code>EnsureCreatedAsync()</code> 不适合长期 schema 演进，应切 EF migrations。</li><li>OCR 上传投资截图，需要脱敏、显式同意、endpoint 白名单、大小/超时限制、安全凭据存储与可删除审计。</li><li>派息规则与基准线是简化/示意，不得当真实市场数据；XIRR 多根歧义未检测。</li><li>排查：输入/现金流符号与日期 → XIRR bracket/残差 → repository/DB migration → ViewModel 状态 → OCR 响应归一/人工校验。</li></ul></section>
+      <section id="finance-case">
+        <h2>固定收益案例与 OCR 导入验收</h2>
+        <p>固定收益链路应从一笔可手算的债券批次开始：交易日的买入金额记为负现金流，历史票息和当前估值/到期本金为正现金流；核对票息频率、数量、面值、费用和日期后再调用 XIRR。测试不仅断言收益率，还把结果代回 XNPV 检查残差，并覆盖同日现金流、无正负号、到期日前估值、已到期资产和 Newton 失败后二分。组合、单券、批次三层聚合必须使用一致的现金流口径，不能平均各批次收益率代替组合 XIRR。</p>
+        <p><code>CouponCalendarGenerator</code> 当前按频率递推，只能算原型规则。更真实的模型需要起息日、下一付息日、到期日、节假日调整、日计数约定和提前赎回信息。测试应覆盖月末、闰年、到期日与票息同日、查询窗口边界和多批次去重。Windows 通知只消费已确认事件，数据库更新后要可重新计算并撤销过期提醒，不能把一次生成结果永久缓存。</p>
+        <p>OCR 的 contract test 可用本地假服务返回纯 JSON、代码围栏 JSON、多层响应外壳、缺字段、错误类型和恶意超长文本，验证 <code>ParseCandidates()</code> 只产出草稿。ViewModel 对资产类型、日期、数量、价格、票息和到期日逐项报错，用户勾选后再以单事务写库；任一记录失败时应决定全回滚还是明确部分成功。图片发送前展示 endpoint、字段范围和隐私提示，API key 存系统凭据库，异常只保留 request id 与脱敏摘要。这样才能证明“AI 提取”没有绕开金融数据的人工确认边界。</p>
+      </section>
+      <section id="pitch">
+        <h2>面试讲法</h2>
+        <h3>30 秒版本</h3><blockquote><p>Purrfolio 是 WinUI 3 本地资产追踪原型，按 App/Core/Infrastructure 分层。Core 里 XIRR 用 Newton 加二分兜底，OCR 导入经过草稿、人工复核和字段校验。现有领域测试记录为 9/9；数据库迁移、真实金融规则和 OCR 隐私仍需完善，归属及个人范围需本人确认。</p></blockquote>
+        <h3>2 分钟版本</h3><blockquote><p>项目把 UI、纯领域计算和 SQLite 分层。资产首页流式读取记录，计算四类永久组合偏离和复利目标；固定收益把交易与票息转现金流，XIRR 先 Newton、失败后二分；OCR 不直接入库，而是外部模型抽取、草稿、人工复核、字段校验再持久化。这个结构利于测试和替换基础设施，但 EnsureCreated 不适合演进，OCR 涉及投资隐私，派息与基准仍是简化模型，多 IRR 也需提示。只有本人实际 commit 的模块才讲为个人贡献。</p></blockquote>
+      </section>
+      <section id="questions"><h2>追问与回答</h2>
+    <details open>
+      <summary>问题1：为什么 Newton 后还要二分？</summary>
+      <p>Newton 快但依赖初值和导数；导数接近零或越界时失败，找到异号区间后二分更稳定。</p>
+    </details>
+    <details>
+      <summary>问题2：仓储为什么返回 IAsyncEnumerable？</summary>
+      <p>可边读边聚合和取消，并隐藏 EF 读取方式；小数据量下价值有限。</p>
+    </details>
+    <details>
+      <summary>问题3：OCR 为什么不能直接入库？</summary>
+      <p>模型会误识别且输入敏感，必须草稿、用户确认、字段校验和事务写入。</p>
+    </details>
+    <details>
+      <summary>问题4：EnsureCreated 有什么问题？</summary>
+      <p>无法像 migration 那样记录和演进 schema，长期版本升级风险高。</p>
+    </details>
+    <details>
+      <summary>问题5：如何处理多 IRR？</summary>
+      <p>扫描更宽利率区间识别多个符号变化，提示歧义并建议 MIRR 或业务约束。</p>
+    </details></section>
+      <section id="evidence">
+        <h2>源码证据</h2>
+        
+        <ol><li><code>yyyyy-cdoe/Purrfolio/Purrfolio.sln</code></li><li><code>yyyyy-cdoe/Purrfolio/src/Purrfolio.Core/Utilities/XirrCalculator.cs</code></li><li><code>yyyyy-cdoe/Purrfolio/src/Purrfolio.Infrastructure/Repositories/SqliteInvestmentRepository.cs</code></li><li><code>yyyyy-cdoe/Purrfolio/src/Purrfolio.App/ViewModels/OcrImportViewModel.cs</code></li><li><code>yyyyy-cdoe/Purrfolio/src/Purrfolio.App/Services/MinimaxOcrService.cs</code></li><li><code>yyyyy-cdoe/Purrfolio/tests/Purrfolio.Core.Tests/XirrCalculatorTests.cs</code></li></ol>
+        <p>证据口径：路径来自当前工作区源码与权威库存；个人贡献仍需本人确认，未由路径本身推断。</p>
+      </section>
+      <p><a href="../repositories.html">返回仓库索引</a> · <a href="../index.html">返回文档首页</a></p>
+      </article>
+    </main>
+  </div>
+</body>
+</html>

@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="VipMercury Android 业务仓库源码证据、调用链与面试讲法">
+  <title>VipMercury｜Android 业务仓库分析</title>
+  <link rel="stylesheet" href="../assets/docs.css">
+  <script>try{const t=localStorage.getItem("interview-docs-theme");document.documentElement.dataset.theme=t||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light")}catch{}</script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <header class="topbar">
+    <button class="icon-button menu-button" type="button" data-menu-toggle aria-label="打开文档导航" aria-expanded="false">☰</button>
+    <a class="brand" href="../index.html"><span class="brand-mark">⌁</span><span>项目面试资料库</span></a>
+    <div class="search-shell"><label class="sr-only" for="global-search">搜索文档</label><input id="global-search" type="search" data-search-input placeholder="搜索仓库、技术或面试题…" autocomplete="off"><div class="search-results" data-search-results hidden></div></div>
+    <button class="icon-button" type="button" data-theme-toggle aria-label="切换深浅主题">◐</button>
+  </header>
+  <div class="drawer-backdrop" data-drawer-backdrop hidden></div>
+  <div class="docs-layout">
+    <nav class="sidebar" data-sidebar aria-label="文档导航">
+      <div class="sidebar-heading">仓库文档</div>
+      <section class="nav-group">
+        <h2 class="nav-group-title">返回</h2>
+        <a class="nav-link" href="../repositories.html">全部仓库</a>
+        <a class="nav-link" href="../index.html">资料首页</a>
+        <a class="nav-link" href="../10-android-business-repositories.html">业务仓聚合分析</a>
+      </section>
+      <p class="sidebar-note">离线源码证据 · 2026-07-25</p>
+    </nav>
+    <main class="article-shell" id="main-content">
+    <div class="breadcrumbs"><a href="../index.html">首页</a><span>/</span><a href="../repositories.html">仓库索引</a><span>/</span><span>VipMercury</span></div>
+    <div class="article-grid">
+      <article class="markdown-body">
+        <h1 id="vipmercury">VipMercury：VIP 产品的 WebView/Hybrid 容器、插件与离线资源组件</h1>
+        <blockquote class="callout"><p>基于当前本地检出与真实源码路径整理。源码只能证明仓库中存在这些实现；所有个人职责、主导范围、上线结果和收益均为<strong>需本人确认</strong>，不得把团队框架、三方内核或上游仓库归为本人原创，也不在没有数据源时编造性能指标。</p></blockquote>
+
+        <h2 id="position">1. 仓库定位与面试边界</h2>
+        <p><code>yyyyy-cdoe/VipMercury</code> 的当前定位是<strong>VIP 产品的 WebView/Hybrid 容器、插件与离线资源组件</strong>。主要技术形态为 Java/Kotlin、H5Page/JSBridge、可组合 WebViewClient、DNS/离线资源与页面缓存。</p>
+        <p>面试应聚焦业务入口、状态编排、生命周期、异常兜底和组件集成。可以讲“我如何使用既有能力完成业务调用与排障”，但“本人实现/主导”的范围一律<strong>需本人确认</strong>，且应有 MR、commit、需求、评审或上线记录佐证。</p>
+
+        <h2 id="checkout">2. 当前检出、规模、构建入口、测试与 CI</h2>
+        <table><thead><tr><th>项目</th><th>当前证据</th></tr></thead><tbody>
+          <tr><td>分支</td><td><code>vip</code></td></tr>
+          <tr><td>最后提交</td><td><code>f286f62164</code> · 2026-05-02 · Merge branch &#39;fix_leak&#39; into &#39;vip&#39;</td></tr>
+          <tr><td>规模</td><td>398 个 Git 跟踪文件；300 个 Java/Kotlin 源码文件（当前扫描口径）</td></tr>
+          <tr><td>构建入口</td><td><code>app/build.gradle</code>、<code>build.gradle</code>、<code>gradlew</code>、<code>mercury/build.gradle</code>、<code>mercury-api/build.gradle</code>、<code>settings.gradle</code>、<code>version.gradle</code></td></tr>
+          <tr><td>CI</td><td><code>.gitlab-ci.yml</code>、<code>Jenkinsfile</code></td></tr>
+          <tr><td>测试判断</td><td>识别到 10 个测试文件（扫描结果最多展示 10 个），其中至少 10 个文件名指向具体业务/工具场景；仍需阅读断言后才能评价覆盖质量。</td></tr>
+        </tbody></table>
+        <p>建议的静态构建检查入口是 <code>./gradlew projects</code>、<code>./gradlew tasks</code> 和目标模块的 <code>test</code>/<code>lint</code>；当前文档未执行全量构建，内网制品、旧 Gradle/AGP、NDK 或渠道凭据可能是环境限制，不能把“未执行”写成“构建失败”。</p>
+
+        <h2 id="structure">3. 模块与目录结构</h2>
+        <p>Gradle settings 可识别模块：<code>:app</code>。</p>
+        <p>主要物理目录：<code>app/</code>、<code>mercury/</code>、<code>mercury-api/</code>。</p>
+        <p>该仓的 settings 以单宿主或动态映射为主，真实业务能力可能通过组件制品或物理子目录装配，不能仅按 include 数量判断复杂度。</p>
+
+        <h2 id="entry">4. 真实入口</h2>
+        <p>Manifest 抽样入口如下；其中 <code>app</code> 下的 Activity/Application 可能只是 demo 或宿主壳，业务集成仍需回到 API、Provider、Router 或实现类。</p>
+        <ul><li><code>app/src/main/AndroidManifest.xml :: application .App</code></li><li><code>app/src/main/AndroidManifest.xml :: activity .MainActivity</code></li><li><code>app/src/main/AndroidManifest.xml :: activity .X5Activity</code></li><li><code>app/src/main/AndroidManifest.xml :: activity .H5ActionActivity</code></li><li><code>app/src/main/AndroidManifest.xml :: activity .X5BrowserV1Activity</code></li><li><code>app/src/main/AndroidManifest.xml :: activity .PurelyWebViewActivity</code></li></ul>
+        <p>源码阅读建议从 <a href="../../../../yyyyy-cdoe/VipMercury/mercury/src/main/java/com/zhihu/android/app/ui/fragment/webview/WebViewFragment2.java"><code>yyyyy-cdoe/VipMercury/mercury/src/main/java/com/zhihu/android/app/ui/fragment/webview/WebViewFragment2.java</code></a>、<a href="../../../../yyyyy-cdoe/VipMercury/mercury/src/main/java/com/zhihu/android/app/mercury/card/HybridCard.java"><code>yyyyy-cdoe/VipMercury/mercury/src/main/java/com/zhihu/android/app/mercury/card/HybridCard.java</code></a>、<a href="../../../../yyyyy-cdoe/VipMercury/mercury/src/main/java/com/zhihu/android/app/mercury/dns/HtmlDnsWebViewClient.java"><code>yyyyy-cdoe/VipMercury/mercury/src/main/java/com/zhihu/android/app/mercury/dns/HtmlDnsWebViewClient.java</code></a> 开始，再沿调用与依赖反向确认谁创建入口、谁持有状态、谁执行 IO。</p>
+
+                        <h2 id="chain">5. 关键调用链与边界</h2>
+        <h3>源码直接链路：Fragment 页面生命周期</h3>
+        <ol>
+          <li>WebViewFragment2 尝试从 H5PageCacheManager 获取可复用 H5Page，否则创建页面</li>
+          <li>onViewCreated 创建 InnerWebClient 并调用 mPage.setWebClient</li>
+          <li>Fragment 调 loadUrl，内部直接 mPage.loadUrl</li>
+          <li>销毁时按缓存与新生命周期规则清理或移除页面</li>
+        </ol>
+        <p><strong>边界说明：</strong>H5Page 类型来自 mercury-api；具体 Bridge/插件实现不能仅凭 Fragment 引用全部推导。</p>
+        <h3>独立卡片链</h3>
+        <ol>
+          <li>HybridCard.Builder 接收可选 IZhihuWebViewClient/H5Plugin 等</li>
+          <li>build 创建 HybridCard</li>
+          <li>HybridCard.load 调 mPage.loadUrl</li>
+        </ol>
+        <p><strong>边界说明：</strong>HybridCard 不是 WebViewFragment2 每次加载的中间节点。</p>
+        <h3>独立 DNS client 链</h3>
+        <ol>
+          <li>HtmlDnsWebViewClient.shouldInterceptRequest 先调用 super</li>
+          <li>符合主文档请求条件时构建 ResourceRequest</li>
+          <li>交给 ResourceProvider.requestMainFrame/syncRequestMainFrame</li>
+        </ol>
+        <p><strong>边界说明：</strong>只有页面实际装配该 client 时，这条资源拦截链才参与。</p>
+<h2 id="tradeoff">6. 技术亮点与取舍</h2>
+        <h3>亮点</h3><p>页面、Bridge、资源 client 和产品插件分层，VIP 差异通过可组合 client/Provider 表达。</p>
+        <h3>取舍</h3><p>Hybrid 迭代快且能力可复用，但 origin 权限、回调清理、WebView 复用污染和分支安全修复漂移风险高。</p>
+        <p>面试时不要把“使用了某框架”本身当亮点。更有价值的是说清楚为什么这样划分状态与生命周期、失败如何降级、版本/协议如何兼容，以及出现竞态时如何用真实调用链定位。</p>
+
+                        <h2 id="risk">7. 仓库专属风险与排查顺序</h2>
+        <p>下面的顺序按本仓真实状态 owner、服务与生命周期组织；前一步没有证据时，不跳到渲染层猜测。</p>
+        <ol>
+          <li><strong>第 1 步。</strong>页面串内容先查 H5PageCacheManager 的 URL、appId、webViewType、pageId 和 useNewApi 复用条件。</li>
+          <li><strong>第 2 步。</strong>Fragment 白屏从 mPage、InnerWebClient、setWebClient 到 loadUrl/mPage.loadUrl 逐步确认。</li>
+          <li><strong>第 3 步。</strong>卡片问题只沿 HybridCard.Builder/build/load 查，不把 Fragment 生命周期套进卡片。</li>
+          <li><strong>第 4 步。</strong>HTML 主文档异常再确认是否实际使用 HtmlDnsWebViewClient，并检查 shouldInterceptRequest 与 ResourceProvider 返回。</li>
+        </ol>
+        <h2 id="talk">8. 可直接复述的讲法</h2>
+        <h3>30 秒版本</h3>
+        <blockquote><p>VipMercury 有三条可验证机制：WebViewFragment2 复用或创建 H5Page、绑定 InnerWebClient 后 loadUrl；HybridCard.Builder 是独立卡片容器；HtmlDnsWebViewClient 只在被装配时拦截主文档请求。三者可组合，但不是固定一条链。 个人参与范围<strong>需本人确认</strong>。</p></blockquote>
+        <h3>2 分钟版本</h3>
+        <blockquote><p>WebViewFragment2 先通过 H5PageCacheManager 判断能否复用页面，onViewCreated 再创建 InnerWebClient、setWebClient，并通过 mPage.loadUrl 加载；销毁阶段还要避免复用已销毁 page。HybridCard 有自己的 Builder/build/load 生命周期。HtmlDnsWebViewClient 则在 shouldInterceptRequest 中按条件把主文档交给 ResourceProvider。Hybrid 复用提升性能，但 URL 与参数复用、Client 组合和 Context 清理任何一处不严谨都会造成串页或泄漏。 若要把其中某个调用点写成个人成果，仍需本人确认并提供可核验记录。</p></blockquote>
+        <h2 id="qa">9. 仓库专属追问与回答</h2>
+        <h3>1. 问：H5Page 缓存只按 URL 复用吗？</h3><p><strong>答：</strong>不只，H5PageCacheManager 还比较 appId、webViewType、pageId、useNewApi、geoPermissions 等参数。</p>
+        <h3>2. 问：HybridCard 是 WebViewFragment2 的下一步吗？</h3><p><strong>答：</strong>不是，它是独立容器，自己通过 Builder 组合 client/plugin 并 load。</p>
+        <h3>3. 问：HtmlDnsWebViewClient 一定参与所有页面吗？</h3><p><strong>答：</strong>不一定，只有页面实际装配它且请求满足条件时才拦截。</p>
+        <h3>4. 问：怎样测试缓存复用安全？</h3><p><strong>答：</strong>覆盖同 URL 不同 appId/pageId/webViewType 的拒绝复用，以及 destroy 后缓存移除和 Context 解绑。</p>
+        <h3>5. 问：面试中怎样说明自己在这个仓库里的贡献边界？</h3><p><strong>答：</strong>只陈述自己能用需求单、MR、commit 或评审记录证明的 vipmercury 调用点；公共框架、团队装配体系和历史代码不据为己有。无法核验的个人动作、结果和指标统一标为“需本人确认”。</p>
+<h2 id="evidence">10. 源码证据</h2>
+        <p>以下路径均在当前工作区真实存在；它们证明实现与工程结构，不自动证明个人贡献。</p>
+        <ul><li><a href="../../../../yyyyy-cdoe/VipMercury/mercury/src/main/java/com/zhihu/android/app/ui/fragment/webview/WebViewFragment2.java"><code>yyyyy-cdoe/VipMercury/mercury/src/main/java/com/zhihu/android/app/ui/fragment/webview/WebViewFragment2.java</code></a></li><li><a href="../../../../yyyyy-cdoe/VipMercury/mercury/src/main/java/com/zhihu/android/app/mercury/card/HybridCard.java"><code>yyyyy-cdoe/VipMercury/mercury/src/main/java/com/zhihu/android/app/mercury/card/HybridCard.java</code></a></li><li><a href="../../../../yyyyy-cdoe/VipMercury/mercury/src/main/java/com/zhihu/android/app/mercury/dns/HtmlDnsWebViewClient.java"><code>yyyyy-cdoe/VipMercury/mercury/src/main/java/com/zhihu/android/app/mercury/dns/HtmlDnsWebViewClient.java</code></a></li><li><a href="../../../../yyyyy-cdoe/VipMercury/mercury/src/main/java/com/zhihu/android/app/mercury/plugin/AccountPlugin.java"><code>yyyyy-cdoe/VipMercury/mercury/src/main/java/com/zhihu/android/app/mercury/plugin/AccountPlugin.java</code></a></li><li><a href="../../../../yyyyy-cdoe/VipMercury/mercury/src/main/java/com/zhihu/android/app/mercury/H5PageCacheManager.java"><code>yyyyy-cdoe/VipMercury/mercury/src/main/java/com/zhihu/android/app/mercury/H5PageCacheManager.java</code></a></li><li><a href="../../../../yyyyy-cdoe/VipMercury/app/src/main/java/com/zhihu/android/app/App.java"><code>yyyyy-cdoe/VipMercury/app/src/main/java/com/zhihu/android/app/App.java</code></a></li><li><a href="../../../../yyyyy-cdoe/VipMercury/app/src/main/java/com/zhihu/android/app/BrowserActivityV1.java"><code>yyyyy-cdoe/VipMercury/app/src/main/java/com/zhihu/android/app/BrowserActivityV1.java</code></a></li></ul>
+        <p>补充工程证据：<a href="../../../../yyyyy-cdoe/VipMercury/app/build.gradle"><code>yyyyy-cdoe/VipMercury/app/build.gradle</code></a>、<a href="../../../../yyyyy-cdoe/VipMercury/build.gradle"><code>yyyyy-cdoe/VipMercury/build.gradle</code></a>、<a href="../../../../yyyyy-cdoe/VipMercury/gradlew"><code>yyyyy-cdoe/VipMercury/gradlew</code></a>、<a href="../../../../yyyyy-cdoe/VipMercury/mercury/build.gradle"><code>yyyyy-cdoe/VipMercury/mercury/build.gradle</code></a>、<a href="../../../../yyyyy-cdoe/VipMercury/mercury-api/build.gradle"><code>yyyyy-cdoe/VipMercury/mercury-api/build.gradle</code></a>、<a href="../../../../yyyyy-cdoe/VipMercury/settings.gradle"><code>yyyyy-cdoe/VipMercury/settings.gradle</code></a>。</p>
+
+        <hr>
+        <p><a href="../repositories.html">← 返回仓库索引</a> · <a href="../index.html">返回资料首页</a></p>
+      </article>
+      <aside class="page-toc" aria-label="本页目录"><div class="toc-title">本页目录</div><a class="toc-link level-2" href="#position">仓库定位与面试边界</a><a class="toc-link level-2" href="#checkout">当前检出与工程健康</a><a class="toc-link level-2" href="#structure">模块与目录结构</a><a class="toc-link level-2" href="#entry">真实入口</a><a class="toc-link level-2" href="#chain">关键调用链</a><a class="toc-link level-2" href="#tradeoff">技术亮点与取舍</a><a class="toc-link level-2" href="#risk">风险、缺口与排查顺序</a><a class="toc-link level-2" href="#talk">可直接复述</a><a class="toc-link level-2" href="#qa">追问与回答</a><a class="toc-link level-2" href="#evidence">源码证据</a></aside>
+    </div>
+    </main>
+  </div>
+  <script src="../assets/search-data.js"></script>
+  <script src="../assets/docs.js"></script>
+</body>
+</html>

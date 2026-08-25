@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>meter：工资实时计量 Android 原型</title>
+  <link rel="stylesheet" href="../assets/docs.css">
+  <script defer src="../assets/search-data.js"></script>
+  <script defer src="../assets/docs.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <header class="topbar">
+    <button class="icon-button menu-button" type="button" data-menu-toggle aria-label="打开文档导航" aria-expanded="false">☰</button>
+    <a class="brand" href="../index.html"><span class="brand-mark">⌁</span><span>项目面试资料库</span></a>
+    <div class="search-shell">
+      <label class="sr-only" for="global-search">搜索所有文档</label>
+      <input id="global-search" type="search" data-search-input placeholder="搜索仓库、技术或面试题…" autocomplete="off">
+      <span class="search-shortcut">Ctrl K</span>
+      <div class="search-results" data-search-results hidden></div>
+    </div>
+    <button class="icon-button" type="button" data-theme-toggle aria-label="切换深浅主题">◐</button>
+  </header>
+  <div class="drawer-backdrop" data-drawer-backdrop hidden></div>
+  <div class="docs-layout">
+    <nav class="sidebar" data-sidebar aria-label="全站文档导航">
+      <div class="sidebar-heading">文档导航</div>
+      <section class="nav-group">
+        <h2 class="nav-group-title">逐仓文档</h2>
+        <a class="nav-link active" href="../repositories.html">仓库独立分析</a>
+      </section>
+      <section class="nav-group">
+        <h2 class="nav-group-title">开始使用</h2>
+        <a class="nav-link" href="../index.html">总览与导航</a>
+      </section>
+      <section class="nav-group">
+        <h2 class="nav-group-title">来源分析</h2>
+        <a class="nav-link" href="../00-repository-inventory.html">全量仓库盘点</a>
+        <a class="nav-link" href="../30-cross-platform-rn-web.html">RN 与 Web</a>
+        <a class="nav-link" href="../31-tools-samples-and-assets.html">工具、样例与资产</a>
+      </section>
+      <p class="sidebar-note">离线资料 · 源码证据快照</p>
+    </nav>
+    <main class="article-shell" id="main-content">
+      <div class="breadcrumbs"><a href="../index.html">首页</a><span>/</span><a href="../repositories.html">仓库索引</a><span>/</span><span>meter</span></div>
+      <article class="markdown-body">
+      <h1>meter：工资实时计量 Android 原型</h1>
+      <p><strong>定位标签：</strong>个人原型候选 / 归属需确认</p>
+      <nav class="toc" aria-label="本页目录">
+        <strong>本页目录</strong>
+        <ol>
+          <li><a href="#identity">定位与归属边界</a></li>
+          <li><a href="#checkout">检出与构建信息</a></li>
+          <li><a href="#structure">结构与核心入口</a></li>
+          <li><a href="#workflow">关键工作流</a></li>
+          <li><a href="#tradeoffs">亮点与取舍</a></li>
+          <li><a href="#risks">风险、测试与排查</a></li>
+          <li><a href="#pitch">面试讲法</a></li>
+          <li><a href="#questions">追问与回答</a></li>
+          <li><a href="#evidence">源码证据</a></li>
+        </ol>
+      </nav>
+      <section id="identity"><h2>定位与归属边界</h2><ul><li>单 app 模块 Kotlin + XML/ViewBinding 原型，按月薪、作息与工作日计算当日/当月收益，并展示曲线、通知和桌面组件。</li><li>包名仍为 <code>com.example.meter</code>，更像原型；个人所有权和具体实现范围<strong>需本人确认</strong>。</li><li>工资与作息属于敏感数据，存储、日志、备份、通知和 widget 都在隐私边界内。</li></ul></section>
+      <section id="checkout"><h2>检出与构建信息</h2><ul><li>库存记录：分支 <code>main</code>，提交 <code>cde4305</code>（2026-06-10），Kotlin 微型仓。</li><li>构建入口：<code>./gradlew assembleDebug</code> / <code>testDebugUnitTest</code>，AGP 8.7.2、Kotlin 2.0、Java 17、minSdk 32。</li><li>聚合分析记录离线运行仍尝试下载 Gradle 8.9 并超时，未进入测试；现有 unit/androidTest 只是 Android Studio 模板。</li></ul></section>
+      <section id="structure"><h2>结构与核心入口</h2><ul><li><code>MainActivity.kt</code>：表单、权限、动画、保存、通知、widget 刷新。</li><li><code>data/EarningsCalculator.kt</code>：纯收益计算。</li><li><code>HolidayRepository.kt</code>：节假日 API、24 小时缓存与工作日 fallback。</li><li><code>EarningsWidgetProvider.kt</code>、<code>EarningsNotificationHelper.kt</code>、<code>EarningsTrendView.kt</code>：外围呈现。</li></ul></section>
+      <section id="workflow"><h2>关键工作流</h2><ol><li>用户录入月薪、上下班和午休 → EncryptedSharedPreferences 保存。</li><li>HolidayRepository 先读缓存，未命中同步 fallback 周一至周五，并异步拉节假日数据。</li><li>EarningsCalculator 按本月工作日和每日有效分钟计算累计收入。</li><li>Activity、通知和 widget 各自读取配置并刷新；自绘 View 画日/月趋势。</li></ol></section>
+      <section id="tradeoffs"><h2>亮点与取舍</h2><ul><li>小项目串起加密偏好、网络缓存、通知、widget、自绘 View，产品闭环直观。</li><li>fallback 保证离线可用，却无法识别调休；Activity 集中编排快，但职责过重且多处重复计算。</li><li>高频视觉反馈适合前台，后台/widget 不适合 10 秒 alarm。</li></ul></section>
+      <section id="risks"><h2>风险、测试与排查</h2><ul><li>P0：工资/作息被写入 debug 日志；存储加密不能抵消日志泄露，需全链路脱敏并审计备份策略。</li><li>P1：widget 使用 GlobalScope；10 秒 inexact alarm 不可靠且耗电；receiver exported=true 的自定义 action 缺权限保护。</li><li>P1：时间字符串校验不足、节假日依赖中文字符串、重复依赖装配；应抽 repository/use case 并注入 clock。</li><li>排查：输入与 LocalTime → 缓存 TTL/API/fallback → 工作日与分母 → Activity/notification/widget 一致性 → alarm/Doze → receiver 权限。</li></ul></section>
+      <section id="calculation-case">
+        <h2>收益计算边界与后台刷新设计</h2>
+        <p><code>EarningsCalculator</code> 最适合先抽成完全确定的 use case：输入月薪、月份工作日数、上下班/午休区间、当前时间和当天是否工作日，输出当日已赚、当日进度与当月累计。测试表要覆盖上班前为 0、上午工作中线性增长、午休冻结、下午继续、下班后封顶、周末/节假日不增长、二月和跨月，以及午休越界、下班早于上班等非法配置。金额用明确精度和舍入策略，展示层再格式化；不能让 Activity、通知和 widget 各算一遍。</p>
+        <p>HolidayRepository 的 24 小时缓存要注入 clock 和 fake API，验证缓存命中、过期刷新、网络失败保留旧数据、首次离线 fallback，以及调休工作日。服务端返回中文状态字符串属于脆弱契约，解析应收敛为枚举并把未知值记录为降级。UI 必须标明“精确节假日数据”还是“周一至周五估算”，否则用户会把 fallback 当真实工资口径。</p>
+        <p>前台页面可以用 lifecycle-aware coroutine 或定时器做秒级动画，但 widget 与通知应按系统约束降低频率。Widget 更新可由系统周期、用户点击和配置变化触发；通知只在上班、午休结束、下班等节点更新。取消 GlobalScope，使用受控 CoroutineScope/WorkManager；自定义广播若无需外部调用就设为不导出，或加 signature permission。验收时同时检查 Doze、重启后恢复、通知权限拒绝和备份恢复，并用同一 use case 对比三种界面的金额一致性。</p>
+      </section>
+      <section id="pitch">
+        <h2>面试讲法</h2>
+        <h3>30 秒版本</h3><blockquote><p>这是工资实时计量 Android 原型：配置月薪和作息后，结合节假日缓存计算累计收入，并同步曲线、通知和 widget。亮点是小闭环，问题是 Activity 过重、敏感日志、GlobalScope 和不合理的 10 秒 AlarmManager；归属及个人模块需本人确认。</p></blockquote>
+        <h3>2 分钟版本</h3><blockquote><p>核心计算由 EarningsCalculator 承担，HolidayRepository 提供缓存/API/fallback，结果在 Activity、自绘趋势、通知和 widget 展示。方案的产品反馈很直观，但外围各自重复装配和计算，容易不一致；后台 10 秒 inexact alarm 不符合系统限制，widget GlobalScope 无生命周期，工资虽然加密存储却进入日志。重做会抽单一 use case、注入 clock 和 holiday source，改用合理刷新策略，保护 receiver，并补计算边界、缓存、widget 与通知测试。只有本人 commit 能证明的部分才说“我负责”。</p></blockquote>
+      </section>
+      <section id="questions"><h2>追问与回答</h2>
+    <details open>
+      <summary>问题1：为什么 10 秒 AlarmManager 不合理？</summary>
+      <p>inexact alarm 不保证频率，Doze 和最小间隔会干预，高频唤醒还耗电。</p>
+    </details>
+    <details>
+      <summary>问题2：加密存储为什么仍不安全？</summary>
+      <p>明文日志、备份、通知与 widget 都可能泄露；安全要覆盖全数据生命周期。</p>
+    </details>
+    <details>
+      <summary>问题3：fallback 有什么业务误差？</summary>
+      <p>周一至周五无法识别法定调休和补班，只能作为降级估算并明确标记。</p>
+    </details>
+    <details>
+      <summary>问题4：怎么测试时间计算？</summary>
+      <p>注入固定 clock，覆盖上班前、午休、下班后、非工作日、跨月与非法时间。</p>
+    </details>
+    <details>
+      <summary>问题5：如何减少三处重复计算？</summary>
+      <p>抽 EarningsUseCase，统一配置、节假日与 clock 依赖，Activity/通知/widget 只消费同一结果模型。</p>
+    </details></section>
+      <section id="evidence">
+        <h2>源码证据</h2>
+        
+        <ol><li><code>yyyyy-cdoe/meter/app/src/main/java/com/example/meter/MainActivity.kt</code></li><li><code>yyyyy-cdoe/meter/app/src/main/java/com/example/meter/data/EarningsCalculator.kt</code></li><li><code>yyyyy-cdoe/meter/app/src/main/java/com/example/meter/data/HolidayRepository.kt</code></li><li><code>yyyyy-cdoe/meter/app/src/main/java/com/example/meter/data/EarningsPreferences.kt</code></li><li><code>yyyyy-cdoe/meter/app/src/main/java/com/example/meter/widget/EarningsWidgetProvider.kt</code></li><li><code>yyyyy-cdoe/meter/app/src/test/java/com/example/meter/ExampleUnitTest.kt</code></li></ol>
+        <p>证据口径：路径来自当前工作区源码与权威库存；个人贡献仍需本人确认，未由路径本身推断。</p>
+      </section>
+      <p><a href="../repositories.html">返回仓库索引</a> · <a href="../index.html">返回文档首页</a></p>
+      </article>
+    </main>
+  </div>
+</body>
+</html>

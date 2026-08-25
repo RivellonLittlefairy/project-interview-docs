@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>mcp-financial-calculator：确定性金融计算 MCP</title>
+  <link rel="stylesheet" href="../assets/docs.css">
+  <script defer src="../assets/search-data.js"></script>
+  <script defer src="../assets/docs.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <header class="topbar">
+    <button class="icon-button menu-button" type="button" data-menu-toggle aria-label="打开文档导航" aria-expanded="false">☰</button>
+    <a class="brand" href="../index.html"><span class="brand-mark">⌁</span><span>项目面试资料库</span></a>
+    <div class="search-shell">
+      <label class="sr-only" for="global-search">搜索所有文档</label>
+      <input id="global-search" type="search" data-search-input placeholder="搜索仓库、技术或面试题…" autocomplete="off">
+      <span class="search-shortcut">Ctrl K</span>
+      <div class="search-results" data-search-results hidden></div>
+    </div>
+    <button class="icon-button" type="button" data-theme-toggle aria-label="切换深浅主题">◐</button>
+  </header>
+  <div class="drawer-backdrop" data-drawer-backdrop hidden></div>
+  <div class="docs-layout">
+    <nav class="sidebar" data-sidebar aria-label="全站文档导航">
+      <div class="sidebar-heading">文档导航</div>
+      <section class="nav-group">
+        <h2 class="nav-group-title">逐仓文档</h2>
+        <a class="nav-link active" href="../repositories.html">仓库独立分析</a>
+      </section>
+      <section class="nav-group">
+        <h2 class="nav-group-title">开始使用</h2>
+        <a class="nav-link" href="../index.html">总览与导航</a>
+      </section>
+      <section class="nav-group">
+        <h2 class="nav-group-title">来源分析</h2>
+        <a class="nav-link" href="../00-repository-inventory.html">全量仓库盘点</a>
+        <a class="nav-link" href="../30-cross-platform-rn-web.html">RN 与 Web</a>
+        <a class="nav-link" href="../31-tools-samples-and-assets.html">工具、样例与资产</a>
+      </section>
+      <p class="sidebar-note">离线资料 · 源码证据快照</p>
+    </nav>
+    <main class="article-shell" id="main-content">
+      <div class="breadcrumbs"><a href="../index.html">首页</a><span>/</span><a href="../repositories.html">仓库索引</a><span>/</span><span>mcp-financial-calculator</span></div>
+      <article class="markdown-body">
+      <h1>mcp-financial-calculator：确定性金融计算 MCP</h1>
+      <p><strong>定位标签：</strong>个人项目候选 / 归属需确认</p>
+      <nav class="toc" aria-label="本页目录">
+        <strong>本页目录</strong>
+        <ol>
+          <li><a href="#identity">定位与归属边界</a></li>
+          <li><a href="#checkout">检出与构建信息</a></li>
+          <li><a href="#structure">结构与核心入口</a></li>
+          <li><a href="#workflow">关键工作流</a></li>
+          <li><a href="#tradeoffs">亮点与取舍</a></li>
+          <li><a href="#risks">风险、测试与排查</a></li>
+          <li><a href="#pitch">面试讲法</a></li>
+          <li><a href="#questions">追问与回答</a></li>
+          <li><a href="#evidence">源码证据</a></li>
+        </ol>
+      </nav>
+      <section id="identity"><h2>定位与归属边界</h2><ul><li>Node.js ESM stdio MCP server，将基础算术、现金流、货币时间价值和指标计算注册为 17 个工具。</li><li>可作为个人项目候选，但所有权、本人算法/协议范围和量化结果<strong>需本人确认</strong>，不能只凭本地目录推断。</li><li>它是确定性计算工具，不是投顾或生产金融决策系统。</li></ul></section>
+      <section id="checkout"><h2>检出与构建信息</h2><ul><li>库存记录：分支 <code>main</code>，提交 <code>a5dff7f</code>（2026-04-07），JavaScript 微型仓。</li><li>入口：<code>npm start</code> 启动 stdio server；<code>npm test</code> 使用 Node 内置 test runner。</li><li>聚合分析记录 2026-07-24 实测 21/21 通过，约 0.19 秒；只代表当时 checkout，本文未重复运行。</li></ul></section>
+      <section id="structure"><h2>结构与核心入口</h2><ul><li><code>src/index.js</code>：McpServer + StdioServerTransport。</li><li><code>src/tools/{basic,cashflow,tvm,metrics}.js</code>：工具注册和 handler。</li><li><code>src/schemas.js</code>：Zod 输入、严格 ISO 日期和领域边界。</li><li><code>src/lib/finance.js</code>：纯算法与求根；<code>result.js</code> 统一文本 JSON 响应。</li></ul></section>
+      <section id="workflow"><h2>关键工作流</h2><ol><li>MCP client 通过 stdio tool call → SDK/Zod 做类型与范围校验。</li><li>handler 调纯算法；IRR/XIRR/RATE 先 Newton，失败后扩张可括区间并二分。</li><li>统一返回小数/百分比或 JSON 文本；错误由领域校验明确抛出。</li><li>XNPV/XIRR 使用 Actual/365，现金流正数为流入、负数为流出，TVM 沿用 Excel 符号约定。</li></ol></section>
+      <section id="tradeoffs"><h2>亮点与取舍</h2><ul><li>协议、schema、注册与算法分层，无数据库/网络副作用，适合 Agent 调用和单测。</li><li>Newton 快但依赖初值/导数；二分稳但需找到异号区间，组合提高鲁棒性。</li><li>stdio 缩小网络攻击面，也限制跨机器、多租户能力。</li></ul></section>
+      <section id="risks"><h2>风险、测试与排查</h2><ul><li>非常规现金流可能多 IRR，当前只返回一个根；应扫描区间、提示歧义或推荐 MIRR。</li><li>只有 Actual/365，缺 30/360、Actual/Actual；精度、舍入与免责声明也未产品化。</li><li>测试覆盖算法/schema，但缺真实 MCP transport 注册、调用和错误响应 contract test。</li><li>排查：先看 schema/日期/正负现金流 → 约定与单位 → 求根 bracket/残差 → handler 注册 → stdio 帧与 stderr。</li></ul></section>
+      <section id="numerical-case">
+        <h2>数值求根案例与协议测试</h2>
+        <p>IRR/XIRR/RATE 的测试不应只断言一个格式化百分比。对普通现金流，可以先用已知 rate 生成现金流，再求回 rate，并把结果代入 NPV/XNPV 方程验证残差接近 0；对 XIRR 还要构造不等间隔日期，确认 Actual/365 的年分数。边界组包括全正、全负、只有一个现金流、rate 接近 -1、超大正 rate、导数接近 0 与无法找到异号区间。错误应稳定映射成可理解的工具错误，不能返回 NaN、Infinity 或看似正常的 0。</p>
+        <p>多 IRR 可以用符号多次变化的现金流复现。改进方案是在允许的利率域上按对数/分段网格计算 NPV，发现相邻点异号后分别二分，并对相近根去重；如果找到多个候选，响应应返回歧义说明与所有根，而不是静默选择最接近初始 guess 的一个。扫描也有漏过偶重根的可能，因此文档要说明局限，并建议用户结合 MIRR 或业务资本成本判断。所有迭代都应有最大次数和有限数检查，防止 Agent 输入造成长时间占用。</p>
+        <p>协议层需要真正启动 stdio server 做 contract test：发送 initialize、tools/list，核对 17 个工具名称与 schema；再调用一个基础算术和一个 XIRR 工具，验证 JSON-RPC id、content 文本、错误结构和进程退出。stdout 只能输出 MCP 帧，调试信息必须去 stderr，否则会破坏协议。还应测试未知工具、缺字段、严格日期失败与客户端关闭 stdin 后进程是否退出。这样才能证明“算法函数可用”与“Agent 能通过 MCP 正确调用”两条链都成立。</p>
+      </section>
+      <section id="pitch">
+        <h2>面试讲法</h2>
+        <h3>30 秒版本</h3><blockquote><p>这是一个 Node.js stdio MCP 金融计算服务，17 个工具按协议、Zod schema 和纯算法分层。IRR/XIRR/RATE 用 Newton 加二分兜底，测试会把结果代回方程看残差。当前边界是多 IRR、日计数约定和 MCP contract test；归属与个人贡献需本人确认。</p></blockquote>
+        <h3>2 分钟版本</h3><blockquote><p>入口创建 MCP server 并连接 stdio transport，tools 层注册 17 个工具，schemas 控制输入，finance 承载纯函数。数值求根先用 Newton 获取速度，在导数过小、越界或不收敛时扩大区间并二分；测试既校验已知值，也把 rate 代回 NPV 方程检查残差。它没有网络和数据库副作用，适合作为本地确定性工具，但仍要提示浮点、日计数和多根风险。若本人确实负责，才补充可验证 commit 与测试结果，否则只作源码分析。</p></blockquote>
+      </section>
+      <section id="questions"><h2>追问与回答</h2>
+    <details open>
+      <summary>问题1：为什么不用 REST？</summary>
+      <p>目标是给 Agent 作为本地工具，MCP 已提供发现、schema 与调用协议，stdio 不需开端口；跨机多租户再考虑带鉴权的 HTTP。</p>
+    </details>
+    <details>
+      <summary>问题2：schema 校验为何不够？</summary>
+      <p>schema 处理类型和基础范围；正负现金流、存在可括区间属于领域/数值约束，算法层仍要防守。</p>
+    </details>
+    <details>
+      <summary>问题3：怎么处理多 IRR？</summary>
+      <p>宽区间分段扫描符号变化，返回所有候选根或明确提示歧义，并推荐 MIRR。</p>
+    </details>
+    <details>
+      <summary>问题4：为什么验证残差？</summary>
+      <p>求根结果只比较预期常量可能掩盖误差；代回原方程更直接验证算法目标。</p>
+    </details>
+    <details>
+      <summary>问题5：stdio 也要安全设计吗？</summary>
+      <p>要。host 仍应限制可执行路径、依赖来源、资源上限与日志；不能把不可信参数无限耗时计算。</p>
+    </details></section>
+      <section id="evidence">
+        <h2>源码证据</h2>
+        
+        <ol><li><code>yyyyy-cdoe/mcp-financial-calculator/src/index.js</code></li><li><code>yyyyy-cdoe/mcp-financial-calculator/src/schemas.js</code></li><li><code>yyyyy-cdoe/mcp-financial-calculator/src/lib/finance.js</code></li><li><code>yyyyy-cdoe/mcp-financial-calculator/src/tools/index.js</code></li><li><code>yyyyy-cdoe/mcp-financial-calculator/test/finance.test.js</code></li><li><code>yyyyy-cdoe/mcp-financial-calculator/test/schemas.test.js</code></li></ol>
+        <p>证据口径：路径来自当前工作区源码与权威库存；个人贡献仍需本人确认，未由路径本身推断。</p>
+      </section>
+      <p><a href="../repositories.html">返回仓库索引</a> · <a href="../index.html">返回文档首页</a></p>
+      </article>
+    </main>
+  </div>
+</body>
+</html>

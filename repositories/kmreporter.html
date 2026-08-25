@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>KmReporter：成功率报表与告警闭环</title>
+  <link rel="stylesheet" href="../assets/docs.css">
+  <script defer src="../assets/search-data.js"></script>
+  <script defer src="../assets/docs.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <header class="topbar">
+    <button class="icon-button menu-button" type="button" data-menu-toggle aria-label="打开文档导航" aria-expanded="false">☰</button>
+    <a class="brand" href="../index.html"><span class="brand-mark">⌁</span><span>项目面试资料库</span></a>
+    <div class="search-shell">
+      <label class="sr-only" for="global-search">搜索所有文档</label>
+      <input id="global-search" type="search" data-search-input placeholder="搜索仓库、技术或面试题…" autocomplete="off">
+      <span class="search-shortcut">Ctrl K</span>
+      <div class="search-results" data-search-results hidden></div>
+    </div>
+    <button class="icon-button" type="button" data-theme-toggle aria-label="切换深浅主题">◐</button>
+  </header>
+  <div class="drawer-backdrop" data-drawer-backdrop hidden></div>
+  <div class="docs-layout">
+    <nav class="sidebar" data-sidebar aria-label="全站文档导航">
+      <div class="sidebar-heading">文档导航</div>
+      <section class="nav-group">
+        <h2 class="nav-group-title">逐仓文档</h2>
+        <a class="nav-link active" href="../repositories.html">仓库独立分析</a>
+      </section>
+      <section class="nav-group">
+        <h2 class="nav-group-title">开始使用</h2>
+        <a class="nav-link" href="../index.html">总览与导航</a>
+      </section>
+      <section class="nav-group">
+        <h2 class="nav-group-title">来源分析</h2>
+        <a class="nav-link" href="../00-repository-inventory.html">全量仓库盘点</a>
+        <a class="nav-link" href="../30-cross-platform-rn-web.html">RN 与 Web</a>
+        <a class="nav-link" href="../31-tools-samples-and-assets.html">工具、样例与资产</a>
+      </section>
+      <p class="sidebar-note">离线资料 · 源码证据快照</p>
+    </nav>
+    <main class="article-shell" id="main-content">
+      <div class="breadcrumbs"><a href="../index.html">首页</a><span>/</span><a href="../repositories.html">仓库索引</a><span>/</span><span>kmreporter</span></div>
+      <article class="markdown-body">
+      <h1>KmReporter：成功率报表与告警闭环</h1>
+      <p><strong>定位标签：</strong>团队监控工具 / Bun + TypeScript</p>
+      <nav class="toc" aria-label="本页目录">
+        <strong>本页目录</strong>
+        <ol>
+          <li><a href="#identity">定位与归属边界</a></li>
+          <li><a href="#checkout">检出与构建信息</a></li>
+          <li><a href="#structure">结构与核心入口</a></li>
+          <li><a href="#workflow">关键工作流</a></li>
+          <li><a href="#tradeoffs">亮点与取舍</a></li>
+          <li><a href="#risks">风险、测试与排查</a></li>
+          <li><a href="#pitch">面试讲法</a></li>
+          <li><a href="#questions">追问与回答</a></li>
+          <li><a href="#evidence">源码证据</a></li>
+        </ol>
+      </nav>
+      <section id="identity"><h2>定位与归属边界</h2><ul><li>Bun/TypeScript 服务：查询成功/失败时序数据，按场景和平台计算成功率，与上周对比，渲染截图并发送企业消息；同时接收告警、静默 ACK 和关联任务。</li><li>这是团队监控资产，个人实现或运维范围<strong>需本人确认</strong>，且要用 commit、部署记录与指标证明。</li><li>源码含企业内网端点和 webhook 形态信息；本文不展示任何具体值。</li></ul></section>
+      <section id="checkout"><h2>检出与构建信息</h2><ul><li>库存记录：分支 <code>node</code>，提交 <code>5c7a6f2</code>（2025-10-28），TypeScript 微型仓。</li><li>构建/运行：README 要求 Bun；<code>bun install</code>，<code>bun run ./src/server.ts</code>。也有 Dockerfile、compose 与 Puppeteer。</li><li>package scripts 只有 dev/start，未检出 test/lint/typecheck/CI；本轮未启动服务，避免网络、告警和任务创建副作用。</li></ul></section>
+      <section id="structure"><h2>结构与核心入口</h2><ul><li><code>src/server.ts</code>：Bun HTTP 路由、Cron、告警静默、任务关联。</li><li><code>src/main.ts</code> / <code>fetch.ts</code>：按日与上周同期拉取、解析并聚合 Android/iOS 场景数据。</li><li><code>src/inflater.ts</code>：阈值着色、环比、异常项收集；<code>render.ts</code> 用 Puppeteer 截图。</li><li><code>src/task.ts</code> / <code>wework.ts</code>：任务持久化、HMAC 鉴权与企业消息。</li></ul></section>
+      <section id="workflow"><h2>关键工作流</h2><ol><li>每日 Cron → 查询昨天与上周同期数据 → 按 scene/platform 合并 success/failure → 计算 rate。</li><li>按配置阈值标红异常，生成 HTML → Puppeteer 1200px、2x 截图 → 条件开启时发送企业消息。</li><li><code>/warning</code> 解析告警项与级别 → critical 建任务 → ACK map 限时静默 → 推送负责人并查询补充结果。</li><li>每周汇总未关闭任务；周期检查任务状态并清理关闭超过一个月的记录。</li></ol></section>
+      <section id="tradeoffs"><h2>亮点与取舍</h2><ul><li>从指标到截图、告警、静默和任务形成闭环；配置化阈值支持多场景。</li><li>Bun + Puppeteer 简化服务与图片产出，但 Chromium 成本高，Docker 使用 no-sandbox 增加安全要求。</li><li>当前本地 JSON 持久化简单，却有并发覆盖、损坏和多实例不一致风险。</li></ul></section>
+      <section id="risks"><h2>风险、测试与排查</h2><ul><li>P0：源码存在 webhook/内网信息形态；需轮换迁 secret、清历史和日志，服务端加鉴权与网络访问控制。</li><li>P1：<code>fetchData()</code> 无限重试且无请求 timeout；上游故障会永久占用任务。应限定次数、指数退避、熔断和 stale 标记。</li><li>P1：HTTP 路由可触发报告、告警、ACK 和任务操作，当前未见通用认证；日志还会输出告警正文/任务 JSON，需脱敏。</li><li>排查：Cron/时区 → 查询区间与 target → tag 解析 → total/rate 分母 → 阈值配置 → Puppeteer → 消息开关/响应 → ACK/任务持久化。</li></ul></section>
+      <section id="report-case">
+        <h2>指标异常案例与回归测试</h2>
+        <p><code>fetch.ts</code> 的 <code>parseItem()</code> 从点号分隔 tag 中推断 platform、scene 与 true/false，再把 iPhone/iPad 汇总成 iOS。这个规则应使用表驱动测试覆盖 AndroidPhone、Android、iPhone、iPad、未知平台、缺成功标记、同 scene 多序列和多 datapoint 求和。解析失败项当前被改写为 ignore；线上应同时增加丢弃计数和样例化错误日志，否则 tag 规范变化会让报表悄悄少数据。rate 的测试还要覆盖 success=0、failure=0、total=0 与跨序列合并，明确 total=0 显示 N/A 而非 0% 失败率。</p>
+        <p><code>Infalater</code> 按 scene/platform 阈值决定标红，并将异常标题加入待建任务列表。可准备固定 config 与今天/上周两组 Map，断言配置顺序、未知 scene 追加、平台独立阈值、环比百分比和异常列表去重。环比计算遇到上周 total=0 时不能除零；当成功率提升但样本骤降时，报表应同时展示数量变化，避免只看百分比。生成 HTML 后不必每次启动真实 Chromium：先 snapshot 模板数据，少量集成测试再用 Puppeteer 验证截图存在、尺寸和关键文本。</p>
+        <p>告警闭环测试要使用 fake clock。第一次 warning 建立半小时静默，同一项目重复告警应被抑制；warning 升级 critical 应突破静默并尝试建任务；ACK 修改截止时间后，在到期前抑制、到期后重新发送。当前任务 Map 写入单个 JSON 文件，多请求并发会出现读改写丢失；至少应串行化写入并采用临时文件原子替换，更稳妥是迁 SQLite/数据库并对告警指纹加唯一约束。HTTP 路由测试还要覆盖未认证请求、畸形 JSON、超大正文和上游慢响应。</p>
+      </section>
+      <section id="pitch">
+        <h2>面试讲法</h2>
+        <h3>30 秒版本</h3><blockquote><p>KmReporter 把成功率监控做成查询、阈值、同比、截图、告警静默和任务闭环。核心是按 scene/platform 聚合成功失败量并渲染报表。当前主要风险是敏感配置、无限重试、HTTP 鉴权和 JSON 并发持久化；个人贡献范围需本人确认。</p></blockquote>
+        <h3>2 分钟版本</h3><blockquote><p>服务每天查询昨天与上周同期时序数据，parseItem 从 tag 识别平台、场景和成功标记，聚合后按配置阈值标红，再用 Puppeteer 生成 2x 图片。告警接口会解析 check item，critical 时关联任务，ACK map 控制静默，周任务再汇总未关闭项。闭环完整，但 fetch 无限重试没有 timeout，Bun 路由缺少清晰认证，敏感配置和日志需要治理，本地 JSON 也不适合多实例。重做会拆 query/domain/render/notify，加入有界重试、持久化事务、鉴权、幂等和测试。个人负责内容必须有 commit 与运行指标。</p></blockquote>
+      </section>
+      <section id="questions"><h2>追问与回答</h2>
+    <details open>
+      <summary>问题1：成功率怎么计算？</summary>
+      <p>同一 scene/platform 的 true 与 false 计数求和，rate=success/(success+failure)；total 为 0 时显示 N/A。</p>
+    </details>
+    <details>
+      <summary>问题2：为什么要对比上周同期？</summary>
+      <p>能减少星期分布差异，但仍不是因果基线；节假日、流量结构和版本变化要单独标注。</p>
+    </details>
+    <details>
+      <summary>问题3：无限重试有什么问题？</summary>
+      <p>上游故障会永久占用执行并掩盖失败；需要 timeout、有界退避、熔断和可观测错误状态。</p>
+    </details>
+    <details>
+      <summary>问题4：ACK 静默如何避免丢告警？</summary>
+      <p>静默应按告警指纹和级别，升级可打破静默，并持久化过期时间；恢复通知也要单独处理。</p>
+    </details>
+    <details>
+      <summary>问题5：Puppeteer no-sandbox 可以接受吗？</summary>
+      <p>只在强隔离容器、最小权限和可信 HTML 下勉强使用；更好是启用浏览器 sandbox 或独立渲染服务。</p>
+    </details></section>
+      <section id="evidence">
+        <h2>源码证据</h2>
+        
+        <ol><li><code>yyyyy-cdoe/KmReporter/src/server.ts</code></li><li><code>yyyyy-cdoe/KmReporter/src/main.ts</code></li><li><code>yyyyy-cdoe/KmReporter/src/fetch.ts</code></li><li><code>yyyyy-cdoe/KmReporter/src/inflater.ts</code></li><li><code>yyyyy-cdoe/KmReporter/src/render.ts</code></li><li><code>yyyyy-cdoe/KmReporter/package.json</code></li></ol>
+        <p>证据口径：路径来自当前工作区源码与权威库存；个人贡献仍需本人确认，未由路径本身推断。</p>
+      </section>
+      <p><a href="../repositories.html">返回仓库索引</a> · <a href="../index.html">返回文档首页</a></p>
+      </article>
+    </main>
+  </div>
+</body>
+</html>

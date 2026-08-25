@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>photos：仅含许可证的空壳仓</title>
+  <link rel="stylesheet" href="../assets/docs.css">
+  <script defer src="../assets/search-data.js"></script>
+  <script defer src="../assets/docs.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <header class="topbar">
+    <button class="icon-button menu-button" type="button" data-menu-toggle aria-label="打开文档导航" aria-expanded="false">☰</button>
+    <a class="brand" href="../index.html"><span class="brand-mark">⌁</span><span>项目面试资料库</span></a>
+    <div class="search-shell">
+      <label class="sr-only" for="global-search">搜索所有文档</label>
+      <input id="global-search" type="search" data-search-input placeholder="搜索仓库、技术或面试题…" autocomplete="off">
+      <span class="search-shortcut">Ctrl K</span>
+      <div class="search-results" data-search-results hidden></div>
+    </div>
+    <button class="icon-button" type="button" data-theme-toggle aria-label="切换深浅主题">◐</button>
+  </header>
+  <div class="drawer-backdrop" data-drawer-backdrop hidden></div>
+  <div class="docs-layout">
+    <nav class="sidebar" data-sidebar aria-label="全站文档导航">
+      <div class="sidebar-heading">文档导航</div>
+      <section class="nav-group">
+        <h2 class="nav-group-title">逐仓文档</h2>
+        <a class="nav-link active" href="../repositories.html">仓库独立分析</a>
+      </section>
+      <section class="nav-group">
+        <h2 class="nav-group-title">开始使用</h2>
+        <a class="nav-link" href="../index.html">总览与导航</a>
+      </section>
+      <section class="nav-group">
+        <h2 class="nav-group-title">来源分析</h2>
+        <a class="nav-link" href="../00-repository-inventory.html">全量仓库盘点</a>
+        <a class="nav-link" href="../30-cross-platform-rn-web.html">RN 与 Web</a>
+        <a class="nav-link" href="../31-tools-samples-and-assets.html">工具、样例与资产</a>
+      </section>
+      <p class="sidebar-note">离线资料 · 源码证据快照</p>
+    </nav>
+    <main class="article-shell" id="main-content">
+      <div class="breadcrumbs"><a href="../index.html">首页</a><span>/</span><a href="../repositories.html">仓库索引</a><span>/</span><span>photos</span></div>
+      <article class="markdown-body">
+      <h1>photos：仅含许可证的空壳仓</h1>
+      <p><strong>定位标签：</strong>证据不足 / 用途无法判断</p>
+      <nav class="toc" aria-label="本页目录">
+        <strong>本页目录</strong>
+        <ol>
+          <li><a href="#identity">定位与归属边界</a></li>
+          <li><a href="#checkout">检出与构建信息</a></li>
+          <li><a href="#structure">结构与核心入口</a></li>
+          <li><a href="#workflow">关键工作流</a></li>
+          <li><a href="#tradeoffs">亮点与取舍</a></li>
+          <li><a href="#risks">风险、测试与排查</a></li>
+          <li><a href="#pitch">面试讲法</a></li>
+          <li><a href="#questions">追问与回答</a></li>
+          <li><a href="#evidence">源码证据</a></li>
+        </ol>
+      </nav>
+      <section id="identity"><h2>定位与归属边界</h2><ul><li>当前工作树只发现 <code>LICENSE</code>，没有 README、源码、构建文件、资源清单或测试。</li><li>不能据此判断它是照片应用、图片资产仓、占位仓还是历史清理后的仓库，更不能推断个人项目或团队产出；任何归属均<strong>需本人确认</strong>。</li><li>本页刻意不补写不存在的架构、功能、工作流或指标。</li></ul></section>
+      <section id="checkout"><h2>检出与构建信息</h2><ul><li>权威库存记录：分支 <code>main</code>，提交 <code>3b4c6f3</code>（2026-03-24），有效 Git 仓但源码规模 0。</li><li>构建入口：无。README：无。测试：无。CI：无。</li><li>静态检查仅能确认仓库根目录和 LICENSE；没有足够材料执行构建或功能验证。</li></ul></section>
+      <section id="structure"><h2>结构与核心入口</h2><ul><li><code>yyyyy-cdoe/photos/LICENSE</code>：唯一可见文件。</li><li>没有可核验的应用入口、模块边界或资源目录。</li><li>没有足够源码证据建立组件图。</li></ul></section>
+      <section id="workflow"><h2>关键工作流</h2><ol><li>不存在可核验的运行工作流。</li><li>若后续要恢复分析，先确认远端/分支/LFS/submodule 是否缺失，再获取 README、源码和构建入口。</li><li>在材料补齐前，面试中不应使用该仓作为案例。</li></ol></section>
+      <section id="tradeoffs"><h2>亮点与取舍</h2><ul><li>当前唯一亮点是边界诚实：不从仓库名推断功能。</li><li>许可证能说明授权文本存在，不能证明具体内容、作者贡献或产品形态。</li><li>任何“照片管理、图库、上传、同步”等说法都没有证据，必须避免。</li></ul></section>
+      <section id="risks"><h2>风险、测试与排查</h2><ul><li>最大风险是把仓库名当需求，把空 checkout 当完成项目，形成虚假陈述。</li><li>排查顺序：核对远端与当前分支 → 检查 sparse checkout/LFS/submodule → 查询历史是否只提交 LICENSE → 向仓库维护者确认用途。</li><li>在未取得更多材料前，不给构建命令、测试覆盖、架构优缺点或性能指标。</li></ul></section>
+      <section id="pitch">
+        <h2>面试讲法</h2>
+        <h3>30 秒版本</h3><blockquote><p>photos 当前只有 LICENSE，没有 README、源码、构建或测试。权威库存只能确认它是有效 Git 仓，无法判断用途。我不会把仓库名扩写成项目经历；若要使用，必须先补齐远端、源码、历史和本人贡献证据。</p></blockquote>
+        <h3>2 分钟版本</h3><blockquote><p>这个仓的正确讲法就是证据不足。当前可见事实只有 LICENSE 和库存记录的 Git 分支/提交，既没有入口，也没有模块或运行链路。下一步应核对是否是 sparse checkout、LFS、子模块、缺分支或仅占位仓；在此之前，不把它描述成照片应用或素材平台，也不编造测试与指标。个人归属同样需要本人确认。</p></blockquote>
+      </section>
+      <section id="questions"><h2>追问与回答</h2>
+    <details open>
+      <summary>问题1：能从名字判断是相册应用吗？</summary>
+      <p>不能。仓库名不是源码证据。</p>
+    </details>
+    <details>
+      <summary>问题2：LICENSE 能证明什么？</summary>
+      <p>只能证明存在一份授权文本，不能证明功能、作者范围或交付状态。</p>
+    </details>
+    <details>
+      <summary>问题3：为什么库存仍算有效 Git 仓？</summary>
+      <p>它有有效 Git 元数据和提交记录；“有效 Git”不等于“有可分析源码”。</p>
+    </details>
+    <details>
+      <summary>问题4：下一步怎么查？</summary>
+      <p>核对远端、分支、sparse checkout、Git LFS、submodule 和历史，再向维护者确认。</p>
+    </details>
+    <details>
+      <summary>问题5：面试时能讲什么？</summary>
+      <p>只讲它证据不足、未作为项目使用；不讲功能、架构、测试或个人贡献。</p>
+    </details></section>
+      <section id="evidence">
+        <h2>源码证据</h2>
+        <p><strong>证据限制：仓内只有 1 个可见文件。以上后两项只是工作区与库存佐证，不是为了凑成三份源码；本页没有虚构第三个源文件。</strong></p>
+        <ol><li><code>yyyyy-cdoe/photos/LICENSE（唯一源码侧文件）</code></li><li><code>yyyyy-cdoe/photos/（已核验的仓库根；除 LICENSE 外无可见项目文件）</code></li><li><code>docs/project-interview/00-repository-inventory.md（库存元数据；不是功能源码）</code></li></ol>
+        <p>证据口径：路径来自当前工作区源码与权威库存；个人贡献仍需本人确认，未由路径本身推断。</p>
+      </section>
+      <p><a href="../repositories.html">返回仓库索引</a> · <a href="../index.html">返回文档首页</a></p>
+      </article>
+    </main>
+  </div>
+</body>
+</html>

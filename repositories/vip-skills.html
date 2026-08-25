@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VIP-Skills：团队 Agent 工作流仓</title>
+  <link rel="stylesheet" href="../assets/docs.css">
+  <script defer src="../assets/search-data.js"></script>
+  <script defer src="../assets/docs.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <header class="topbar">
+    <button class="icon-button menu-button" type="button" data-menu-toggle aria-label="打开文档导航" aria-expanded="false">☰</button>
+    <a class="brand" href="../index.html"><span class="brand-mark">⌁</span><span>项目面试资料库</span></a>
+    <div class="search-shell">
+      <label class="sr-only" for="global-search">搜索所有文档</label>
+      <input id="global-search" type="search" data-search-input placeholder="搜索仓库、技术或面试题…" autocomplete="off">
+      <span class="search-shortcut">Ctrl K</span>
+      <div class="search-results" data-search-results hidden></div>
+    </div>
+    <button class="icon-button" type="button" data-theme-toggle aria-label="切换深浅主题">◐</button>
+  </header>
+  <div class="drawer-backdrop" data-drawer-backdrop hidden></div>
+  <div class="docs-layout">
+    <nav class="sidebar" data-sidebar aria-label="全站文档导航">
+      <div class="sidebar-heading">文档导航</div>
+      <section class="nav-group">
+        <h2 class="nav-group-title">逐仓文档</h2>
+        <a class="nav-link active" href="../repositories.html">仓库独立分析</a>
+      </section>
+      <section class="nav-group">
+        <h2 class="nav-group-title">开始使用</h2>
+        <a class="nav-link" href="../index.html">总览与导航</a>
+      </section>
+      <section class="nav-group">
+        <h2 class="nav-group-title">来源分析</h2>
+        <a class="nav-link" href="../00-repository-inventory.html">全量仓库盘点</a>
+        <a class="nav-link" href="../30-cross-platform-rn-web.html">RN 与 Web</a>
+        <a class="nav-link" href="../31-tools-samples-and-assets.html">工具、样例与资产</a>
+      </section>
+      <p class="sidebar-note">离线资料 · 源码证据快照</p>
+    </nav>
+    <main class="article-shell" id="main-content">
+      <div class="breadcrumbs"><a href="../index.html">首页</a><span>/</span><a href="../repositories.html">仓库索引</a><span>/</span><span>vip-skills</span></div>
+      <article class="markdown-body">
+      <h1>VIP-Skills：团队 Agent 工作流仓</h1>
+      <p><strong>定位标签：</strong>团队知识资产 / 不是个人项目</p>
+      <nav class="toc" aria-label="本页目录">
+        <strong>本页目录</strong>
+        <ol>
+          <li><a href="#identity">定位与归属边界</a></li>
+          <li><a href="#checkout">检出与构建信息</a></li>
+          <li><a href="#structure">结构与核心入口</a></li>
+          <li><a href="#workflow">关键工作流</a></li>
+          <li><a href="#tradeoffs">亮点与取舍</a></li>
+          <li><a href="#risks">风险、测试与排查</a></li>
+          <li><a href="#pitch">面试讲法</a></li>
+          <li><a href="#questions">追问与回答</a></li>
+          <li><a href="#evidence">源码证据</a></li>
+        </ol>
+      </nav>
+      <section id="identity"><h2>定位与归属边界</h2><ul><li>把项目分析、加调试日志、App 图标提示、发版和 Xcode 构建流程编码为 Agent Skills。</li><li>这是团队知识资产，不能把全仓成果归为个人；本人负责的 skill、安装器或落地指标<strong>需本人确认</strong>。</li><li>当前有 5 个有效 SKILL.md；空目录不算已实现能力。</li></ul></section>
+      <section id="checkout"><h2>检出与构建信息</h2><ul><li>库存记录：分支 <code>master</code>，提交 <code>cae175f</code>（2026-03-17），Markdown/Shell 配置仓。</li><li>入口：<code>install-skills.sh</code> 扫描带 SKILL.md 的目录，交互选择 skill 和 Claude/Cursor/Kiro 目标，再建立全局符号链接。</li><li>无传统构建；未检出 skill lint、fixture、snapshot 或安装器测试。本轮未执行安装脚本，避免覆盖用户全局技能目录。</li></ul></section>
+      <section id="structure"><h2>结构与核心入口</h2><ul><li><code>SKILL_GUIDE.md</code>：技能创建规范。</li><li><code>analyze-project/SKILL.md</code>、<code>add-debugs/SKILL.md</code>：分析与日志工作流。</li><li><code>release-new-version/SKILL.md</code>、<code>xcode-build/SKILL.md</code>：发布与构建高风险流程。</li><li><code>app-icon-prompt/SKILL.md</code>：从产品、平台和品牌生成图标方案。</li></ul></section>
+      <section id="workflow"><h2>关键工作流</h2><ol><li>metadata 描述触发边界 → Agent 检查前置条件 → 生成计划/预览 → 用户确认危险动作 → 执行 → 验证。</li><li>analyze-project 先读现有文档，再扫描结构/入口/业务并生成索引。</li><li>release skill 检查 Git、识别项目、更新版本/文档，再分级处理 commit/tag/push/publish。</li><li>安装器扫描 skill，选择目标后建立符号链接，使多 Agent 复用同一事实源。</li></ol></section>
+      <section id="tradeoffs"><h2>亮点与取舍</h2><ul><li>把隐性经验变成可发现、可复用流程；metadata 能限制触发边界。</li><li>符号链接保持单一事实源，但跨平台和目标目录冲突处理更复杂。</li><li>文本技能迭代快，却会随 Agent 工具名/命令变化而漂移。</li></ul></section>
+      <section id="risks"><h2>风险、测试与排查</h2><ul><li>安装器会递归删除目标 skill 目录后建链接，缺备份、归属校验和冲突预览，是高风险覆盖操作。</li><li>release skill 涉及 commit/tag/push/publish，必须拆成读检查、用户确认、可逆本地变更、外部发布。</li><li>add-debugs 应禁止敏感字段日志化；analyze-project 默认排除凭据/二进制；xcode-build 输出应脱敏签名身份。</li><li>排查：触发是否正确 → 前置检查 → 写入范围 → 危险动作确认 → 命令兼容 → 最终产物/测试 → 外部发布状态。</li></ul></section>
+      <section id="skill-regression">
+        <h2>Skill 回归矩阵与安装回滚</h2>
+        <p><code>analyze-project</code> 可用 Android、Node、Python 三个小型 fixture 仓验收：已有文档时先读取，扫描时排除 <code>.git</code>、build、二进制与凭据，输出必须链接真实入口且不虚构业务。<code>add-debugs</code> 则准备同步函数、协程、网络异常和状态变更样例，断言日志位于入口/出口/失败边界，不改变返回值与异常语义；fixture 中放置 token、Cookie、手机号和签名信息，确保 denylist 会阻止其进入日志。</p>
+        <p><code>release-new-version</code> 需要完整的危险动作阶梯测试。脏工作树、未知项目类型、版本冲突和测试失败时应在本地阶段停止；版本文件与 README diff 由用户确认后才能 commit，tag、push、publish 必须再次独立确认。使用本地 bare remote 和假 registry 验证重复 tag、push 被拒、publish 超时与回滚说明。任何一次授权都不能默认覆盖后续外部动作。<code>xcode-build</code> 的 fixture 覆盖只有 project、同时存在 workspace、多个 scheme、无设备和签名失败，并确保输出不泄露证书路径或身份详情。</p>
+        <p>安装器应先枚举真正含 SKILL.md 的源目录和目标 Agent 根，生成“新建、链接已一致、目标冲突、非本工具管理”预览。对冲突目录默认停止；若用户确认替换，先移动到带时间戳的备份，再在同一文件系统创建临时链接并原子换入，失败就恢复。测试在临时目录执行，覆盖路径含空格、断链、无权限、重复运行和部分失败，绝不能操作真实全局技能目录。卸载也只删除由 manifest 记录的链接，不递归删除未知目录。</p>
+        <p>文本技能的兼容性不能靠人工通读。可以解析 frontmatter 检查 name/description，扫描已弃用工具名和危险命令，使用 snapshot 比较关键步骤，再在支持的 Agent 版本上运行 fixture。采用指标应区分触发正确率、任务成功率、需人工回滚率和节省时间；没有调用日志与样本时，只能说流程被编码，不能宣称团队效率提升。</p>
+      </section>
+      <section id="pitch">
+        <h2>面试讲法</h2>
+        <h3>30 秒版本</h3><blockquote><p>VIP-Skills 是团队 Agent 工作流仓，把分析、日志、发版和 Xcode 构建等经验编码为触发、检查、执行与验证步骤。亮点是可复用，风险是安装器覆盖目标目录且缺回归，高风险发布动作也需分级授权。个人贡献需本人确认。</p></blockquote>
+        <h3>2 分钟版本</h3><blockquote><p>这个仓的价值是把隐性工程经验做成 Agent 可发现的 workflow。SKILL_GUIDE 约束结构，五个 skill 覆盖分析、debug、图标、发版和 Xcode；安装器通过符号链接让多 IDE 共用。问题是文本和工具版本会漂移，安装器先删目标目录却没有备份和冲突预览，release 又可能一路做 tag/push/publish。重做会加 fixture、snapshot、dry-run、危险动作审批层级和安装回滚。没有本人 commit/评审与采用指标时，只讲团队设计。</p></blockquote>
+      </section>
+      <section id="questions"><h2>追问与回答</h2>
+    <details open>
+      <summary>问题1：怎么测试一个 Skill？</summary>
+      <p>用代表性小仓 fixture，断言触发、计划、写入范围、危险确认和验证；文本做结构规则/snapshot，外部动作 mock。</p>
+    </details>
+    <details>
+      <summary>问题2：安装器为什么高风险？</summary>
+      <p>递归删除目标目录可能覆盖用户内容；需要归属校验、diff 预览、备份与原子回滚。</p>
+    </details>
+    <details>
+      <summary>问题3：为什么发布动作要分级？</summary>
+      <p>本地版本修改可逆，push/publish 影响外部协作者；授权范围和失败恢复不同。</p>
+    </details>
+    <details>
+      <summary>问题4：如何防日志 skill 泄密？</summary>
+      <p>维护敏感字段 denylist/结构化脱敏，禁止 token、Cookie、个人数据和签名信息进入日志。</p>
+    </details>
+    <details>
+      <summary>问题5：怎样证明 skill 有价值？</summary>
+      <p>记录真实调用成功率、节省时间、人工回滚率和用户反馈，并注明统计期、样本和来源。</p>
+    </details></section>
+      <section id="evidence">
+        <h2>源码证据</h2>
+        
+        <ol><li><code>yyyyy-cdoe/VIP-Skills/SKILL_GUIDE.md</code></li><li><code>yyyyy-cdoe/VIP-Skills/install-skills.sh</code></li><li><code>yyyyy-cdoe/VIP-Skills/analyze-project/SKILL.md</code></li><li><code>yyyyy-cdoe/VIP-Skills/add-debugs/SKILL.md</code></li><li><code>yyyyy-cdoe/VIP-Skills/release-new-version/SKILL.md</code></li><li><code>yyyyy-cdoe/VIP-Skills/xcode-build/SKILL.md</code></li></ol>
+        <p>证据口径：路径来自当前工作区源码与权威库存；个人贡献仍需本人确认，未由路径本身推断。</p>
+      </section>
+      <p><a href="../repositories.html">返回仓库索引</a> · <a href="../index.html">返回文档首页</a></p>
+      </article>
+    </main>
+  </div>
+</body>
+</html>
