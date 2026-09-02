@@ -207,4 +207,54 @@
       searchInput?.blur();
     }
   });
+
+  const accordionRoot = document.querySelector("[data-interview-accordion]");
+  if (accordionRoot) {
+    const topicSections = [...accordionRoot.querySelectorAll("[data-topic]")];
+    const questions = [...accordionRoot.querySelectorAll("details")];
+    const localSearch = document.querySelector("[data-accordion-search]");
+    const status = document.querySelector("[data-accordion-status]");
+
+    function visibleQuestions() {
+      return questions.filter((question) => !question.hidden && !question.closest("[data-topic]")?.hidden);
+    }
+
+    function updateAccordionStatus() {
+      if (!status) return;
+      const visible = visibleQuestions();
+      const openCount = visible.filter((question) => question.open).length;
+      status.textContent = `当前显示 ${visible.length} 题，已展开 ${openCount} 题`;
+    }
+
+    function setVisibleQuestions(open) {
+      visibleQuestions().forEach((question) => { question.open = open; });
+      updateAccordionStatus();
+    }
+
+    document.querySelector("[data-accordion-expand]")?.addEventListener("click", () => setVisibleQuestions(true));
+    document.querySelector("[data-accordion-collapse]")?.addEventListener("click", () => setVisibleQuestions(false));
+
+    questions.forEach((question) => question.addEventListener("toggle", updateAccordionStatus));
+
+    localSearch?.addEventListener("input", () => {
+      const terms = localSearch.value.toLocaleLowerCase("zh-CN").trim().split(/\s+/).filter(Boolean);
+      for (const topic of topicSections) {
+        const topicQuestions = [...topic.querySelectorAll("details")];
+        let matches = 0;
+        for (const question of topicQuestions) {
+          const text = question.textContent.toLocaleLowerCase("zh-CN");
+          const matched = !terms.length || terms.every((term) => text.includes(term));
+          question.hidden = !matched;
+          if (matched) {
+            matches += 1;
+            if (terms.length) question.open = true;
+          }
+        }
+        topic.hidden = matches === 0;
+      }
+      updateAccordionStatus();
+    });
+
+    updateAccordionStatus();
+  }
 })();
