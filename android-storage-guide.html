@@ -188,7 +188,95 @@ MMKV：业务键值 → 编码 → 修改 mmap 映射页 → 操作系统回写�
 
           <p>MMKV 适合高频、小型、按 key 访问的数据，但仍不是 SQL 数据库。需要条件查询、排序、事务和关系约束时，mmap 不会自动替你解决数据建模。</p>
 
-          <h3>4.2 真实案例：Native 写、RN 读的盐言预加载</h3>
+          <h3>4.2 常用 API 速查</h3>
+          <p>Android 侧通常先在 <code>Application</code> 中初始化一次，再按隔离范围选择默认实例或命名实例。<code>encode()</code> 有多种类型重载并返回写入结果；<code>decodeXxx()</code> 在 key 不存在时返回调用方传入的默认值。</p>
+
+          <table>
+            <thead><tr><th>用途</th><th>常用 API</th><th>说明</th></tr></thead>
+            <tbody>
+              <tr><td>初始化</td><td><code>MMKV.initialize(context)</code></td><td>通常放在应用级初始化流程，只做一次</td></tr>
+              <tr><td>默认实例</td><td><code>MMKV.defaultMMKV()</code></td><td>适合不需要单独文件隔离的普通键值</td></tr>
+              <tr><td>命名实例</td><td><code>MMKV.mmkvWithID(id)</code></td><td>按业务 ID 使用独立存储文件，方便隔离和清理</td></tr>
+              <tr><td>多进程实例</td><td><code>MMKV.mmkvWithID(id, MMKV.MULTI_PROCESS_MODE)</code></td><td>仅确有跨进程访问时使用，会增加同步成本</td></tr>
+              <tr><td>写基础类型</td><td><code>encode(key, value)</code></td><td>支持 Boolean、Int、Long、Float、Double、String、ByteArray 等重载</td></tr>
+              <tr><td>读基础类型</td><td><code>decodeBool()</code>、<code>decodeInt()</code>、<code>decodeLong()</code>、<code>decodeString()</code>、<code>decodeBytes()</code></td><td>读取时显式传默认值，避免把“无值”误当成有效的 0 或 false</td></tr>
+              <tr><td>对象与集合</td><td><code>encode(key, parcelable)</code>、<code>decodeParcelable()</code>、<code>encode(key, stringSet)</code>、<code>decodeStringSet()</code></td><td>Parcelable 结构升级要考虑兼容；复杂或持续增长的数据不要硬塞进键值存储</td></tr>
+              <tr><td>判断与枚举</td><td><code>containsKey()</code>、<code>allKeys()</code>、<code>count()</code></td><td>检查 key、枚举 key 和获取键值数量；不要依赖全量枚举实现复杂查询</td></tr>
+              <tr><td>删除</td><td><code>removeValueForKey()</code>、<code>removeValuesForKeys()</code>、<code>clearAll()</code></td><td>分别删除一个、多个或当前实例的全部键值</td></tr>
+              <tr><td>空间与生命周期</td><td><code>actualSize()</code>、<code>totalSize()</code>、<code>trim()</code>、<code>clearMemoryCache()</code>、<code>close()</code></td><td>查看有效/分配空间、整理文件、释放内存缓存或关闭实例；不要在仍有调用方使用时关闭</td></tr>
+              <tr><td>刷盘</td><td><code>sync()</code>、<code>async()</code></td><td>主动同步或异步请求落盘；方法返回不等于存储介质在断电场景下绝对安全</td></tr>
+            </tbody>
+          </table>
+
+          <p class="evidence-list"><strong>版本快照：</strong>Android 模块声明 MMKV <code>2.0.2</code>，RN 工作区声明 <code>react-native-mmkv 3.2.0</code>。证据：<code>yyyyy-cdoe/VipCommon/version.gradle:335</code>、<code>yyyyy-cdoe/VipCommon/vip_common/build.gradle:102</code>、<code>pikachu/package.json:38</code>。升级版本时应以对应版本 API 为准。</p>
+
+          <div class="code-block">
+            <div class="code-toolbar"><span>Kotlin · 常用写法</span><button type="button" data-copy-code>复制</button></div>
+            <pre><code>// Application 中初始化一次
+MMKV.initialize(applicationContext)
+
+val settings = MMKV.mmkvWithID("feature_settings")
+
+// 写入：encode 根据 value 类型选择重载，返回 Boolean
+val success = settings.encode("dark_mode", true)
+settings.encode("launch_count", 3)
+settings.encode("last_open_time", System.currentTimeMillis())
+settings.encode("nickname", "Alice")
+
+// 读取：第二个参数是 key 不存在时的默认值
+val darkMode = settings.decodeBool("dark_mode", false)
+val launchCount = settings.decodeInt("launch_count", 0)
+val lastOpenTime = settings.decodeLong("last_open_time", 0L)
+val nickname = settings.decodeString("nickname", "")
+
+if (settings.containsKey("nickname")) {
+    settings.removeValueForKey("nickname")
+}</code></pre>
+          </div>
+
+          <blockquote>
+            <p><strong>初始化边界：</strong>工作区源码里有业务类直接调用 <code>MMKV.initialize()</code> 的写法，但更稳妥的工程组织是由应用启动框架统一初始化，业务层只获取实例和读写，避免把全局初始化散落在 Fragment 或 UseCase 中。</p>
+          </blockquote>
+
+          <h3>4.3 项目源码摘录：默认实例保存展示日期</h3>
+          <p><code>ShareBubbleUseCase</code> 使用默认 MMKV 保存“上次展示气泡的自然日”。写入和读取都直接使用 String API，适合这种单 key、小体量的频控状态。</p>
+
+          <div class="code-block">
+            <div class="code-toolbar"><span>Kotlin · ShareBubbleUseCase 源码摘录</span><button type="button" data-copy-code>复制</button></div>
+            <pre><code>companion object {
+    const val KEY = "manuscript_daily_share_bubble_date"
+}
+
+fun markBubbleShownToday() {
+    val mmkv = MMKV.defaultMMKV()
+    val today = getTodayDateString()
+    mmkv.encode(KEY, today)
+}
+
+fun isFirstTimeToday(): Boolean {
+    val mmkv = MMKV.defaultMMKV()
+    val lastShowDateStr = mmkv.decodeString(KEY, "")
+
+    if (lastShowDateStr.isNullOrEmpty()) {
+        return true
+    }
+
+    val todayDateStr = getTodayDateString()
+
+    if (lastShowDateStr == todayDateStr) {
+        return false
+    }
+
+    val lastShowDate = parseDateString(lastShowDateStr) ?: return true
+    val todayDate = parseDateString(todayDateStr) ?: return true
+    val daysDiff = calculateDaysDifference(lastShowDate, todayDate)
+    return daysDiff &gt;= interval
+}</code></pre>
+          </div>
+
+          <p class="evidence-list"><strong>源码：</strong><code>yyyyy-cdoe/VipManuscript/vip_manuscript/src/main/java/com/zhihu/android/vip/manuscript/usecase/ShareBubbleUseCase.kt:19-32, 46-75, 132-148</code></p>
+
+          <h3>4.4 项目源码摘录：Native 写、RN 读的盐言预加载</h3>
           <p>工作区里最有价值的 MMKV 证据不是 Gradle 出现依赖，而是一条完整跨端链路：</p>
 
           <ol>
@@ -198,36 +286,77 @@ MMKV：业务键值 → 编码 → 修改 mmap 映射页 → 操作系统回写�
           </ol>
 
           <div class="code-block">
-            <div class="code-toolbar"><span>Kotlin · Native 写入（简化）</span><button type="button" data-copy-code>复制</button></div>
+            <div class="code-toolbar"><span>Kotlin · PinDetailPreloadHelper 源码摘录</span><button type="button" data-copy-code>复制</button></div>
             <pre><code>private const val MMKV_ID = "com.zhvip.preload.pin"
-private const val KEY_PREFIX = "pin_"
+private const val CACHE_KEY_PREFIX = "pin_"
+private const val CACHE_EXPIRE_TIME = 30 * 60 * 1000L
 
-val cache = MMKV.mmkvWithID(MMKV_ID, MMKV.MULTI_PROCESS_MODE)
+private fun initMMKV() {
+    try {
+        MMKV.initialize(BaseApplication.get())
+        mmkv = MMKV.mmkvWithID(MMKV_ID, MMKV.MULTI_PROCESS_MODE)
+        KmLog.i(TAG, "MMKV initialized successfully")
+    } catch (e: Throwable) {
+        KmLog.e(TAG, "MMKV initialization failed", e)
+        mmkv = null
+    }
+}
 
-cache.encode("${KEY_PREFIX}${pinId}", gson.toJson(response))
-cache.encode("${KEY_PREFIX}${pinId}_timestamp", System.currentTimeMillis())</code></pre>
+// saveToCache() 中
+val cacheKey = getCacheKey(pinId)
+val timestampKey = getTimestampKey(pinId)
+val currentTime = System.currentTimeMillis()
+val jsonData = JsonUtils.toJsonString(data)
+mmkv?.encode(cacheKey, jsonData)
+mmkv?.encode(timestampKey, currentTime)
+
+// getCachedData() 中
+val jsonData = mmkv?.decodeString(cacheKey)
+
+// isDataValid() 中
+if (mmkv?.containsKey(cacheKey) != true || mmkv?.containsKey(timestampKey) != true) {
+    return false
+}
+val timestamp = mmkv?.decodeLong(timestampKey, 0L) ?: 0L
+
+// clearCache() 中
+mmkv?.removeValueForKey(cacheKey)
+mmkv?.removeValueForKey(timestampKey)
+
+// clearAllCache() 中
+mmkv?.clearAll()</code></pre>
           </div>
 
           <div class="code-block">
-            <div class="code-toolbar"><span>TypeScript · RN 读取（简化）</span><button type="button" data-copy-code>复制</button></div>
-            <pre><code>const store = useMMKVStore({ id: 'com.zhvip.preload.pin' })
-const cached = store.getString(`pin_${pinId}`)
-const preloadData = cached ? JSON.parse(cached) : undefined</code></pre>
+            <div class="code-toolbar"><span>TypeScript · PinIndex 源码摘录</span><button type="button" data-copy-code>复制</button></div>
+            <pre><code>const store = useMMKVStore({id: 'com.zhvip.preload.pin'})
+
+const getStore = useCallback((): PageDataType | null =&gt; {
+  const data = store.getString(`pin_${pinId}`)
+  if (data) {
+    return camelizeKeys(safeJSONParse(data) || {}) as PageDataType
+  }
+  return {}
+}, [store, pinId])
+
+const [pageData, setPageData] = useState&lt;PageDataType&gt;(getStore() || {})</code></pre>
           </div>
 
-          <p class="evidence-list"><strong>Native 证据：</strong><code>yyyyy-cdoe/VipCommon/vip_common/src/main/java/com/zhihu/android/vip_common/preload/PinDetailPreloadHelper.kt:21-49, 58-118, 195-229, 270-295</code></p>
+          <p class="evidence-list"><strong>Native 证据：</strong><code>yyyyy-cdoe/VipCommon/vip_common/src/main/java/com/zhihu/android/vip_common/preload/PinDetailPreloadHelper.kt:21-49, 58-118, 137-164, 195-229, 270-295</code></p>
           <p class="evidence-list"><strong>RN 证据：</strong><code>pikachu/pages/VipPin/src/PinIndex.tsx:56-69</code></p>
           <p class="evidence-list"><strong>调用入口：</strong><code>yyyyy-cdoe/VipCommon/vip_common/src/main/java/com/zhihu/android/vip_common/preload/Preloader.kt:148-157</code></p>
 
           <blockquote>
-            <p><strong>证据强度：</strong><code>VipCommon/build.gradle</code> 中出现 <code>com.tencent:mmkv</code> 只能证明“模块可以使用 MMKV”；上面的 <code>mmkvWithID/encode/getString</code> 才能证明真实业务读写。面试时要区分依赖声明和调用证据。</p>
+            <p><strong>证据强度：</strong><code>VipCommon/vip_common/build.gradle</code> 中出现 <code>com.tencent:mmkv</code> 只能证明“模块可以使用 MMKV”；上面的 <code>mmkvWithID/encode/getString</code> 才能证明真实业务读写。面试时要区分依赖声明和调用证据。</p>
           </blockquote>
 
-          <h3>4.3 另一个案例：RN 展示频控</h3>
+          <p>上面的代码按原文件 API 名称摘录并省略了日志、异常处理和对象反序列化。当前项目真正使用到了 <code>initialize</code>、<code>mmkvWithID</code>、<code>encode</code>、<code>decodeString</code>、<code>decodeLong</code>、<code>containsKey</code>、<code>removeValueForKey</code> 和 <code>clearAll</code>；速查表中的其余方法是 MMKV 提供的常用能力，不代表该业务链路全部调用过。</p>
+
+          <h3>4.5 另一个案例：RN 展示频控</h3>
           <p><code>VIPBookshelf/Entry.tsx</code> 用 MMKV 保存礼包上次展示时间，超过 24 小时再更新并打开礼包；<code>useAtmosphereCardShow.ts</code> 用独立 ID 保存当天时间戳与 PV。这说明 MMKV 很适合时间戳和频控，但不需要把这些简单状态升级成 Room。</p>
           <p class="evidence-list"><code>pikachu/pages/VIPBookshelf/src/Entry.tsx:53, 105-122</code><br><code>pikachu/packages/comment-components/src/hooks/useAtmosphereCardShow.ts:30-46, 59-89</code></p>
 
-          <h3>4.4 MMKV 的工程代价</h3>
+          <h3>4.6 MMKV 的工程代价</h3>
           <ul>
             <li>引入 Native 库和 ABI 产物，需要关注包体、初始化、崩溃与升级兼容。</li>
             <li><code>MULTI_PROCESS_MODE</code> 是明确选择，不代表所有 MMKV 调用天然跨进程。</li>

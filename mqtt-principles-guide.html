@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MQTT 原理详解：从发布订阅到可靠投递</title>
+<style>
+:root{color-scheme:light;--ink:#192b3b;--muted:#526575;--line:#dbe4e9;--accent:#006e68;--soft:#eff8f6;--paper:#fff;--bg:#f4f6f8}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:22px}body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;line-height:1.85;font-size:16px}a{color:var(--accent);text-underline-offset:3px}header{background:#153f47;color:white;padding:56px max(24px,calc((100vw - 1160px)/2)) 44px}header .eyebrow{color:#acddd4;letter-spacing:.12em;font-size:13px}h1{font-size:clamp(28px,4vw,43px);line-height:1.35;margin:12px 0 18px}header p{max-width:850px;color:#e1eeec;margin:0}main{max-width:1210px;margin:auto;padding:30px 24px 64px;display:grid;grid-template-columns:225px minmax(0,1fr);gap:30px}nav{position:sticky;top:20px;align-self:start;font-size:14px;max-height:calc(100vh - 40px);overflow:auto}nav strong{display:block;margin-bottom:10px}nav a{display:block;text-decoration:none;padding:5px 0;color:var(--muted)}nav a:hover{text-decoration:underline;color:var(--accent)}article{min-width:0;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px 36px 36px}section{padding:23px 0;border-bottom:1px solid var(--line)}section:last-child{border-bottom:0}h2{font-size:24px;line-height:1.45;margin:0 0 18px}h3{font-size:18px;margin:25px 0 10px}p{margin:12px 0}ul,ol{padding-left:24px}li{margin:7px 0}strong{font-weight:650}code{font-family:Consolas,"Cascadia Code",monospace;font-size:.92em;background:#eef2f4;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{padding:18px;background:#142b36;color:#e6f4f1;border-radius:8px;overflow-x:auto;font-size:14px;line-height:1.75;tab-size:2}pre code{padding:0;background:transparent;color:inherit;overflow-wrap:normal}blockquote,.note{margin:18px 0;padding:14px 18px;background:var(--soft);border-left:4px solid var(--accent);border-radius:0 6px 6px 0}.caution{background:#fff7e9;border-color:#b87610}.table-wrap{overflow-x:auto;margin:16px 0}table{border-collapse:collapse;width:100%;font-size:14px}th,td{padding:12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}th{background:#edf4f5;font-weight:650}td:first-child{font-weight:550}.flow{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;align-items:center;gap:10px;padding:22px 12px;background:var(--soft);border-radius:8px}.node{text-align:center;padding:14px 8px;background:white;border:1px solid #c7ded8;border-radius:8px}.node small{display:block;color:var(--muted)}.arrow{color:var(--accent);font-size:23px}.caption,.meta{font-size:14px;color:var(--muted)}.tags{margin-top:20px;display:flex;flex-wrap:wrap;gap:8px}.tags span{border:1px solid #67918f;border-radius:20px;padding:2px 11px;font-size:13px;color:#e1eeec}footer{font-size:14px;color:var(--muted);padding-top:24px}a:focus-visible{outline:3px solid #e5ab32;outline-offset:3px}@media(max-width:850px){main{display:block;padding:20px 16px 40px}nav{position:static;max-height:none;margin-bottom:20px;columns:2}nav strong{column-span:all}nav a{break-inside:avoid}article{padding:6px 22px 25px}}@media(max-width:480px){header{padding:34px 20px}body{font-size:16px}main{padding:16px 10px}article{padding:5px 16px 22px}h2{font-size:22px}.flow{grid-template-columns:1fr;gap:4px}.arrow{text-align:center;transform:rotate(90deg)}nav{font-size:13px}th,td{padding:9px;min-width:105px}}@media print{body{background:white;font-size:11pt}header{background:white;color:#152b35;padding:0 0 18px}header p,header .eyebrow{color:#526575}.tags,nav{display:none}main{display:block;padding:0;max-width:none}article{border:0;padding:0}section{break-inside:auto}h2,h3{break-after:avoid}pre,.note,.flow,table{break-inside:avoid}a{color:inherit}pre{white-space:pre-wrap;background:#f0f4f5;color:#142b36}}
+</style>
+</head>
+<body>
+<header>
+<div class="eyebrow">PROTOCOL NOTES · MQTT 3.1.1 / 5.0</div>
+<h1>MQTT 原理详解</h1>
+<p>从一条温度消息如何送到手机出发，理解发布订阅、长连接、QoS、断线恢复和设备在线状态，再看生产环境中需要补齐哪些业务保证。</p>
+<div class="tags"><span>发布 / 订阅</span><span>报文与状态机</span><span>可靠性边界</span><span>工程实践</span></div>
+</header>
+<main>
+<nav aria-label="文档目录"><a href="index.html">← 返回资料库主页</a><strong>阅读目录</strong>
+<a href="#overview">01 · MQTT 解决什么问题</a><a href="#architecture">02 · 发布订阅与 Broker</a><a href="#connection">03 · 从建连到收到消息</a><a href="#topic">04 · Topic 与通配符</a><a href="#wire">05 · 字节、报文与拆包</a><a href="#qos">06 · QoS 0 / 1 / 2</a><a href="#hops">07 · 两段投递与业务确认</a><a href="#session">08 · 会话与断线重连</a><a href="#retained">09 · 保留消息</a><a href="#heartbeat">10 · 心跳与遗嘱</a><a href="#ordering">11 · 重复、顺序与幂等</a><a href="#v5">12 · MQTT 5 的改进</a><a href="#broker">13 · Broker 内部原理</a><a href="#practice">14 · 完整设备控制示例</a><a href="#comparison">15 · 适用场景与选型</a><a href="#recap">16 · 易错点与复述</a><a href="#references">17 · 官方规范索引</a>
+</nav>
+<article>
+<section id="overview">
+<h2>01 · MQTT 解决什么问题？</h2>
+<blockquote><strong>MQTT 是一种轻量的、基于发布／订阅模型的应用层消息协议。</strong>客户端通常通过长连接接入消息服务器 Broker：发送者把消息发布到某个主题，Broker 把消息转发给订阅了匹配主题的客户端。</blockquote>
+<p>例如，温度传感器每 5 秒产生一个读数。手机 App、告警服务、数据入库服务都想收到它。如果传感器直接连接每个消费者，就要维护地址、连接、失败重试和消费者变更。换成 MQTT，传感器只需告诉 Broker：“我向 <code>home/room1/temperature</code> 发布了一条 <code>26.3</code>。”谁要用这条数据，由谁订阅。</p>
+<p>这种模式降低了发送者和接收者的耦合：设备不必知道有几个消费者，也不必知道它们在哪里。接收者也不需要不断问设备“有没有新数据”。有新消息时，Broker 可以通过已有连接主动发送。</p>
+<p>“轻量”主要指协议头相对紧凑、通信模型适合持续的小消息；它不意味着所有流量只有几个字节，也不意味着任意弱网条件下都不会丢消息。实际开销还包括主题、属性、Payload、TCP/IP、TLS，以及心跳和确认报文。</p>
+<p class="note">本篇以常见的 MQTT 3.1.1 和 MQTT 5.0 为范围。普通 MQTT 运行在有序、无损、双向的传输连接上，最常见的是 TCP/TLS。MQTT-SN 是另一个协议，不能把它的 UDP 用法直接套到普通 MQTT 上。</p>
+</section>
+<section id="architecture">
+<h2>02 · 发布订阅：谁负责什么？</h2>
+<div class="flow" role="img" aria-label="温度传感器将消息发布给 Broker，Broker 按订阅关系分别发送给手机、告警和入库服务">
+<div class="node">温度传感器<small>Publisher · 发布者</small></div><div class="arrow">→</div><div class="node">Broker<small>鉴权、匹配订阅、转发</small></div><div class="arrow">→</div><div class="node">手机 / 告警 / 入库<small>Subscribers · 订阅者</small></div>
+</div>
+<p>这里有四个核心概念：</p>
+<ul><li><strong>Client：</strong>连接 Broker 的程序，可以是设备、手机 App 或服务端进程。</li><li><strong>Broker：</strong>管理连接和订阅，接收发布消息，按规则转发，并管理相应的会话与投递状态。</li><li><strong>Topic：</strong>消息的主题名称，比如 <code>home/room1/temperature</code>。</li><li><strong>Payload：</strong>消息正文。可以是 JSON、文本、Protobuf 或任意二进制数据；MQTT 通常不替应用解释业务内容。</li></ul>
+<p>Publisher 和 Subscriber 是角色，不是两种互斥的客户端。一盏智能灯既可以订阅控制命令，也可以发布自己的状态。同一个客户端可以同时发布和订阅多个主题。</p>
+<h3>普通订阅默认是“每个匹配者都收到”</h3>
+<p>如果手机、告警服务和入库服务都订阅同一主题，Broker 会为它们分别安排投递。不是随机挑一个接收，也不是一方收到后另一方就拿不到。需要“多个工作进程共同分担一组消息”时，可以使用共享订阅，后文会说明。</p>
+<p>Topic 更像路由地址，不能直接等同于数据库表或持久化队列。创建主题通常无需单独操作，向一个合法主题发布即可；历史记录、消息重放和任意时间点查询也不是 Topic 自动提供的能力。</p>
+</section>
+<section id="connection">
+<h2>03 · 一条消息从建连到被接收的全过程</h2>
+<pre><code>传感器 A                  Broker                    手机 B
+   │                        │                         │
+   │── TCP / TLS 建连 ──────▶│◀──── TCP / TLS 建连 ────│
+   │── CONNECT ────────────▶│◀──── CONNECT ───────────│
+   │◀─ CONNACK ─────────────│───── CONNACK ──────────▶│
+   │                        │◀──── SUBSCRIBE ────────│
+   │                        │      home/room1/temp    │
+   │                        │───── SUBACK ──────────▶│
+   │── PUBLISH ────────────▶│                         │
+   │   home/room1/temp      │───── PUBLISH ──────────▶│
+   │   {"value":26.3}       │                         │
+   │                        │                    执行业务回调
+   │                        │                         │</code></pre>
+<p class="caption">这是教学上的正常流程，省略了 QoS 确认和心跳。协议允许部分符合订阅的 PUBLISH 在 SUBACK 之前到达，应用不应把图中的简化顺序理解为所有报文的强制顺序。</p>
+<ol><li><strong>建立传输连接。</strong>通常先建立 TCP，再进行可选的 TLS 握手。常见监听端口是 1883（明文）和 8883（TLS），具体由服务配置决定。</li><li><strong>发送 CONNECT。</strong>客户端提交协议版本、Client ID、Keep Alive、会话参数，以及可选的认证信息、遗嘱等。</li><li><strong>收到 CONNACK。</strong>Broker 返回连接结果。TCP 连通不代表 MQTT 登录成功，MQTT 登录成功也不代表拥有所有 Topic 的权限。</li><li><strong>订阅并检查结果。</strong>订阅者发送 SUBSCRIBE，声明 Topic Filter 和请求的最大 QoS；Broker 用 SUBACK 返回授予的 QoS 或失败原因。</li><li><strong>发布。</strong>发送者发送 PUBLISH，携带 Topic、Payload、QoS 等。Broker 进行权限检查、主题匹配，并为符合条件的订阅者安排下行消息。</li><li><strong>接收与业务处理。</strong>客户端库解码 PUBLISH，交给应用回调。MQTT 的确认机制和业务是否真正处理完毕，需要分别理解。</li></ol>
+<h3>为什么适合服务端主动推送？</h3>
+<p>TCP 是双向的。连接由设备主动建立之后，Broker 可以使用同一条连接向设备发送数据，不需要重新从公网连接设备的私有 IP。这适合位于 NAT 后的设备。浏览器通常无法直接使用原始 TCP MQTT，常用 MQTT over WebSocket；WebSocket 承载的仍然是 MQTT 报文，不是换成随意约定的 JSON 协议。</p>
+</section>
+<section id="topic">
+<h2>04 · Topic 如何匹配订阅？</h2>
+<p>发布消息使用<strong>具体的 Topic Name</strong>，订阅使用<strong>Topic Filter</strong>。二者都区分大小写，斜杠 <code>/</code> 分隔层级，但 Topic 不是真实的文件路径。</p>
+<div class="table-wrap"><table><thead><tr><th>订阅过滤器</th><th>可以匹配</th><th>不能匹配 / 说明</th></tr></thead><tbody>
+<tr><td><code>home/room1/temp</code></td><td>相同主题</td><td><code>home/room2/temp</code></td></tr>
+<tr><td><code>home/+/temp</code></td><td><code>home/room1/temp</code><br><code>home/room2/temp</code></td><td><code>+</code> 匹配恰好一层，不能匹配 <code>home/a/b/temp</code></td></tr>
+<tr><td><code>home/#</code></td><td><code>home</code><br><code>home/room1/temp</code></td><td><code>#</code> 匹配零层或多层，必须单独占据最后一层</td></tr>
+<tr><td><code>#</code></td><td>普通主题</td><td>不会匹配以 <code>$</code> 开头的主题；如需系统主题，要显式订阅 <code>$SYS/#</code></td></tr>
+</tbody></table></div>
+<ul><li>不能向 <code>home/+/temp</code> 发布普通业务消息；通配符用于订阅。</li><li><code>home/Temp</code> 与 <code>home/temp</code> 是不同主题，前后的斜杠也有区别。</li><li>空层级是有意义的：<code>home//temp</code> 可以被 <code>home/+/temp</code> 匹配。工程上最好统一命名，减少歧义。</li><li>主题前缀可以辅助权限管理，例如只允许设备 42 发布 <code>devices/42/state</code>，不能靠客户端自己“遵守约定”实现隔离。</li></ul>
+<p>推荐让 Topic 表达路由信息，让 Payload 表达业务数据。例如主题使用 <code>tenant/t1/devices/42/telemetry</code>，温度、单位、采集时间放在 Payload 中。不要把频繁变化的温度值写进主题。</p>
+</section>
+<section id="wire">
+<h2>05 · 底层发送的是怎样的字节？</h2>
+<p>MQTT 使用二进制控制报文，其通用结构是：</p>
+<pre><code>┌──────────────────────────┐
+│ 固定报头 Fixed Header    │  所有控制报文都有
+│ · 类型 + 标志：1 字节      │
+│ · Remaining Length：1–4 字节│
+├──────────────────────────┤
+│ 可变报头 Variable Header │  依报文类型而定
+├──────────────────────────┤
+│ 载荷 Payload             │  依报文类型而定
+└──────────────────────────┘</code></pre>
+<p>第一个字节的高 4 位标识报文类型；低 4 位是相关标志。对 PUBLISH 来说，低位包含 DUP、QoS 和 RETAIN。Remaining Length 使用变长编码，表示后面的可变报头与载荷长度，不包含固定报头自身。</p>
+<p><strong>所以“MQTT 报头最小 2 字节”不等于“一条业务消息只有 2 字节”。</strong>以 MQTT 3.1.1 中向主题 <code>a</code> 发布正文 <code>1</code> 的 QoS 0 消息为例：</p>
+<pre><code>30 04 00 01 61 31
+│  │  └──┘ │  └─ Payload：ASCII 字符 "1"
+│  │    │  └──── Topic：ASCII 字符 "a"
+│  │    └─────── Topic 的 UTF-8 字节长度 = 1
+│  └──────────── Remaining Length = 4
+└─────────────── PUBLISH，QoS 0，DUP=0，RETAIN=0
+
+MQTT 报文本身共 6 字节，尚未计算 TCP / IP / TLS 开销。</code></pre>
+<p>在 MQTT 5 中，PUBLISH 还包含属性长度等字段，不能原样照搬上面的 3.1.1 字节示例。QoS 1/2 的 PUBLISH 还包含一个 2 字节 Packet Identifier，用于关联该段投递的确认状态。</p>
+<h3>TCP 没有“消息边界”，MQTT 自己负责拆包</h3>
+<p>一次 socket 读取可能只读到半个 MQTT 报文，也可能读到连续的多个报文。解码器先解析固定报头和 Remaining Length，再等到完整数据后解析内容，剩下的字节继续解析。这就是处理所谓 TCP“粘包／半包”的核心：按应用协议长度字段重组，而不是假设一次读取就是一条消息。</p>
+<p>Remaining Length 的协议上限是 268,435,455 字节，但 Broker 和客户端通常会设置小得多的消息限制。协议上限并不表示 MQTT 适合直接传输几百 MB 的文件。</p>
+</section>
+<section id="qos">
+<h2>06 · QoS 的原理：三种投递状态机</h2>
+<p>QoS 是 Quality of Service，描述 MQTT 消息的投递级别。下面的“发送端”和“接收端”可以是“设备 → Broker”，也可以是“Broker → 订阅者”。先理解一段连接上的交付，再理解完整链路。</p>
+<div class="table-wrap"><table><thead><tr><th>QoS</th><th>协议语义</th><th>正常交互</th><th>典型取舍</th></tr></thead><tbody>
+<tr><td>0</td><td>至多一次</td><td>PUBLISH</td><td>开销低，失败时可能丢失</td></tr>
+<tr><td>1</td><td>至少一次</td><td>PUBLISH → PUBACK</td><td>保留待确认状态，可能重复</td></tr>
+<tr><td>2</td><td>恰好一次的协议交付</td><td>PUBLISH → PUBREC → PUBREL → PUBCOMP</td><td>更多状态和交互；保证有明确范围</td></tr>
+</tbody></table></div>
+<h3>QoS 0：发送后不等待 MQTT 确认</h3>
+<pre><code>发送端 ─── PUBLISH ───▶ 接收端</code></pre>
+<p>MQTT 不为这条消息建立 QoS 确认交换，也不会按照 QoS 1/2 那样恢复未完成投递。如果连接断掉、进程退出或者发送失败，消息可能丢失。TCP 在连接存续期间仍会做自己的重传，所以 QoS 0 不是“改用不可靠的 UDP”，而是“没有 MQTT 层的确认恢复机制”。</p>
+<p>适合高频、允许少量缺失、下一条能覆盖上一条的采样数据。例如每秒上报一次温度，偶尔缺一个读数可能可以接受。如果应用自己重新发布同一条业务数据，QoS 0 也不会替它消除业务重复。</p>
+<h3>QoS 1：确认能解决丢失，却会带来重复</h3>
+<pre><code>发送端                         接收端
+   │── PUBLISH，Packet ID=7 ─────▶│
+   │                        接收消息
+   │◀──────── PUBACK，ID=7 ──────│
+   │                        
+ 收到确认后，释放 ID=7 的待确认状态</code></pre>
+<p>发送端在消息未确认时保留状态，直到收到相应的成功确认，才将该段投递视为完成。想象接收端已经收到并处理消息，但 PUBACK 没有成功返回，连接就断了：恢复会话后，发送端只能再次发送未确认的 PUBLISH。</p>
+<p>发送端无法从“没收到确认”推断“对方没收到消息”，于是出现了“第一次已收到，恢复后又收到一次”的情况。这是至少一次语义允许重复的根源。</p>
+<div class="note caution"><strong>不要把它简化成“每隔几秒必定重发”。</strong>规范要求在相应会话恢复时重发未确认的 QoS 1/2 PUBLISH 或 PUBREL。MQTT 5 明确禁止在其他时候重发这些消息；3.1.1 下库的连接内重试策略可能不同。检查使用的协议版本和客户端行为。</div>
+<h3>QoS 2：通过两阶段确认和去重状态避免重复交付</h3>
+<pre><code>发送端                           接收端
+   │── PUBLISH，Packet ID=9 ───────▶│
+   │                          记录本次接收状态
+   │◀───────── PUBREC，ID=9 ───────│
+   │── PUBREL，ID=9 ──────────────▶│
+   │                          按状态完成且仅交付一次
+   │◀──────── PUBCOMP，ID=9 ───────│
+   │                          
+     本次 QoS 2 交换结束，可以回收状态</code></pre>
+<p>它的关键不只是“多了两个 ACK”，而是双方维护了<strong>以 Packet Identifier 关联的状态机</strong>。收到重复的 PUBLISH 时，接收端识别该消息已经处于处理中，并再次响应 PUBREC，不重复向后交付。发送端收到 PUBREC 后，重传阶段转为 PUBREL；重复 PUBREL 也不会导致重复业务交付。</p>
+<p>具体实现可以在不同阶段把消息交给后续处理，规范允许不同的实现方式；必须守住的是同一次 QoS 2 交换不能重复交付。该状态机不是把数据库事务、设备动作和多段消息链路一起纳入原子提交的分布式事务协议。</p>
+<p class="note"><strong>QoS 2 的“恰好一次”依赖相关会话与协议状态正确保留，且传输有机会完成。</strong>它不承诺清空会话、状态丢失、消息过期或业务崩溃后仍然无条件成功，更不等于整个业务流程全局只执行一次。</p>
+</section>
+<section id="hops">
+<h2>07 · 发布到 Broker 和送到订阅者是两回事</h2>
+<pre><code>设备 A                 Broker                 服务 B
+   │── QoS 1 PUBLISH ───▶│                        │
+   │◀──── PUBACK ────────│                        │
+   │                     │── QoS 1 PUBLISH ───────▶│
+   │                     │◀──── PUBACK ────────────│
+   │                     │                        │</code></pre>
+<p><strong>A 收到 Broker 的 PUBACK，只能说明 A → Broker 这一段的 QoS 1 交换得到了确认。</strong>它不是“所有订阅者都已收到”的证明，更不是“服务 B 已经写库成功”的证明。MQTT 5 还需要检查 ACK 的原因码，不能只判断收到了某种报文。</p>
+<p>Broker → B 有自己的 QoS、Packet Identifier、待确认状态和失败恢复。两段的报文标识符独立，也无需数值相同。</p>
+<h3>订阅 QoS 不会把发布 QoS 自动升级</h3>
+<p>订阅时请求的是最大接收 QoS，Broker 可能授予更低级别。对于某条匹配订阅，出站 QoS 不得高于原始发布 QoS，也不得高于实际授予的订阅 QoS；通常取二者较小值，服务端还可能受策略限制进一步降低。</p>
+<div class="table-wrap"><table><thead><tr><th>发布 QoS</th><th>已授予订阅 QoS</th><th>常见下行 QoS</th></tr></thead><tbody><tr><td>0</td><td>2</td><td>0，订阅 QoS 2 不能补救上行丢失</td></tr><tr><td>2</td><td>1</td><td>1，下行允许重复</td></tr><tr><td>1</td><td>0</td><td>0，下行没有 MQTT 确认</td></tr></tbody></table></div>
+<p>有多个重叠订阅、共享订阅时，还涉及相应匹配和分发规则，不能仅靠一条简单公式推断收到几份消息。</p>
+<h3>如果要知道“门锁确实打开了”</h3>
+<p>需要应用层结果消息。例如命令携带 <code>commandId</code>，设备执行完成后向结果主题发布 <code>{"commandId":"c123","status":"success"}</code>。业务端把命令和结果关联，并处理超时、失败、重复和执行状态未知。MQTT ACK 与业务 ACK 分工不同。</p>
+</section>
+<section id="session">
+<h2>08 · TCP 连接断了，会话为什么还能保留？</h2>
+<p><strong>连接</strong>是当前的网络通道；<strong>会话</strong>是与 Client ID 关联的协议状态。连接可以断，会话可以按配置保留。Client ID 就像恢复会话用的身份索引，但它本身不是认证凭证。</p>
+<p>会话状态包括订阅、未完成的 QoS 1/2 交付、QoS 2 接收状态，以及需要为该会话保存的待投递消息等。客户端也要正确维护它那一侧的未完成状态；仅让 Broker 开启持久化，并不能自动恢复客户端已经丢失的数据。</p>
+<h3>MQTT 3.1.1：Clean Session</h3>
+<ul><li><code>Clean Session = 1</code>：开始新会话，丢弃同一 Client ID 的旧会话；连接结束后不保留这次会话。</li><li><code>Clean Session = 0</code>：尝试恢复相同 Client ID 的已有会话；没有则创建可跨连接保留的会话。客户端应检查 CONNACK 的 <code>Session Present</code>。</li></ul>
+<h3>MQTT 5：把“是否清旧状态”和“保留多久”拆开</h3>
+<ul><li><strong>Clean Start：</strong>本次连接是否清除已有会话并重新开始。</li><li><strong>Session Expiry Interval：</strong>连接结束后会话还能保留多久，未指定默认是 0，即连接结束就删除。</li></ul>
+<p>因此 <code>Clean Start = false</code> 本身不保证下次还能恢复；还必须考虑会话过期时间。<code>Clean Start = true</code> 配合非零 Session Expiry 也完全合理：这次重新开始，但为下次保留新会话。</p>
+<h3>离线消息到达，需要同时满足哪些条件？</h3>
+<ol><li>离线前已经建立了匹配订阅，并且它所属的会话仍存在。</li><li>消息符合 Broker 对该会话的离线保存规则；QoS 1/2 是关键场景，不应依赖 QoS 0 离线排队。</li><li>消息和会话都没有过期，没有触及队列上限等部署限制。</li><li>客户端用相同 Client ID 和正确参数恢复会话，并继续完成投递。</li></ol>
+<p>设备此前从未订阅过，后来才新建订阅，Broker 不会自动补上所有历史消息。需要历史查询时，要建立数据库、时序库或日志存储。保留消息只解决“最近状态”，也不是完整历史。</p>
+<h3>重连的实际策略</h3>
+<p>使用稳定且唯一的 Client ID、指数退避加随机抖动、正确判断 Session Present，并在没有恢复会话时重建订阅。对尚未确认的发送消息，交给支持相应持久化能力的客户端库管理。大量设备不宜同时以固定间隔重试，以免服务恢复时形成重连风暴。</p>
+<p class="note caution">两个同时在线的设备如果使用相同 Client ID，通常会触发连接接管，旧连接被断开，表现为相互“踢下线”。账号可以按安全策略设计共享范围，但 Client ID 必须按客户端实例正确规划。</p>
+</section>
+<section id="retained">
+<h2>09 · Retained Message：后来者怎样马上知道状态？</h2>
+<p>发布 PUBLISH 时设置 <code>RETAIN = 1</code>，表示请求 Broker 为这个具体 Topic 保存一条保留消息。新订阅与该主题匹配时，Broker 按版本及订阅选项发送保存的消息，让订阅者立即获得最近发布的状态。</p>
+<pre><code>09:00 灯发布 devices/42/state = ON，retain=true
+09:05 手机首次订阅 devices/42/state
+      → 可以立即收到保留的 ON，不必等待灯再次上报
+09:10 灯发布 devices/42/state = OFF，retain=true
+      → 更新该主题的保留值，并向当前匹配订阅者正常投递</code></pre>
+<p>对每个 Topic，保留的是一条最近设置的保留消息，不是每个订阅者一份，也不是按时间排序的历史列表。它独立于某个客户端的会话，不会因为发布者用 Clean Session 连接就自动被清掉。</p>
+<ul><li><strong>更新：</strong>再次向相同 Topic 发布 <code>retain=true</code> 的非空消息，替换原来的保留内容。</li><li><strong>删除：</strong>向相同 Topic 发布 <code>retain=true</code> 且 Payload 为零字节的消息。字符串 <code>""</code> 的 JSON 编码或文本 <code>null</code> 都不等同于零字节。</li><li><strong>普通发布：</strong><code>retain=false</code> 不会替换已有保留值，因此可能导致新订阅者收到旧的保留状态。</li><li><strong>保存边界：</strong>QoS 0 保留消息在规范中允许被服务端丢弃；重启后的保留能力还要看持久化配置。MQTT 5 的消息过期也会影响保留值。</li></ul>
+<div class="table-wrap"><table><thead><tr><th>机制</th><th>解决的问题</th><th>保存对象</th></tr></thead><tbody><tr><td>保留消息</td><td>新订阅者马上获得最近状态</td><td>每个主题的一条保留值</td></tr><tr><td>会话中的离线队列</td><td>已有订阅者离线期间暂存待投递消息</td><td>某个会话的待投递记录</td></tr><tr><td>历史数据库</td><td>查询过去全部或一段时间内的数据</td><td>应用自行保存的历史</td></tr></tbody></table></div>
+<p class="note caution">适合保留“当前温度、当前开关状态、期望配置”；谨慎保留“开锁、付款、执行一次升级”等瞬时命令。设备重新订阅时可能再次收到旧命令。状态数据也要带采集时间，最近发布不必然代表现实中仍有效。</p>
+</section>
+<section id="heartbeat">
+<h2>10 · Keep Alive 与遗嘱：怎么知道设备掉线？</h2>
+<h3>Keep Alive 检测连接活性</h3>
+<p>客户端通过 CONNECT 声明 Keep Alive，单位为秒。当没有其他 MQTT 控制报文可发送时，客户端要在这个时间范围内发送 PINGREQ，Broker 以 PINGRESP 响应。如果一直在发送正常 MQTT 控制报文，就没有必要再额外以固定频率发送 PINGREQ。</p>
+<pre><code>客户端 ───── PINGREQ ────▶ Broker
+客户端 ◀──── PINGRESP ──── Broker</code></pre>
+<p>对于非零 Keep Alive，服务端如果在其 1.5 倍时间内没有收到客户端的 MQTT 控制报文，应断开连接。例如 Keep Alive 为 60 秒，约 90 秒未收到控制报文就会触发相应超时处理；实际发现时间还受最后一次报文、网络错误和实现调度影响。MQTT 5 的 Server Keep Alive 可以覆盖客户端提出的值。值为 0 表示关闭这项协议级超时要求，不代表网络永远不会断。</p>
+<p>它不是业务健康检查：客户端的网络线程还能回心跳，不代表其数据库、传感器或业务线程正常。应用如需“设备真正健康”，应另行上报采样时间、错误码和业务状态。</p>
+<h3>Last Will：客户端失联后，由 Broker 代发通知</h3>
+<p>客户端连接时预先提交遗嘱 Topic、Payload、QoS 和 Retain 参数。遇到符合遗嘱发布条件的异常断开，例如连接故障或 Keep Alive 超时，Broker 代替客户端发布这条消息。</p>
+<pre><code>设备 CONNECT 时设置遗嘱：
+  topic   = devices/42/availability
+  payload = offline
+  qos     = 1
+  retain  = true
+
+设备连接成功后主动发布：
+  devices/42/availability = online，retain=true
+
+设备意外断电 → Broker 检测失联 → 发布 retained offline
+新打开的监控页面订阅该主题 → 获得最近的在线状态</code></pre>
+<p>正常退出时，设备可以先发布 <code>offline</code>，再正常 DISCONNECT；正常断开通常不会触发遗嘱。MQTT 5 另有“Disconnect with Will Message”原因码，可显式请求遗嘱。</p>
+<p>MQTT 5 的 <strong>Will Delay Interval</strong> 能推迟遗嘱发布，降低短暂断网导致的状态抖动。如果延迟结束前恢复了相应会话，遗嘱可以不发；如果会话更早结束，也会影响遗嘱的触发时机。</p>
+<p class="note">“online”表示最近观测到的连接状态，具有检测延迟。Broker 自身整体宕机时，也不能指望它即时替全部设备发布遗嘱；这需要集群、监控和业务层超时判断共同处理。</p>
+</section>
+<section id="ordering">
+<h2>11 · 消息重复、顺序与“业务只执行一次”</h2>
+<h3>为什么 TCP 有序，MQTT 仍然需要关心顺序？</h3>
+<p>TCP 保证一条连接上的字节顺序。MQTT 对有序主题和特定发布来源有相应的顺序规则，但这不等于多个发布者、多个主题、共享订阅和并发业务处理之间存在一个全局顺序。</p>
+<p>QoS 1 的重投递可能让较早的消息副本出现在较晚的消息之后；共享订阅把工作交给不同消费者后，处理完成顺序也可能变化。即使回调按顺序触发，应用把任务交给多个线程后，数据库提交也可能乱序。</p>
+<p>需要同一设备严格按版本更新状态时，应在 Payload 中加 <code>seq</code>、<code>version</code> 或业务事件编号，由应用拒绝过时数据。设备重启会让普通计数器归零，需要持久化序号或配合 <code>bootId</code>。时间戳适合判断新旧和超时，但不同设备的时钟未必同步。</p>
+<h3>Packet Identifier 不是业务全局唯一 ID</h3>
+<p>MQTT 的 Packet Identifier 只有 16 位，取值 1～65535，投递完成后可以复用；上下行以及不同连接之间也有各自作用范围。因此不能把它直接当成订单号或永久去重键。</p>
+<p>DUP 标志只反映相关 MQTT PUBLISH 是否可能是重传，不是业务重复的可靠标识。同一条业务命令被应用重新发布时，可以有新的 Packet ID，DUP 也可以是 0。MQTT Broker 转发到下游时会独立管理下游的 DUP。</p>
+<h3>为什么 QoS 2 不能保证数据库副作用只发生一次？</h3>
+<ol><li>服务收到命令，把余额更新到数据库。</li><li>尚未持久记录业务去重结果或尚未回复业务结果，进程崩溃。</li><li>上游因结果未知重新发布相同业务命令，形成一个新的 MQTT 投递。</li><li>如果没有业务去重，服务可能再次更新余额。</li></ol>
+<p>反过来，客户端库可能已经完成 MQTT 确认，但业务事务尚未提交，进程就崩溃。此时协议交付完成也不能证明业务成功。不同库的确认时机和手动确认能力不同，应检查实际 API。</p>
+<p>常见方案是给每次业务操作分配稳定的 <code>messageId</code> 或 <code>commandId</code>，在数据库里用唯一约束去重，并将“记录已处理”和“业务更新”放进同一事务。涉及外部支付或实际设备动作时，还要利用对方的幂等键、状态查询、补偿机制；本地事务不能自动覆盖外部副作用。</p>
+<p class="note">“将灯设置为开启”通常比“将灯状态翻转一次”更容易实现幂等。重试前者仍然是开启，重试后者可能又关回去。协议可靠性与业务命令设计应一起考虑。</p>
+</section>
+<section id="v5">
+<h2>12 · MQTT 5 增加了哪些实用能力？</h2>
+<p>MQTT 5 保留发布订阅与 QoS 的基本模型，主要通过属性和更丰富的原因码补强控制能力。是否可以使用，还需检查 Broker 的能力声明、配置及客户端库支持。</p>
+<div class="table-wrap"><table><thead><tr><th>能力</th><th>用途</th><th>需要注意</th></tr></thead><tbody>
+<tr><td>Session Expiry Interval</td><td>控制离线会话保留多久</td><td>与 Clean Start 分开设置</td></tr>
+<tr><td>Message Expiry Interval</td><td>让排队过久的消息过期，避免投递旧数据</td><td>不能撤回已经交付的消息；业务执行仍应检查有效期</td></tr>
+<tr><td>Receive Maximum</td><td>限制一方向另一方并行发送的未完成 QoS 1/2 发布数量</td><td>不是 QoS 0 限速器，也不是磁盘队列容量</td></tr>
+<tr><td>Maximum Packet Size</td><td>声明能接收的最大 MQTT 报文大小</td><td>按报文计算，不仅是 Payload</td></tr>
+<tr><td>Topic Alias</td><td>在同一连接上用短编号代替重复的长主题</td><td>先建立别名映射；映射不跨网络连接保留</td></tr>
+<tr><td>Response Topic / Correlation Data</td><td>支持应用构建请求—响应关联</td><td>Broker 不会自动替设备执行请求或生成结果</td></tr>
+<tr><td>User Property</td><td>携带自定义键值元数据</td><td>会增加报文大小，敏感数据仍要受访问控制</td></tr>
+<tr><td>Shared Subscription</td><td>同组订阅者分担消息，例如 <code>$share/workers/jobs/new</code></td><td>不承诺跨消费者的全局处理顺序；3.1.1 中支持与否属于产品扩展</td></tr>
+<tr><td>No Local</td><td>对允许该选项的订阅避免收到自己发布的消息</td><td>可减少某些回环，不等于完整的环路检测</td></tr>
+<tr><td>Retain Handling</td><td>控制建立订阅时是否发送保留消息</td><td>与新消息的正常转发是不同问题</td></tr>
+<tr><td>Will Delay / 更丰富原因码</td><td>减少短时离线抖动，并诊断鉴权、配额等错误</td><td>需真正读取和处理原因码</td></tr>
+</tbody></table></div>
+</section>
+<section id="broker">
+<h2>13 · Broker 内部大致怎样实现？</h2>
+<p>规范约束的是可观察的协议行为，并不规定必须采用某个数据库或线程模型。下面是一种常见实现思路：</p>
+<pre><code>Socket / TLS / WebSocket
+          ↓
+MQTT 解码：识别完整报文
+          ↓
+认证、Topic 权限、配额检查
+          ↓
+订阅索引匹配：找到目标会话
+          ↓
+为每个目标建立投递任务
+          ↓
+在线发送队列 / 离线队列 / QoS 状态存储
+          ↓
+编码 PUBLISH → 网络发送 → 跟踪确认</code></pre>
+<h3>订阅匹配与扇出</h3>
+<p>Broker 往往按 Topic 层级建立树状索引或其他高效结构，以处理精确主题、<code>+</code> 和 <code>#</code> 的匹配。一个发布者发 1 KB 消息，匹配 10,000 个普通订阅者时，下游有效载荷量约为 10 MB，还没算协议开销；“发布只发一次”不代表 Broker 的转发成本也是一次。</p>
+<h3>慢消费者与背压</h3>
+<p>某个客户端接收太慢，Broker 需要管理它的待发送队列、未确认窗口和存储配额。队列满了之后如何处理，取决于产品、QoS、策略和协议约束，可能限制发布、拒绝请求、断开连接或按规则处理积压。不能把持久会话理解成无限邮箱。</p>
+<h3>持久化与高可用</h3>
+<p>“在当前内存里保留了 QoS 状态”和“断电后还能恢复”不是同一能力。生产部署要检查会话、在途消息、离线队列和保留消息的持久化配置，以及确认报文与落盘之间的实际保证。</p>
+<p>MQTT 没有规定统一的 Broker 集群复制协议。节点之间如何同步订阅、路由消息和复制会话，是具体产品的实现。接了负载均衡不等于已经解决故障切换；节点故障后能否继续会话，要看集群设计和存储保证。</p>
+<h3>安全是连接和主题两层问题</h3>
+<p>TLS 用于传输加密和服务端身份校验，必要时使用双向 TLS；账号、令牌或证书用于客户端认证；Topic ACL 用于控制能发布与订阅哪些主题。仅配置用户名密码却使用明文连接，凭据和正文仍可能泄露；仅使用 TLS，却给所有设备 <code>#</code> 权限，也没有实现租户隔离。</p>
+</section>
+<section id="practice">
+<h2>14 · 用智能灯串起全部机制</h2>
+<p>假设设备编号是 42，手机需要控制灯，并确认执行结果。可以把 Topic 设计成：</p>
+<div class="table-wrap"><table><thead><tr><th>主题</th><th>方向与作用</th><th>示例策略</th></tr></thead><tbody><tr><td><code>devices/42/command</code></td><td>手机 → 灯：即时命令</td><td>QoS 1，retain=false，设置有效期</td></tr><tr><td><code>devices/42/result</code></td><td>灯 → 手机：某次命令的结果</td><td>QoS 1，retain=false，以 commandId 关联</td></tr><tr><td><code>devices/42/state</code></td><td>灯 → 手机：最新实际状态</td><td>QoS 1，retain=true，携带版本与时间</td></tr><tr><td><code>devices/42/availability</code></td><td>灯或遗嘱 → 监控：在线状态</td><td>QoS 1，retain=true</td></tr></tbody></table></div>
+<p>命令正文可以是：</p>
+<pre><code>{
+  "commandId": "cmd-20260905-000123",
+  "operation": "setPower",
+  "value": "on",
+  "expiresAt": "2026-09-05T12:00:30+08:00"
+}</code></pre>
+<ol><li><strong>设备连接：</strong>使用唯一 Client ID，完成认证，设置 retained offline 遗嘱；按需求配置会话保留时间。</li><li><strong>恢复订阅：</strong>检查 Session Present，没有可恢复会话就订阅 command；连接成功后发布 retained online 和实际 state。</li><li><strong>手机先订阅：</strong>先建立 result、state、availability 订阅并处理订阅结果，再发命令，以减少快速回复被错过的风险。</li><li><strong>手机发布：</strong>发送 QoS 1 命令。收到 PUBACK 时 UI 可以显示“已提交”，不能据此显示“灯已开启”。</li><li><strong>设备处理：</strong>校验命令权限与格式、有效期和 commandId。重复命令返回已有结果；新命令执行 setPower，并可靠记录结果。</li><li><strong>设备反馈：</strong>发布带相同 commandId 的业务结果，再更新 retained state。手机收到成功结果或符合版本的实际状态后更新显示。</li><li><strong>超时恢复：</strong>没有结果时，显示“结果未知／等待确认”，查询状态或按同一 commandId 重试；避免生成新 ID 重复执行同一意图。</li></ol>
+<p>MQTT 5 的 Message Expiry 可以减少旧命令在 Broker 中积压，但设备仍应验证命令有效期，并考虑自身时钟误差。某些设备不适合断线后补执行旧命令，此时应缩短过期时间、调整会话策略，或使用带版本的期望状态同步。</p>
+<p>如果要做自动故障恢复，把命令结果写入数据库和后续发布结果之间也可能存在崩溃窗口。可以使用 outbox 等可靠发布方案，或者让设备在重复请求时查询并返回已经保存的结果。具体方案取决于操作风险。</p>
+<h3>本机已有 Mosquitto 时的最小体验</h3>
+<p>以下仅是操作示例，本篇没有安装或运行 Broker。假定本机 <code>127.0.0.1:1883</code> 已有允许连接的测试实例；真实环境需要按配置补充 TLS 和认证参数。</p>
+<pre><code># 终端 A：先订阅
+mosquitto_sub -h 127.0.0.1 -t "demo/temperature" -q 1 -v
+
+# 终端 B：发布普通消息，A 会收到
+mosquitto_pub -h 127.0.0.1 -t "demo/temperature" -q 1 -m "26.3"
+
+# 发布保留消息；此后新开一个订阅终端，也能获得这个值
+mosquitto_pub -h 127.0.0.1 -t "demo/temperature" -q 1 -r -m "27.1"
+
+# 清除该主题的保留值：-n 表示零字节 Payload
+mosquitto_pub -h 127.0.0.1 -t "demo/temperature" -q 1 -r -n</code></pre>
+</section>
+<section id="comparison">
+<h2>15 · MQTT、HTTP、WebSocket 怎么选？</h2>
+<div class="table-wrap"><table><thead><tr><th>维度</th><th>MQTT</th><th>HTTP API</th><th>WebSocket</th></tr></thead><tbody><tr><td>主要模型</td><td>经 Broker 发布／订阅</td><td>请求／响应</td><td>全双工消息通道</td></tr><tr><td>主题与订阅</td><td>协议自带</td><td>应用自行设计</td><td>应用自行设计</td></tr><tr><td>QoS、会话、遗嘱</td><td>协议定义相关机制</td><td>无 MQTT 式机制</td><td>无 MQTT 式机制</td></tr><tr><td>典型用途</td><td>设备遥测、状态同步、消息推送</td><td>查资料、资源 CRUD、上传文件</td><td>实时交互、自定义双向协议，也可承载 MQTT</td></tr><tr><td>连接特点</td><td>通常使用长连接</td><td>也支持连接复用；并非每次请求都重新建连</td><td>长连接</td></tr></tbody></table></div>
+<p>它们不是绝对替代关系。常见组合是 HTTP 负责登录、历史查询和固件下载，MQTT 负责设备状态和控制通知。例如 MQTT 发“有新固件”的通知和下载地址，大文件通过 HTTPS 下载。</p>
+<p>MQTT 也不会绕过 Android / iOS 的后台限制。App 进入后台后，进程和网络可能受系统限制；普通后台通知常常仍需要平台推送。选用长连接协议不等于获得了无限后台运行权限。</p>
+<p>如果需求核心是可回放的事件日志、按偏移量读取历史、复杂流处理或严格的业务事务，应进一步评估日志系统、任务队列或数据库能力，不能只因为 MQTT 有 QoS 就认为它能覆盖所有消息中间件需求。</p>
+</section>
+<section id="recap">
+<h2>16 · 最容易混淆的十件事</h2>
+<ol><li><strong>TCP 可靠不等于业务可靠。</strong>字节送达、MQTT 交付、业务提交是不同层次。</li><li><strong>QoS 1 允许重复。</strong>业务操作要按风险设计幂等。</li><li><strong>QoS 2 不等于业务全局只执行一次。</strong>它约束特定协议交换，无法自动覆盖数据库和外部副作用。</li><li><strong>订阅 QoS 2 不能升级发布 QoS 0。</strong>整个路径受每一段实际 QoS 约束。</li><li><strong>发布成功不等于所有订阅者成功。</strong>需要业务结果就设计结果消息。</li><li><strong>Retain 不等于离线队列。</strong>前者保存主题的一条保留值，后者服务已有会话。</li><li><strong>持久会话不等于永久、不限量、不怕宕机。</strong>需要检查过期、配额与持久化。</li><li><strong>心跳正常不等于业务健康。</strong>它主要反映连接和协议处理是否活跃。</li><li><strong>Topic 不是历史数据库。</strong>新订阅通常不能自动获取所有过去消息。</li><li><strong>Packet ID 和 DUP 不能代替业务去重键。</strong>业务重试要保持稳定的业务标识。</li></ol>
+<h3>可以这样完整复述 MQTT 的原理</h3>
+<blockquote>MQTT 是基于发布订阅的应用层消息协议。客户端通常通过 TCP 或 TLS 长连接接入 Broker，用 Topic 发布消息或声明订阅，Broker 负责认证、主题匹配和消息转发。协议用长度字段界定报文，用 QoS 0、1、2 提供不同级别的交付语义，用会话保存订阅和未完成投递以支持断线恢复，用保留消息让新订阅者获取最近状态，用心跳检测连接活性，并通过遗嘱通知异常离线。QoS 的确认按发送端和接收端逐段进行，不直接保证业务事务成功；需要业务结果和幂等机制，才能把协议投递与实际执行衔接起来。</blockquote>
+</section>
+<section id="references">
+<h2>17 · 官方规范索引</h2>
+<p>需要查实现边界时，优先对照使用的协议版本及客户端／Broker 文档。以下是 OASIS 正式规范入口：</p>
+<ul><li><a href="https://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html">MQTT Version 3.1.1 · OASIS Standard</a>：§2 报文格式；§3.1 CONNECT、Keep Alive、遗嘱和 Clean Session；§3.3 PUBLISH 与 Retain；§3.8–3.9 订阅；§4.1–4.7 会话、QoS、重投递、顺序与 Topic。</li><li><a href="https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html">MQTT Version 5.0 · OASIS Standard</a>：§3.1 CONNECT 属性；§3.2 CONNACK 能力与限制；§3.3 PUBLISH 属性；§3.8 订阅选项；§4.3–4.4 QoS 与重投递；§4.8 订阅，包括共享订阅。</li></ul>
+<p class="meta">阅读定位：通用协议原理与工程边界。示意图为讲解简化，不代表所有可并发的报文只能按图顺序发生。Broker 存储、集群复制和客户端确认时机属于具体实现能力。</p>
+</section>
+<footer>MQTT 原理详解 · 中文技术学习文档 · 2026-09-05</footer>
+</article>
+</main>
+</body>
+</html>
