@@ -9,6 +9,13 @@
 <style>
 .rn-guide{min-width:0}.rn-guide h1{line-height:1.35}.rn-guide section{padding-top:24px;margin-top:24px;border-top:1px solid var(--border);scroll-margin-top:78px}.rn-guide .lead{font-size:18px;line-height:1.85}.rn-guide .eyebrow{font-size:13px;letter-spacing:.1em;color:var(--accent)}.rn-guide .note,.rn-guide .evidence{padding:14px 18px;background:var(--accent-soft);border-left:3px solid var(--accent);margin:18px 0}.rn-guide .evidence{background:var(--surface-soft);border-color:var(--border);font-size:14px}.rn-guide .evidence p{margin:6px 0}.rn-guide code{overflow-wrap:anywhere}.rn-guide pre{max-width:100%;overflow:auto}.rn-guide pre code{overflow-wrap:normal;word-break:normal;white-space:pre}.rn-guide .table-wrap{max-width:100%;overflow-x:auto}.rn-guide table{width:100%;font-size:14px}.rn-guide th,.rn-guide td{min-width:120px}.rn-guide .flow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:20px;background:var(--surface-soft);margin:20px 0}.rn-guide .flow span{flex:1 1 140px;padding:12px;background:var(--surface);border:1px solid var(--border);text-align:center}.rn-guide .flow b{color:var(--accent)}.rn-guide .small{font-size:14px;color:var(--muted)}.rn-guide .source-list li{margin:14px 0}.rn-guide details{border:1px solid var(--border);padding:12px 16px;margin:12px 0}.rn-guide summary{cursor:pointer;font-weight:600}.rn-guide .source-path{font-size:12px}.rn-guide .label{display:inline-block;font-size:12px;color:var(--accent);margin-right:6px}.rn-guide ul,.rn-guide ol{line-height:1.9}.rn-guide p{line-height:1.9}.rn-guide pre{font-size:13px;line-height:1.75}@media(max-width:600px){.rn-guide .lead{font-size:16px}.rn-guide .flow{flex-direction:column;align-items:stretch}.rn-guide .flow span{flex:auto}.rn-guide .flow b{transform:rotate(90deg);text-align:center}.rn-guide .note,.rn-guide .evidence{padding:12px}.rn-guide pre{font-size:12px}}@media print{.topbar,.sidebar,.page-toc,.drawer-backdrop{display:none!important}.docs-layout{display:block!important}.article-shell{max-width:none!important;margin:0!important;padding:0!important}.rn-guide section{break-inside:auto}.rn-guide h2,.rn-guide h3{break-after:avoid}.rn-guide pre{white-space:pre-wrap}.rn-guide pre code{white-space:pre-wrap}.rn-guide details>*{display:block!important}}
 .rn-guide [id]{scroll-margin-top:78px}
+
+.rn-guide .study-priority,.page-toc .study-priority{display:inline-block;vertical-align:middle;font-size:12px;line-height:1.6;font-weight:600;padding:1px 7px;margin:0 8px 3px 0;border:1px solid var(--border);border-radius:4px;white-space:nowrap}
+.rn-guide .study-p1,.page-toc .study-p1{color:var(--accent);background:var(--accent-soft)}
+.rn-guide .study-p2,.page-toc .study-p2{color:var(--text);background:var(--surface-soft)}
+.rn-guide .study-p3,.page-toc .study-p3{color:var(--muted);background:var(--surface)}
+.rn-guide .study-target{font-size:14px;color:var(--muted);margin:8px 0 16px}
+.rn-guide .study-route{border:1px solid var(--border);padding:16px 18px;margin:20px 0;background:var(--surface-soft)}
 </style>
 </head>
 <body>
@@ -23,10 +30,12 @@
 <div class="eyebrow">ANDROID → REACT NATIVE · 原理与项目对照</div>
 <h1>React Native 0.72 原理<br>给写过一点 RN 业务的 Android 开发者</h1>
 <p class="lead">从 Android 开发经验出发，结合 RN 0.72.10 官方机制和项目源码，理解<strong>一段 JS 在哪里执行、React 如何驱动原生界面，以及 JS 与 Android 如何交换调用和事件。</strong>重点跟读运行时、渲染架构、原生接入与业务调用链。</p>
+<div class="study-route"><p><strong>按优先级阅读，内容完整保留。</strong>优先级针对“Android 为主、做过一些 RN 业务”的准备范围，不是面试题出现概率；若简历写了深入掌握某项技术，就需要相应提高准备深度。</p><ul><li><span class="study-priority study-p1">P1 · 优先掌握</span>第一轮先学，目标是结合自己的代码讲清楚。</li><li><span class="study-priority study-p2">P2 · 常见追问</span>掌握基础后补充，遇到相关项目或追问时重点看。</li><li><span class="study-priority study-p3">P3 · 进阶选读</span>保留作为深入阅读和查证资料，第一轮可以跳过。</li></ul><p><strong>推荐路线：</strong>主线按<a href="#mental-model">RN 整体模型</a> → <a href="#startup">页面启动</a> → <a href="#project-module">JS 调 Android</a> → <a href="#project-view">原生 View</a> → <a href="#events">事件回传</a> → <a href="#lifecycle">生命周期</a> → <a href="#debug">排障</a>阅读。遇到原理追问时回到 Bridge 与新架构章节。</p></div>
 <p><strong>学习入口：</strong>JS、React 状态或 Hook 还不熟悉，先看独立的<a href="react-basics-for-android.html">React 与前端基础</a>。本文可从第 02～03 节的整体模型开始，再进入 Bridge、Fabric 与项目调用链。</p>
 <div class="note"><strong>本文的版本基准已核实：</strong><code>pikachu</code> 声明并安装了 <strong>React Native 0.72.10</strong>；Android 宿主的版本表使用 <code>0.72.10_1</code>。后者带有项目版本后缀，不能假设与官方二进制完全相同。本文用官方原理和 v0.72.10 源码说明框架，用当前仓库说明实际接入；没有运行 APK 验证线上配置。</div>
 
-<section id="version"><h2>01 · 先确定版本，不把不同年代的架构混在一起</h2>
+<section id="version"><h2><span class="study-priority study-p2">P2 · 常见追问</span>01 · 先确定版本，不把不同年代的架构混在一起</h2>
+<p class="study-target"><strong>阅读目标：</strong>记住版本基准和实际架构待核实的边界，详细依赖表按需查。</p>
 <p>RN 0.72 发布于 2023 年。该版本的官方发布说明仍将 New Architecture 称为实验性架构；它不是“只要升级到 0.72，所有页面自然都运行 Fabric”。<a href="#official-release">[官方 O1]</a></p>
 <div class="table-wrap"><table><thead><tr><th>核对对象</th><th>当前证据</th><th>能够得出的结论</th></tr></thead><tbody>
 <tr><td>JS 工程</td><td><code>pikachu/package.json</code>：<code>react-native: 0.72.10</code>，React 声明 <code>^18.2.0</code></td><td>本文以 RN 0.72.10 为基准</td></tr>
@@ -41,7 +50,8 @@
 <div class="evidence"><strong>源码入口</strong><p><code data-source-path="pikachu/package.json">pikachu/package.json</code> · <code data-source-path="pikachu/yarn.lock">pikachu/yarn.lock</code> · <code data-source-path="pikachu/node_modules/react-native/package.json">pikachu/node_modules/react-native/package.json</code></p><p><code data-source-path="yyyyy-cdoe/VipAndroid/version.gradle">yyyyy-cdoe/VipAndroid/version.gradle</code>（<code>versions.react_native</code> / <code>versions.hermes</code>）<br><code data-source-path="yyyyy-cdoe/vip_react_entry/gradle.properties">yyyyy-cdoe/vip_react_entry/gradle.properties</code></p></div>
 </section>
 
-<section id="mental-model"><h2>02 · RN 到底是什么：JS 决定界面，原生系统显示界面</h2>
+<section id="mental-model"><h2><span class="study-priority study-p1">P1 · 优先掌握</span>02 · RN 到底是什么：JS 决定界面，原生系统显示界面</h2>
+<p class="study-target"><strong>阅读目标：</strong>能解释 RN 与 WebView 的区别，以及 JS 和 Android 各自负责什么。</p>
 <blockquote><p><strong>React Native = React 的声明式 UI 模型 + JS 运行时 + 面向原生平台的渲染器 + 原生能力接入机制。</strong></p></blockquote>
 <p>当你写 <code>&lt;View&gt;&lt;Text&gt;你好&lt;/Text&gt;&lt;/View&gt;</code>，并不是把 HTML 塞进 WebView，也不是直接把 TSX 编译成 Kotlin。JS 在 JS 引擎里运行，React 计算应该呈现什么；RN 把结果映射为宿主平台的 View 操作，最终由 Android 的 View 绘制系统显示。</p>
 <div class="flow" role="img" aria-label="JS 业务产生 React 描述，RN 渲染器计算原生更新，Android View 系统显示界面"><span>JS / TS 业务与状态</span><b>→</b><span>React 计算 UI 描述</span><b>→</b><span>RN 渲染器</span><b>→</b><span>Android 原生 View</span></div>
@@ -58,7 +68,8 @@
 <p>也不能说“每个 JSX 标签都一一生成原生 View”。函数组件会被展开；布局专用节点可以被压平；嵌套 Text 可能组合为一段原生文本。实际 Android View 层级往往比 React 组件树浅。</p>
 </section>
 
-<section id="react"><h2>03 · React 做什么：从状态快照到最少必要的 UI 更新</h2>
+<section id="react"><h2><span class="study-priority study-p2">P2 · 常见追问</span>03 · React 做什么：从状态快照到最少必要的 UI 更新</h2>
+<p class="study-target"><strong>阅读目标：</strong>基础篇已读懂时可快速复习，不必重复学习 Hook。</p>
 <p>如果还不熟悉 Hook，请先读<a href="react-basics-for-android.html#fe-hooks">第 11 章 · Hook 详细教程</a>：那里逐步拆解每一轮渲染、状态更新和 effect 清理，本节回到整体渲染过程。</p>
 <p>先看一个教学示例，它不是项目源码摘录：</p>
 <pre><code>function Counter() {
@@ -81,7 +92,8 @@
 <p><code>key</code> 参与 React 对同级元素身份的判断。列表把位置当 key，在插入、删除、重排时容易把输入状态或组件状态对应到错误条目。它不是原生 View 的资源 ID。</p>
 </section>
 
-<section id="layers"><h2>04 · 把整条链路分成四层</h2>
+<section id="layers"><h2><span class="study-priority study-p3">P3 · 进阶选读</span>04 · 把整条链路分成四层</h2>
+<p class="study-target"><strong>阅读目标：</strong>用于整理概念，第一轮可以直接跳过。</p>
 <div class="table-wrap"><table><thead><tr><th>层</th><th>主要职责</th><th>出问题时的典型表现</th></tr></thead><tbody>
 <tr><td>业务 / React 层</td><td>props、state、组件、effect、事件回调</td><td>状态不更新、重复请求、列表反复渲染</td></tr>
 <tr><td>运行时 / 调度层</td><td>Hermes 执行 JS、任务调度、GC、跨语言接口</td><td>JS 卡顿、长任务、同步调用阻塞</td></tr>
@@ -91,7 +103,8 @@
 <p>一次按钮点击形成一个闭环：<strong>原生触摸 → RN 事件系统 → JS 回调 → state 更新 → React 计算 → RN 渲染器 → 原生 View 更新。</strong>如果 JS 回调里处理几万条数据，卡点不一定在 Bridge；如果主线程图片处理太重，JS 再快也不能保证画面流畅。</p>
 </section>
 
-<section id="build-runtime"><h2>05 · Bundle、Metro 和 Hermes：谁编译，谁执行？</h2>
+<section id="build-runtime"><h2><span class="study-priority study-p2">P2 · 常见追问</span>05 · Bundle、Metro 和 Hermes：谁编译，谁执行？</h2>
+<p class="study-target"><strong>阅读目标：</strong>知道 Bundle、构建工具和 Hermes 的职责，具体打包链按项目经历准备。</p>
 <pre><code>开发输入：TS / TSX / JS + 图片资源
               ↓ 转换语法、解析依赖、打包
 构建工具：常规 RN 使用 Metro；项目也可以有自定义打包链
@@ -108,7 +121,8 @@ React / RN：计算 UI、访问平台能力</code></pre>
 <p>Fast Refresh 是开发期反馈机制；线上下载 Bundle 是项目发布机制；Codegen 是生成跨语言接口胶水。它们分别解决不同问题。</p>
 </section>
 
-<section id="startup"><h2>06 · Android 怎么把一个 RN 页面启动起来？</h2>
+<section id="startup"><h2><span class="study-priority study-p1">P1 · 优先掌握</span>06 · Android 怎么把一个 RN 页面启动起来？</h2>
+<p class="study-target"><strong>阅读目标：</strong>能讲 Android 容器如何加载 Bundle、传参数并显示 RN 根 View。</p>
 <h3>先看官方 0.72 的典型 Bridge 宿主路径</h3>
 <pre><code>Activity / 容器
   → ReactNativeHost 提供配置与 ReactInstanceManager
@@ -137,7 +151,8 @@ provider 回调 onRNViewAttached(reactRootView)
 <div class="evidence"><p><code data-source-path="yyyyy-cdoe/vip_react_entry/vip_react_entry/src/main/java/com/zhihu/android/feature/vip_react_entry/T_VipReactNative.kt">yyyyy-cdoe/vip_react_entry/…/T_VipReactNative.kt</code></p><p><code data-source-path="yyyyy-cdoe/vrn_share_ui/vrn_share_ui/src/main/java/com/zhihu/android/ui/shared/vrn_share_ui/container/BaseReactView.kt">yyyyy-cdoe/vrn_share_ui/…/container/BaseReactView.kt</code></p><p><code data-source-path="pikachu/pages/VipPin/src/index.tsx">pikachu/pages/VipPin/src/index.tsx</code></p></div>
 </section>
 
-<section id="bridge"><h2>07 · 旧架构 Bridge：把跨语言调用变成可传递的任务</h2>
+<section id="bridge"><h2><span class="study-priority study-p1">P1 · 优先掌握</span>07 · 旧架构 Bridge：把跨语言调用变成可传递的任务</h2>
+<p class="study-target"><strong>阅读目标：</strong>能解释典型跨语言调用与成本，不必背框架方法实现。</p>
 <p>JS 不能直接拿一个 Kotlin 对象像普通 JS 对象一样随便调用。传统 Native Module 通道把调用描述为“哪个模块、哪个方法、哪些参数”，跨语言转换后交给原生执行；结果通过回调、Promise 或事件回到 JS。</p>
 <pre><code>JS: NativeModules.Demo.doSomething(params)
   → 生成模块方法代理
@@ -157,7 +172,8 @@ provider 回调 onRNViewAttached(reactRootView)
 <div class="evidence"><p><code data-source-path="pikachu/node_modules/react-native/Libraries/BatchedBridge/MessageQueue.js">MessageQueue.js</code>：<code>enqueueNativeCall</code>、<code>flushedQueue</code>、<code>callNativeSyncHook</code>。<br><code data-source-path="pikachu/node_modules/react-native/ReactCommon/cxxreact/NativeToJsBridge.cpp">NativeToJsBridge.cpp</code>：<code>callNativeModules</code> 和调用解析。</p></div>
 </section>
 
-<section id="paper"><h2>08 · Paper 渲染：JS 计算差异，Yoga 布局，主线程更新 View</h2>
+<section id="paper"><h2><span class="study-priority study-p3">P3 · 进阶选读</span>08 · Paper 渲染：JS 计算差异，Yoga 布局，主线程更新 View</h2>
+<p class="study-target"><strong>阅读目标：</strong>旧渲染流程的深入解释；先知道 React 更新怎样落到原生 View 即可。</p>
 <p>Paper 是旧渲染器的常用名称。Android 侧可以沿着这一条主线读源码：</p>
 <pre><code>React 组件重新计算
   → ReactNativeRenderer 生成宿主更新
@@ -177,7 +193,8 @@ provider 回调 onRNViewAttached(reactRootView)
 <div class="evidence"><p><code data-source-path="pikachu/node_modules/react-native/Libraries/Renderer/implementations/ReactNativeRenderer-dev.js">ReactNativeRenderer-dev.js</code>：宿主 create/update 操作。<br><code data-source-path="pikachu/node_modules/react-native/ReactAndroid/src/main/java/com/facebook/react/uimanager/UIImplementation.java">UIImplementation.java</code>：<code>dispatchViewUpdates → updateViewHierarchy → calculateRootLayout</code>。<br><code data-source-path="pikachu/node_modules/react-native/ReactAndroid/src/main/java/com/facebook/react/uimanager/UIViewOperationQueue.java">UIViewOperationQueue.java</code>：将属性、布局、创建操作交给原生 View 层执行。</p></div>
 </section>
 
-<section id="fabric"><h2>09 · Fabric 渲染：共享 C++ Shadow Tree 与更灵活的提交</h2>
+<section id="fabric"><h2><span class="study-priority study-p3">P3 · 进阶选读</span>09 · Fabric 渲染：共享 C++ Shadow Tree 与更灵活的提交</h2>
+<p class="study-target"><strong>阅读目标：</strong>先从下一章理解新架构分工；三棵树与提交细节留作深入阅读。</p>
 <p>Fabric 是新渲染器，不是“另一种 JS 引擎”。核心变化之一，是将 Shadow Tree 和更多渲染逻辑放到跨平台 C++ 层，通过 JSI 与 React 连接，并提供适合并发、优先级和同步场景的基础。<a href="#official-render">[官方 O2]</a></p>
 <h3>先分清三棵树</h3>
 <ul><li><strong>React Element / Fiber 一侧：</strong>JS 的组件描述、状态和更新工作。</li><li><strong>React Shadow Tree：</strong>C++ 中保存宿主组件的 props、布局、原生 state 等信息。</li><li><strong>Host View Tree：</strong>最终的 Android View 层级，由平台 UI 线程操作。</li></ul>
@@ -200,7 +217,8 @@ Mount
 <div class="evidence"><p><code data-source-path="pikachu/node_modules/react-native/ReactCommon/react/renderer/uimanager/UIManagerBinding.cpp">UIManagerBinding.cpp</code>：<code>createNode</code>、<code>cloneNode</code>、<code>completeRoot</code> 的 JS/C++ 连接。<br><code data-source-path="pikachu/node_modules/react-native/ReactCommon/react/renderer/mounting/ShadowTree.cpp">ShadowTree.cpp</code>：提交、布局与重试相关逻辑。</p><p>项目有自定义 <code>ReactFeatureFlags</code> 与 <code>SurfaceMountingManager</code> 源码，只证明存在适配和补丁，不证明当前每个根节点启用了 Fabric。</p></div>
 </section>
 
-<section id="new-architecture"><h2>10 · JSI、TurboModule、Codegen、Bridgeless 不要混为一谈</h2>
+<section id="new-architecture"><h2><span class="study-priority study-p2">P2 · 常见追问</span>10 · JSI、TurboModule、Codegen、Bridgeless 不要混为一谈</h2>
+<p class="study-target"><strong>阅读目标：</strong>先看概念对照，分清 JSI、TurboModule、Fabric 与 Codegen；底层入口可后看。</p>
 <div class="table-wrap"><table><thead><tr><th>名词</th><th>它负责什么</th><th>它不等于什么</th></tr></thead><tbody>
 <tr><td>JSI</td><td>统一操作 JS Runtime、值、函数和宿主对象的 C++ 接口</td><td>不是 JS 引擎、不是线程池，也不自动做到零复制</td></tr>
 <tr><td>TurboModule</td><td>新原生模块系统，配合类型规格、绑定和模块管理</td><td>不负责把 UI 树渲染成 View；同步和异步取决于方法定义与实现</td></tr>
@@ -229,7 +247,8 @@ if (turboModuleProxy != null) {
 <div class="evidence"><p><code data-source-path="pikachu/node_modules/react-native/Libraries/TurboModule/TurboModuleRegistry.js">TurboModuleRegistry.js</code>：兼容回退顺序。<br><code data-source-path="pikachu/node_modules/react-native/Libraries/Utilities/codegenNativeComponent.js">codegenNativeComponent.js</code>：组件运行时兼容逻辑。<br><code data-source-path="pikachu/node_modules/react-native/ReactCommon/jsiexecutor/jsireact/JSIExecutor.cpp">JSIExecutor.cpp</code>：JSI 与旧 Bridge 并存。<br><code data-source-path="pikachu/node_modules/react-native/ReactCommon/jsi/jsi/jsi.h">jsi.h</code>：<code>Runtime</code>、<code>HostObject</code>、<code>HostFunctionType</code>。</p></div>
 </section>
 
-<section id="threads"><h2>11 · RN 的线程：不要只背“JS、UI、Native 三条线程”</h2>
+<section id="threads"><h2><span class="study-priority study-p2">P2 · 常见追问</span>11 · RN 的线程：不要只背“JS、UI、Native 三条线程”</h2>
+<p class="study-target"><strong>阅读目标：</strong>重点掌握主线程 UI 操作与 JS 长任务影响，细分调度不必死记。</p>
 <p>“三线程”可以作为旧架构的入门图，但不是整个 App 只有三条线程。Android 还有 RenderThread、图片线程、网络线程、业务线程池；额外 JS Runtime 也可能有自己的执行安排。</p>
 <div class="table-wrap"><table><thead><tr><th>执行位置</th><th>常见工作</th><th>Android 开发者需要注意</th></tr></thead><tbody>
 <tr><td>主线程 / UI 线程</td><td>宿主生命周期、输入分发、真实 View 操作与挂载</td><td>不要在这里解码大图、做重 IO 或长同步等待</td></tr>
@@ -241,7 +260,8 @@ if (turboModuleProxy != null) {
 <p>优化之前先问：<strong>是哪一段慢？</strong>组件计算慢、跨边界传递太频繁、原生布局重、图片解码慢和 Bundle 冷启动慢，分别要用不同手段处理。不能一律通过 <code>useMemo</code> 解决。</p>
 </section>
 
-<section id="project-module"><h2>12 · 项目例子一：JS 调 Android 路由</h2>
+<section id="project-module"><h2><span class="study-priority study-p1">P1 · 优先掌握</span>12 · 项目例子一：JS 调 Android 路由</h2>
+<p class="study-target"><strong>阅读目标：</strong>优先准备这一条 JS 调 Android 的链路，能解释参数、注册、线程和结果边界。</p>
 <p>这是 Native Module 最容易理解的场景：RN 页面点击某段内容，希望宿主 Android 打开一个原生页面。</p>
 <pre><code>VipPin 业务中的 ZRouter.openURL(...)
   → @kfe/prn-bridges 导出层【本地实现缺失】
@@ -272,7 +292,8 @@ Handler(Looper.getMainLooper()).post {
 <div class="evidence"><p><code data-source-path="pikachu/pages/VipPin/src/components/Content/index.tsx">pikachu/pages/VipPin/src/components/Content/index.tsx</code>：真实 <code>ZRouter.openURL</code> 调用。</p><p><code data-source-path="yyyyy-cdoe/vip_react_entry/vip_react_entry/src/main/js/NativeZRouter.ts">yyyyy-cdoe/vip_react_entry/…/src/main/js/NativeZRouter.ts</code><br><code data-source-path="yyyyy-cdoe/vip_react_entry/vip_react_entry/src/main/java/com/zhihu/android/feature/vip_react_entry/entry/ReactEntryPackage.kt">yyyyy-cdoe/vip_react_entry/…/entry/ReactEntryPackage.kt</code><br><code data-source-path="yyyyy-cdoe/vip_react_entry/vip_react_entry/src/main/java/com/zhihu/android/feature/vip_react_entry/module/RouterModule.kt">yyyyy-cdoe/vip_react_entry/…/module/RouterModule.kt</code></p></div>
 </section>
 
-<section id="project-view"><h2>13 · 项目例子二：RN 图片组件怎样变成原生 View？</h2>
+<section id="project-view"><h2><span class="study-priority study-p1">P1 · 优先掌握</span>13 · 项目例子二：RN 图片组件怎样变成原生 View？</h2>
+<p class="study-target"><strong>阅读目标：</strong>能区别 Native Module 与 Native Component，讲清创建 View 和更新属性。</p>
 <p>Native Module 解决“调用一个能力”；Native Component 解决“把一个原生 UI 控件放进 RN 页面”。项目的 <code>ZRNImageViewV2</code> 就属于后者。</p>
 <pre><code>ZRNImageViewV2NativeComponent.ts
   → 声明 src / resizeMode / filter 等属性
@@ -306,7 +327,8 @@ public void setSrc(ZRNImageView view, String sources) {
 <div class="evidence"><p><code data-source-path="yyyyy-cdoe/vip_react_entry/vip_react_entry/src/main/js/ZRNImageViewV2NativeComponent.ts">yyyyy-cdoe/vip_react_entry/…/src/main/js/ZRNImageViewV2NativeComponent.ts</code><br><code data-source-path="yyyyy-cdoe/vip_react_entry/vip_react_entry/src/main/java/com/zhihu/android/feature/vip_react_entry/component/ZRNImageViewManager2.java">yyyyy-cdoe/vip_react_entry/…/component/ZRNImageViewManager2.java</code><br><code data-source-path="yyyyy-cdoe/vip_react_entry/vip_react_entry/src/main/java/com/zhihu/android/feature/vip_react_entry/component/ZRNImageView.kt">yyyyy-cdoe/vip_react_entry/…/component/ZRNImageView.kt</code></p></div>
 </section>
 
-<section id="events"><h2>14 · 项目例子三：Android 收到 MQTT，JS 怎么知道？</h2>
+<section id="events"><h2><span class="study-priority study-p1">P1 · 优先掌握</span>14 · 项目例子三：Android 收到 MQTT，JS 怎么知道？</h2>
+<p class="study-target"><strong>阅读目标：</strong>能解释 Android 通知 JS、监听注册与清理；MQTT 协议细节按项目经历准备。</p>
 <p>这个例子可以接上<a href="mqtt-principles-guide.html">上一篇 MQTT 原理</a>。网络消息先由 Android 的 MQTT 客户端接收，再通过 RN 的原生事件机制通知 JS。<strong>MQTT Broker 到设备的网络传输，与设备内 Android 到 JS 的事件传递，是两段不同的链路。</strong></p>
 <pre><code>JS useMqtt.start({ topic, onMessage })
   → ZMqtt.startListening(topic)【JS 导出封装缺失】
@@ -338,7 +360,8 @@ reactContext.emitDeviceEvent("MqttMsg_${message.topic}",
 <div class="evidence"><p><code data-source-path="pikachu/packages/harmony-components/src/hooks/useMqtt.ts">pikachu/packages/harmony-components/src/hooks/useMqtt.ts</code><br><code data-source-path="yyyyy-cdoe/vip_react_entry/vip_react_entry/src/main/js/NativeZMqtt.ts">yyyyy-cdoe/vip_react_entry/…/src/main/js/NativeZMqtt.ts</code><br><code data-source-path="yyyyy-cdoe/vip_react_entry/vip_react_entry/src/main/java/com/zhihu/android/feature/vip_react_entry/module/MqttModule.kt">yyyyy-cdoe/vip_react_entry/…/module/MqttModule.kt</code><br><code data-source-path="pikachu/node_modules/react-native/Libraries/EventEmitter/NativeEventEmitter.js">RN 0.72.10 / Libraries/EventEmitter/NativeEventEmitter.js</code></p></div>
 </section>
 
-<section id="touch"><h2>15 · 触摸、手势和动画：为什么 JS 卡住了，有时还能滚动？</h2>
+<section id="touch"><h2><span class="study-priority study-p2">P2 · 常见追问</span>15 · 触摸、手势和动画：为什么 JS 卡住了，有时还能滚动？</h2>
+<p class="study-target"><strong>阅读目标：</strong>遇到卡顿或动画追问时阅读，掌握 JS 卡顿与原生动画的关系。</p>
 <p>普通 React 交互仍然从 Android 输入开始。对典型 Paper 触摸路径，可沿 <code>ReactRootView</code>、<code>JSTouchDispatcher</code>、<code>EventDispatcher</code> 和 JS 事件处理往下看，最终才到 <code>onPress</code> 等业务回调。JSX 的 <code>onPress</code> 不是直接设置一个业务 Kotlin <code>OnClickListener</code> 那么简单。</p>
 <p>连续触摸、滚动事件可能采用合并等策略，避免每一个中间事件都引起独立处理。业务如果依赖每个物理 MOVE 都逐个到达 JS，往往会建立错误的假设。</p>
 <p><strong>原生滚动和 JS 响应可以分开。</strong>ScrollView 自己有原生滚动能力；JS 被长任务堵住时，它仍可能继续滚动，但 JS 驱动的加载、交互反馈或列表窗口更新可能迟到。</p>
@@ -349,7 +372,8 @@ reactContext.emitDeviceEvent("MqttMsg_${message.topic}",
 <div class="evidence"><p><code data-source-path="pikachu/node_modules/react-native/ReactAndroid/src/main/java/com/facebook/react/uimanager/JSTouchDispatcher.java">JSTouchDispatcher.java</code>：从 MotionEvent 构造分发事件。<br><code data-source-path="pikachu/pages/VipPin/src/PinIndex.tsx">pikachu/pages/VipPin/src/PinIndex.tsx</code>：实际动画 Hook 使用。本文只用它证明调用点，不展开 Reanimated 内部实现。</p></div>
 </section>
 
-<section id="lifecycle"><h2>16 · 混合页面的生命周期：React 挂载不等于页面可见</h2>
+<section id="lifecycle"><h2><span class="study-priority study-p1">P1 · 优先掌握</span>16 · 混合页面的生命周期：React 挂载不等于页面可见</h2>
+<p class="study-target"><strong>阅读目标：</strong>能区分页面隐藏、React 卸载与 Runtime 销毁，说明资源由谁释放。</p>
 <p>Android 开发中你会区分 Activity、Fragment 和 Fragment View 的生命周期。混合 RN 页面还要加入 React 组件挂载、RN Root、JS Runtime 和原生业务监听的生命周期。</p>
 <ul><li><strong>组件挂载 / 卸载：</strong>由 React 树决定，影响 effect 和组件局部状态。</li><li><strong>页面显示 / 隐藏：</strong>可能由原生导航、BottomSheet、View attach 或自定义容器决定。</li><li><strong>Runtime 存活：</strong>可能跨多个页面共享，不应因一个卡片销毁就盲目销毁全局引擎。</li><li><strong>原生资源存活：</strong>网络订阅、播放器、View 监听、Activity 引用要按实际所有者释放。</li></ul>
 <h3>项目已经有自己的“页面生命周期协议”</h3>
@@ -362,7 +386,8 @@ reactContext.emitDeviceEvent("MqttMsg_${message.topic}",
 <div class="evidence"><p><code data-source-path="yyyyy-cdoe/vrn_share_ui/vrn_share_ui/src/main/java/com/zhihu/android/ui/shared/vrn_share_ui/handler/ViewLifecycleEventHandler.kt">yyyyy-cdoe/vrn_share_ui/…/handler/ViewLifecycleEventHandler.kt</code><br><code data-source-path="yyyyy-cdoe/vip_rn_comment/vip_rn_comment/src/main/java/com/zhihu/android/feature/vip_rn_comment/Utils.kt">yyyyy-cdoe/vip_rn_comment/…/Utils.kt</code><br><code data-source-path="yyyyy-cdoe/vip_rn_comment/vip_rn_comment/src/main/java/com/zhihu/android/feature/vip_rn_comment/VipRNCommentFragment.kt">yyyyy-cdoe/vip_rn_comment/…/VipRNCommentFragment.kt</code></p></div>
 </section>
 
-<section id="business-state"><h2>17 · 从你写过的业务入手：缓存、state、列表更新</h2>
+<section id="business-state"><h2><span class="study-priority study-p2">P2 · 常见追问</span>17 · 从你写过的业务入手：缓存、state、列表更新</h2>
+<p class="study-target"><strong>阅读目标：</strong>结合自己做过的列表和缓存准备，业务优化比背依赖名称更有价值。</p>
 <p>项目的 VipPin 适合把“会写功能”连接到“理解执行成本”。它读取初始参数，用 MMKV 包装获取预加载数据，再把数据放进 React state，使用多种 Hook 和动画能力构建页面。</p>
 <pre><code>// PinIndex.tsx：实际片段，省略周边逻辑
 const store = useMMKVStore({id: 'com.zhvip.preload.pin'})
@@ -387,7 +412,8 @@ const [pageData, setPageData] = useState&lt;PageDataType&gt;(getStore() || {})</
 <div class="evidence"><p><code data-source-path="pikachu/pages/VipPin/src/PinIndex.tsx">pikachu/pages/VipPin/src/PinIndex.tsx</code>：<code>useMMKVStore</code>、<code>getStore</code>、<code>useState</code> 和动画调用。MMKV 的 Android 背景可继续阅读<a href="android-storage-guide.html">存储方案专题</a>。</p></div>
 </section>
 
-<section id="release"><h2>18 · Bundle 发布和原生版本：为什么改 JS 也可能白屏？</h2>
+<section id="release"><h2><span class="study-priority study-p2">P2 · 常见追问</span>18 · Bundle 发布和原生版本：为什么改 JS 也可能白屏？</h2>
+<p class="study-target"><strong>阅读目标：</strong>混合开发常见追问，知道 Bundle 与 APK 能力兼容及加载失败处理。</p>
 <p>混合 RN App 至少存在两类产物：<strong>安装包中的原生能力与引擎</strong>，以及<strong>被加载的 JS / 字节码 Bundle 和资源</strong>。它们需要兼容，不能把“JS 可以独立发版”理解成“JS 可以随意调用尚不存在的原生功能”。</p>
 <pre><code>新 Bundle 调用 NativeNewFeature.doWork()
                  ↓
@@ -401,7 +427,8 @@ const [pageData, setPageData] = useState&lt;PageDataType&gt;(getStore() || {})</
 <p>Runtime 预热可减少后续等待，但也占内存并可能竞争启动 CPU；复用 Runtime 可节省资源，却要求控制全局状态、事件监听和页面隔离。本文没有足够证据断言项目实际使用“一个 Bundle 一个 Runtime”或“所有页面共用一个 Runtime”。</p>
 </section>
 
-<section id="debug"><h2>19 · Android 开发者应该怎样排查 RN 问题？</h2>
+<section id="debug"><h2><span class="study-priority study-p1">P1 · 优先掌握</span>19 · Android 开发者应该怎样排查 RN 问题？</h2>
+<p class="study-target"><strong>阅读目标：</strong>准备一两个自己能讲清的排障过程，按现象寻找证据。</p>
 <div class="table-wrap"><table><thead><tr><th>现象</th><th>先查什么</th><th>下一步证据</th></tr></thead><tbody>
 <tr><td>首次进入白屏</td><td>Bundle 是否加载执行；启动异常是否发生在组件注册之前</td><td>加载阶段日志、JS exception、componentName / AppRegistry、Root 尺寸</td></tr>
 <tr><td>模块找不到</td><td>JS 模块名、原生注册名、当前 APK 是否有该模块</td><td>ReactEntryPackage、生成 Spec、构建依赖及运行时模块表</td></tr>
@@ -418,7 +445,8 @@ const [pageData, setPageData] = useState&lt;PageDataType&gt;(getStore() || {})</
 <p class="note">React Native 不是“能跑起来就只剩前端问题”。你已有的 Android 排查能力仍然有用，只是需要再补上 JS、React 调度和跨语言边界。</p>
 </section>
 
-<section id="learning"><h2>20 · 推荐学习顺序，以及面试时怎么讲</h2>
+<section id="learning"><h2><span class="study-priority study-p2">P2 · 常见追问</span>20 · 推荐学习顺序，以及面试时怎么讲</h2>
+<p class="study-target"><strong>阅读目标：</strong>整理自己的表达时使用，不必把全部路线当成前置任务。</p>
 <h3>按一条链学，不按一堆名词背</h3>
 <ol><li><strong>先补前端基础：</strong>从<a href="react-basics-for-android.html#frontend-basics">React 与前端基础</a>理解模块、类型、JSX、闭包、异步和数据流，能逐句读懂 NameCard 示例。</li><li><strong>再理解 React：</strong>用一个计数器解释 state 快照、组件重新执行、effect 清理和 key。</li><li><strong>接着理解宿主：</strong>从 Activity / FrameLayout 到 Runtime、Bundle、AppRegistry 和 Root。</li><li><strong>掌握旧架构：</strong>能讲出 MessageQueue、模块调用、Yoga 和主线程 View 更新。</li><li><strong>比较新架构：</strong>分别解释 JSI、TurboModule、Fabric、Codegen；说明为什么不等于 Bridgeless。</li><li><strong>回到项目：</strong>分别跟读 RouterModule、ZRNImageView 和 MQTT 事件三种接入。</li><li><strong>做一次实际诊断：</strong>区分 JS 卡顿和 UI 卡顿，记录自己验证到的事实。</li></ol>
 <h3>一段适合当前经验的回答</h3>
@@ -431,7 +459,8 @@ const [pageData, setPageData] = useState&lt;PageDataType&gt;(getStore() || {})</
 <details><summary>追问：升级到新架构能解决所有卡顿吗？</summary><p>不能。它改变通信和渲染基础，但业务计算、列表刷新范围、图片、主线程 IO 和生命周期问题仍然存在。应先用性能数据定位瓶颈，再判断升级或局部优化能解决哪一段。</p></details>
 </section>
 
-<section id="repo-map"><h2>21 · 当前工作区的 RN 仓库怎么读？</h2>
+<section id="repo-map"><h2><span class="study-priority study-p3">P3 · 进阶选读</span>21 · 当前工作区的 RN 仓库怎么读？</h2>
+<p class="study-target"><strong>阅读目标：</strong>保留仓库地图和完整源码索引，遇到具体问题再查。</p>
 <div class="table-wrap"><table><thead><tr><th>目录</th><th>在本文中的定位</th><th>建议入口</th></tr></thead><tbody>
 <tr><td><code>pikachu</code></td><td>JS/TS 业务和组件工作区</td><td><code>package.json → pages/VipPin/src/index.tsx → PinIndex.tsx</code></td></tr>
 <tr><td><code>pikachu/node_modules/react-native</code></td><td>可阅读的 RN 0.72.10 框架源码副本</td><td><code>AppRegistry → RendererImplementation → Paper / Fabric</code></td></tr>
@@ -447,7 +476,8 @@ const [pageData, setPageData] = useState&lt;PageDataType&gt;(getStore() || {})</
 <details><summary>展开完整源码路径与定位符号（39 个文件）</summary><ol class="source-list"><li><code class="source-path" data-source-path="pikachu/package.json" data-source-line="33">pikachu/package.json</code><br><span class="small">第 33 行附近：<code>&quot;react-native&quot;: &quot;0.72.10&quot;</code></span></li><li><code class="source-path" data-source-path="pikachu/yarn.lock" data-source-line="29392">pikachu/yarn.lock</code><br><span class="small">第 29392 行附近：<code>&quot;react-native@npm:0.72.10&quot;:</code></span></li><li><code class="source-path" data-source-path="pikachu/node_modules/react-native/package.json" data-source-line="3">pikachu/node_modules/react-native/package.json</code><br><span class="small">第 3 行附近：<code>&quot;version&quot;: &quot;0.72.10&quot;</code></span></li><li><code class="source-path" data-source-path="yyyyy-cdoe/VipAndroid/version.gradle" data-source-line="463">yyyyy-cdoe/VipAndroid/version.gradle</code><br><span class="small">第 463 行附近：<code>versions.react_native =</code></span></li><li><code class="source-path" data-source-path="yyyyy-cdoe/vip_react_entry/gradle.properties" data-source-line="4">yyyyy-cdoe/vip_react_entry/gradle.properties</code><br><span class="small">第 4 行附近：<code>newArchEnabled=false</code></span></li><li><code class="source-path" data-source-path="pikachu/babel.config.js" data-source-line="2">pikachu/babel.config.js</code><br><span class="small">第 2 行附近：<code>Jest only</code></span></li><li><code class="source-path" data-source-path="pikachu/node_modules/react-native/ReactAndroid/src/main/java/com/facebook/react/ReactRootView.java" data-source-line="717">pikachu/node_modules/react-native/ReactAndroid/src/main/java/com/facebook/react/ReactRootView.java</code><br><span class="small">第 717 行附近：<code>public void runApplication()</code></span></li><li><code class="source-path" data-source-path="pikachu/node_modules/react-native/Libraries/ReactNative/AppRegistry.js" data-source-line="108">pikachu/node_modules/react-native/Libraries/ReactNative/AppRegistry.js</code><br><span class="small">第 108 行附近：<code>registerComponent(</code></span></li><li><code class="source-path" data-source-path="pikachu/node_modules/react-native/Libraries/ReactNative/RendererImplementation.js" data-source-line="16">pikachu/node_modules/react-native/Libraries/ReactNative/RendererImplementation.js</code><br><span class="small">第 16 行附近：<code>export function renderElement</code></span></li><li><code class="source-path" data-source-path="yyyyy-cdoe/vip_react_entry/vip_react_entry/src/main/java/com/zhihu/android/feature/vip_react_entry/T_VipReactNative.kt" data-source-line="24">yyyyy-cdoe/vip_react_entry/vip_react_entry/src/main/java/com/zhihu/android/feature/vip_react_entry/T_VipReactNative.kt</code><br><span class="small">第 24 行附近：<code>override fun onRun()</code></span></li><li><code class="source-path" data-source-path="yyyyy-cdoe/vrn_share_ui/vrn_share_ui/src/main/java/com/zhihu/android/ui/shared/vrn_share_ui/container/BaseReactView.kt" data-source-line="89">yyyyy-cdoe/vrn_share_ui/vrn_share_ui/src/main/java/com/zhihu/android/ui/shared/vrn_share_ui/container/BaseReactView.kt</code><br><span class="small">第 89 行附近：<code>provider = InstanceProvider.get</code></span></li><li><code class="source-path" data-source-path="pikachu/pages/VipPin/src/index.tsx" data-source-line="5">pikachu/pages/VipPin/src/index.tsx</code><br><span class="small">第 5 行附近：<code>export default createPage</code></span></li><li><code class="source-path" data-source-path="pikachu/node_modules/react-native/Libraries/BatchedBridge/MessageQueue.js" data-source-line="238">pikachu/node_modules/react-native/Libraries/BatchedBridge/MessageQueue.js</code><br><span class="small">第 238 行附近：<code>enqueueNativeCall(</code></span></li><li><code class="source-path" data-source-path="pikachu/node_modules/react-native/ReactCommon/cxxreact/NativeToJsBridge.cpp" data-source-line="54">pikachu/node_modules/react-native/ReactCommon/cxxreact/NativeToJsBridge.cpp</code><br><span class="small">第 54 行附近：<code>void callNativeModules(</code></span></li><li><code class="source-path" data-source-path="pikachu/node_modules/react-native/Libraries/Renderer/implementations/ReactNativeRenderer-dev.js" data-source-line="5328">pikachu/node_modules/react-native/Libraries/Renderer/implementations/ReactNativeRenderer-dev.js</code><br><span class="small">第 5328 行附近：<code>function createInstance(</code></span></li><li><code class="source-path" data-source-path="pikachu/node_modules/react-native/ReactAndroid/src/main/java/com/facebook/react/uimanager/UIImplementation.java" data-source-line="610">pikachu/node_modules/react-native/ReactAndroid/src/main/java/com/facebook/react/uimanager/UIImplementation.java</code><br><span class="small">第 610 行附近：<code>public void dispatchViewUpdates(</code></span></li><li><code class="source-path" data-source-path="pikachu/node_modules/react-native/ReactAndroid/src/main/java/com/facebook/react/uimanager/UIViewOperationQueue.java" data-source-line="822">pikachu/node_modules/react-native/ReactAndroid/src/main/java/com/facebook/react/uimanager/UIViewOperationQueue.java</code><br><span class="small">第 822 行附近：<code>public void dispatchViewUpdates(</code></span></li><li><code class="source-path" data-source-path="pikachu/node_modules/react-native/ReactCommon/react/renderer/uimanager/UIManagerBinding.cpp" data-source-line="179">pikachu/node_modules/react-native/ReactCommon/react/renderer/uimanager/UIManagerBinding.cpp</code><br><span class="small">第 179 行附近：<code>if (methodName == &quot;createNode&quot;)</code></span></li><li><code class="source-path" data-source-path="pikachu/node_modules/react-native/ReactCommon/react/renderer/mounting/ShadowTree.cpp" data-source-line="297">pikachu/node_modules/react-native/ReactCommon/react/renderer/mounting/ShadowTree.cpp</code><br><span class="small">第 297 行附近：<code>CommitStatus ShadowTree::commit(</code></span></li><li><code class="source-path" data-source-path="pikachu/node_modules/react-native/Libraries/TurboModule/TurboModuleRegistry.js" data-source-line="19">pikachu/node_modules/react-native/Libraries/TurboModule/TurboModuleRegistry.js</code><br><span class="small">第 19 行附近：<code>function requireModule</code></span></li><li><code class="source-path" data-source-path="pikachu/node_modules/react-native/Libraries/Utilities/codegenNativeComponent.js" data-source-line="34">pikachu/node_modules/react-native/Libraries/Utilities/codegenNativeComponent.js</code><br><span class="small">第 34 行附近：<code>function codegenNativeComponent</code></span></li><li><code class="source-path" data-source-path="pikachu/node_modules/react-native/ReactCommon/jsiexecutor/jsireact/JSIExecutor.cpp" data-source-line="404">pikachu/node_modules/react-native/ReactCommon/jsiexecutor/jsireact/JSIExecutor.cpp</code><br><span class="small">第 404 行附近：<code>void JSIExecutor::callNativeModules</code></span></li><li><code class="source-path" data-source-path="pikachu/node_modules/react-native/ReactCommon/jsi/jsi/jsi.h" data-source-line="116">pikachu/node_modules/react-native/ReactCommon/jsi/jsi/jsi.h</code><br><span class="small">第 116 行附近：<code>class JSI_EXPORT HostObject</code></span></li><li><code class="source-path" data-source-path="pikachu/pages/VipPin/src/components/Content/index.tsx" data-source-line="103">pikachu/pages/VipPin/src/components/Content/index.tsx</code><br><span class="small">第 103 行附近：<code>ZRouter.openURL</code></span></li><li><code class="source-path" data-source-path="yyyyy-cdoe/vip_react_entry/vip_react_entry/src/main/js/NativeZRouter.ts" data-source-line="4">yyyyy-cdoe/vip_react_entry/vip_react_entry/src/main/js/NativeZRouter.ts</code><br><span class="small">第 4 行附近：<code>export interface Spec</code></span></li><li><code class="source-path" data-source-path="yyyyy-cdoe/vip_react_entry/vip_react_entry/src/main/java/com/zhihu/android/feature/vip_react_entry/entry/ReactEntryPackage.kt" data-source-line="59">yyyyy-cdoe/vip_react_entry/vip_react_entry/src/main/java/com/zhihu/android/feature/vip_react_entry/entry/ReactEntryPackage.kt</code><br><span class="small">第 59 行附近：<code>class ReactEntryPackage</code></span></li><li><code class="source-path" data-source-path="yyyyy-cdoe/vip_react_entry/vip_react_entry/src/main/java/com/zhihu/android/feature/vip_react_entry/module/RouterModule.kt" data-source-line="35">yyyyy-cdoe/vip_react_entry/vip_react_entry/src/main/java/com/zhihu/android/feature/vip_react_entry/module/RouterModule.kt</code><br><span class="small">第 35 行附近：<code>override fun openURL(</code></span></li><li><code class="source-path" data-source-path="yyyyy-cdoe/vip_react_entry/vip_react_entry/src/main/js/ZRNImageViewV2NativeComponent.ts" data-source-line="63">yyyyy-cdoe/vip_react_entry/vip_react_entry/src/main/js/ZRNImageViewV2NativeComponent.ts</code><br><span class="small">第 63 行附近：<code>export default codegenNativeComponent</code></span></li><li><code class="source-path" data-source-path="yyyyy-cdoe/vip_react_entry/vip_react_entry/src/main/java/com/zhihu/android/feature/vip_react_entry/component/ZRNImageViewManager2.java" data-source-line="21">yyyyy-cdoe/vip_react_entry/vip_react_entry/src/main/java/com/zhihu/android/feature/vip_react_entry/component/ZRNImageViewManager2.java</code><br><span class="small">第 21 行附近：<code>public class ZRNImageViewManager2</code></span></li><li><code class="source-path" data-source-path="yyyyy-cdoe/vip_react_entry/vip_react_entry/src/main/java/com/zhihu/android/feature/vip_react_entry/component/ZRNImageView.kt" data-source-line="21">yyyyy-cdoe/vip_react_entry/vip_react_entry/src/main/java/com/zhihu/android/feature/vip_react_entry/component/ZRNImageView.kt</code><br><span class="small">第 21 行附近：<code>class ZRNImageView</code></span></li><li><code class="source-path" data-source-path="pikachu/packages/harmony-components/src/hooks/useMqtt.ts" data-source-line="29">pikachu/packages/harmony-components/src/hooks/useMqtt.ts</code><br><span class="small">第 29 行附近：<code>export const useMqtt</code></span></li><li><code class="source-path" data-source-path="yyyyy-cdoe/vip_react_entry/vip_react_entry/src/main/js/NativeZMqtt.ts" data-source-line="16">yyyyy-cdoe/vip_react_entry/vip_react_entry/src/main/js/NativeZMqtt.ts</code><br><span class="small">第 16 行附近：<code>interface Spec extends TurboModule</code></span></li><li><code class="source-path" data-source-path="yyyyy-cdoe/vip_react_entry/vip_react_entry/src/main/java/com/zhihu/android/feature/vip_react_entry/module/MqttModule.kt" data-source-line="21">yyyyy-cdoe/vip_react_entry/vip_react_entry/src/main/java/com/zhihu/android/feature/vip_react_entry/module/MqttModule.kt</code><br><span class="small">第 21 行附近：<code>class MqttModule(</code></span></li><li><code class="source-path" data-source-path="pikachu/node_modules/react-native/Libraries/EventEmitter/NativeEventEmitter.js" data-source-line="39">pikachu/node_modules/react-native/Libraries/EventEmitter/NativeEventEmitter.js</code><br><span class="small">第 39 行附近：<code>export default class NativeEventEmitter</code></span></li><li><code class="source-path" data-source-path="pikachu/node_modules/react-native/ReactAndroid/src/main/java/com/facebook/react/uimanager/JSTouchDispatcher.java" data-source-line="65">pikachu/node_modules/react-native/ReactAndroid/src/main/java/com/facebook/react/uimanager/JSTouchDispatcher.java</code><br><span class="small">第 65 行附近：<code>public void handleTouchEvent(</code></span></li><li><code class="source-path" data-source-path="pikachu/pages/VipPin/src/PinIndex.tsx" data-source-line="36">pikachu/pages/VipPin/src/PinIndex.tsx</code><br><span class="small">第 36 行附近：<code>export const Entry:</code></span></li><li><code class="source-path" data-source-path="yyyyy-cdoe/vrn_share_ui/vrn_share_ui/src/main/java/com/zhihu/android/ui/shared/vrn_share_ui/handler/ViewLifecycleEventHandler.kt" data-source-line="16">yyyyy-cdoe/vrn_share_ui/vrn_share_ui/src/main/java/com/zhihu/android/ui/shared/vrn_share_ui/handler/ViewLifecycleEventHandler.kt</code><br><span class="small">第 16 行附近：<code>class ViewLifecycleEventHandler(</code></span></li><li><code class="source-path" data-source-path="yyyyy-cdoe/vip_rn_comment/vip_rn_comment/src/main/java/com/zhihu/android/feature/vip_rn_comment/Utils.kt" data-source-line="17">yyyyy-cdoe/vip_rn_comment/vip_rn_comment/src/main/java/com/zhihu/android/feature/vip_rn_comment/Utils.kt</code><br><span class="small">第 17 行附近：<code>internal fun generateReactPageArgs</code></span></li><li><code class="source-path" data-source-path="yyyyy-cdoe/vip_rn_comment/vip_rn_comment/src/main/java/com/zhihu/android/feature/vip_rn_comment/VipRNCommentFragment.kt" data-source-line="21">yyyyy-cdoe/vip_rn_comment/vip_rn_comment/src/main/java/com/zhihu/android/feature/vip_rn_comment/VipRNCommentFragment.kt</code><br><span class="small">第 21 行附近：<code>class VipRNCommentFragment</code></span></li></ol></details>
 </section>
 
-<section id="sources"><h2>22 · 官方参考与版本边界</h2>
+<section id="sources"><h2><span class="study-priority study-p3">P3 · 进阶选读</span>22 · 官方参考与版本边界</h2>
+<p class="study-target"><strong>阅读目标：</strong>保留官方依据和版本边界，查证时使用。</p>
 <p>本文主要参考官方架构文档、RN 0.72 官方发布说明，以及官方 v0.72.10 源码。本次旧的 <code>/docs/0.72/…</code> 文档入口返回 404，因此没有把新版默认配置冒充 0.72 行为；版本敏感细节用本地安装源码和官方版本文件核对。</p>
 <ol class="source-list">
 <li id="official-release"><strong>O1 · RN 0.72 官方发布说明</strong><br><a href="https://reactnative.dev/blog/2023/06/21/0.72-metro-package-exports-symlinks">React Native 0.72 — Symlink Support, Better Errors, and more</a><br>2023-06-21；用于版本背景、Metro 改进和当时 New Architecture 的实验性状态。本次已读取。</li>
@@ -460,30 +490,30 @@ const [pageData, setPageData] = useState&lt;PageDataType&gt;(getStore() || {})</
 <p class="small">证据日期：2026-09-05。本文中的教学示例、框架事实、项目摘录和待确认边界均分别标注；不推断个人负责范围或未经测量的性能收益。</p>
 </section>
 </article>
-<footer class="article-footer">官方机制与项目接入分开说明。源码事实不代表个人贡献；运行时架构与发布产物需单独验证。更新：2026-09-05。</footer>
+<footer class="article-footer">官方机制与项目接入分开说明。源码事实不代表个人贡献；运行时架构与发布产物需单独验证。更新：2026-09-05。 阅读优先级更新：2026-09-06；完整内容恢复自 Git a6cf5ce。</footer>
 </main>
-<aside class="page-toc" aria-label="本页目录"><div class="toc-heading">阅读目录</div><a class="toc-link level-2" href="#version">01 · 先确定版本，不把不同年代的架构混在一起</a>
-<a class="toc-link level-2" href="#mental-model">02 · RN 到底是什么：JS 决定界面，原生系统显示界面</a>
-<a class="toc-link level-2" href="#react">03 · React 做什么：从状态快照到最少必要的 UI 更新</a>
-<a class="toc-link level-2" href="#layers">04 · 把整条链路分成四层</a>
-<a class="toc-link level-2" href="#build-runtime">05 · Bundle、Metro 和 Hermes：谁编译，谁执行？</a>
-<a class="toc-link level-2" href="#startup">06 · Android 怎么把一个 RN 页面启动起来？</a>
-<a class="toc-link level-2" href="#bridge">07 · 旧架构 Bridge：把跨语言调用变成可传递的任务</a>
-<a class="toc-link level-2" href="#paper">08 · Paper 渲染：JS 计算差异，Yoga 布局，主线程更新 View</a>
-<a class="toc-link level-2" href="#fabric">09 · Fabric 渲染：共享 C++ Shadow Tree 与更灵活的提交</a>
-<a class="toc-link level-2" href="#new-architecture">10 · JSI、TurboModule、Codegen、Bridgeless 不要混为一谈</a>
-<a class="toc-link level-2" href="#threads">11 · RN 的线程：不要只背“JS、UI、Native 三条线程”</a>
-<a class="toc-link level-2" href="#project-module">12 · 项目例子一：JS 调 Android 路由</a>
-<a class="toc-link level-2" href="#project-view">13 · 项目例子二：RN 图片组件怎样变成原生 View？</a>
-<a class="toc-link level-2" href="#events">14 · 项目例子三：Android 收到 MQTT，JS 怎么知道？</a>
-<a class="toc-link level-2" href="#touch">15 · 触摸、手势和动画：为什么 JS 卡住了，有时还能滚动？</a>
-<a class="toc-link level-2" href="#lifecycle">16 · 混合页面的生命周期：React 挂载不等于页面可见</a>
-<a class="toc-link level-2" href="#business-state">17 · 从你写过的业务入手：缓存、state、列表更新</a>
-<a class="toc-link level-2" href="#release">18 · Bundle 发布和原生版本：为什么改 JS 也可能白屏？</a>
-<a class="toc-link level-2" href="#debug">19 · Android 开发者应该怎样排查 RN 问题？</a>
-<a class="toc-link level-2" href="#learning">20 · 推荐学习顺序，以及面试时怎么讲</a>
-<a class="toc-link level-2" href="#repo-map">21 · 当前工作区的 RN 仓库怎么读？</a>
-<a class="toc-link level-2" href="#sources">22 · 官方参考与版本边界</a>
+<aside class="page-toc" aria-label="本页目录"><div class="toc-heading">阅读目录</div><a class="toc-link level-2" href="#version"><span class="study-priority study-p2">P2</span>01 · 先确定版本，不把不同年代的架构混在一起</a>
+<a class="toc-link level-2" href="#mental-model"><span class="study-priority study-p1">P1</span>02 · RN 到底是什么：JS 决定界面，原生系统显示界面</a>
+<a class="toc-link level-2" href="#react"><span class="study-priority study-p2">P2</span>03 · React 做什么：从状态快照到最少必要的 UI 更新</a>
+<a class="toc-link level-2" href="#layers"><span class="study-priority study-p3">P3</span>04 · 把整条链路分成四层</a>
+<a class="toc-link level-2" href="#build-runtime"><span class="study-priority study-p2">P2</span>05 · Bundle、Metro 和 Hermes：谁编译，谁执行？</a>
+<a class="toc-link level-2" href="#startup"><span class="study-priority study-p1">P1</span>06 · Android 怎么把一个 RN 页面启动起来？</a>
+<a class="toc-link level-2" href="#bridge"><span class="study-priority study-p1">P1</span>07 · 旧架构 Bridge：把跨语言调用变成可传递的任务</a>
+<a class="toc-link level-2" href="#paper"><span class="study-priority study-p3">P3</span>08 · Paper 渲染：JS 计算差异，Yoga 布局，主线程更新 View</a>
+<a class="toc-link level-2" href="#fabric"><span class="study-priority study-p3">P3</span>09 · Fabric 渲染：共享 C++ Shadow Tree 与更灵活的提交</a>
+<a class="toc-link level-2" href="#new-architecture"><span class="study-priority study-p2">P2</span>10 · JSI、TurboModule、Codegen、Bridgeless 不要混为一谈</a>
+<a class="toc-link level-2" href="#threads"><span class="study-priority study-p2">P2</span>11 · RN 的线程：不要只背“JS、UI、Native 三条线程”</a>
+<a class="toc-link level-2" href="#project-module"><span class="study-priority study-p1">P1</span>12 · 项目例子一：JS 调 Android 路由</a>
+<a class="toc-link level-2" href="#project-view"><span class="study-priority study-p1">P1</span>13 · 项目例子二：RN 图片组件怎样变成原生 View？</a>
+<a class="toc-link level-2" href="#events"><span class="study-priority study-p1">P1</span>14 · 项目例子三：Android 收到 MQTT，JS 怎么知道？</a>
+<a class="toc-link level-2" href="#touch"><span class="study-priority study-p2">P2</span>15 · 触摸、手势和动画：为什么 JS 卡住了，有时还能滚动？</a>
+<a class="toc-link level-2" href="#lifecycle"><span class="study-priority study-p1">P1</span>16 · 混合页面的生命周期：React 挂载不等于页面可见</a>
+<a class="toc-link level-2" href="#business-state"><span class="study-priority study-p2">P2</span>17 · 从你写过的业务入手：缓存、state、列表更新</a>
+<a class="toc-link level-2" href="#release"><span class="study-priority study-p2">P2</span>18 · Bundle 发布和原生版本：为什么改 JS 也可能白屏？</a>
+<a class="toc-link level-2" href="#debug"><span class="study-priority study-p1">P1</span>19 · Android 开发者应该怎样排查 RN 问题？</a>
+<a class="toc-link level-2" href="#learning"><span class="study-priority study-p2">P2</span>20 · 推荐学习顺序，以及面试时怎么讲</a>
+<a class="toc-link level-2" href="#repo-map"><span class="study-priority study-p3">P3</span>21 · 当前工作区的 RN 仓库怎么读？</a>
+<a class="toc-link level-2" href="#sources"><span class="study-priority study-p3">P3</span>22 · 官方参考与版本边界</a>
 <a class="back-to-top" href="#">↑ 返回顶部</a></aside>
 </div>
 <script src="assets/search-data.js"></script><script src="assets/docs.js"></script>
