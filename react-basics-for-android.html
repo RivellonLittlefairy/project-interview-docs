@@ -152,12 +152,85 @@ setCount(count + 1); // 两次都请求设为 1
 
 // 换成下面的写法，React 按队列计算：0 → 1 → 2
 setCount(previous =&gt; previous + 1);
-setCount(previous =&gt; previous + 1);</code></pre><p>previous 是 React 提供的待处理状态，不是外层闭包的 count。可以类比 MVI 的“旧状态 → 新状态”更新函数。更新函数只做计算和返回，不在其中请求网络或埋点。</p><h3 id="hook-ref">3 · useRef：跨渲染保存的可变盒子</h3><pre><code data-language="tsx" data-example="basic-ref">// 组件中的教学片段
-const clicks = useRef(0);
-function recordClick() {
-  clicks.current += 1;
-  console.log(clicks.current);
-}</code></pre><p>同一组件身份后续渲染时，useRef 返回同一个对象。旧回调捕获这个对象，执行时读取 current，就可以读到后来写入的值。普通 <code>const box = {current: 0}</code> 则会在每次组件执行时新建。</p><p><strong>修改 current 不会自动刷新界面。</strong>需要展示的计数用 state；定时器句柄、订阅对象或原生组件引用可以用 ref。ref 不会自动跟 state 同步，也不要靠渲染期间随意读写 ref 来驱动 UI。</p><h3 id="hook-effect">4 · useEffect：在提交后建立外部同步，并交代怎么收尾</h3>
+setCount(previous =&gt; previous + 1);</code></pre><p>previous 是 React 提供的待处理状态，不是外层闭包的 count。可以类比 MVI 的“旧状态 → 新状态”更新函数。更新函数只做计算和返回，不在其中请求网络或埋点。</p><h3 id="hook-ref">3 · useRef：返回一个对象，帮你在多次渲染之间保存数据</h3>
+<p>你刚理解了 useState 返回“状态值 + 更新函数”。useRef 更简单：<strong>它返回一个对象，对象的 current 属性用来放你要保存的内容。</strong>先看返回值，再看它为什么有用。</p>
+<h4>① useRef(0) 返回什么？</h4><pre><code data-language="tsx" data-example="ref-object">const clicks = useRef(0);
+
+// 第一次拿到的对象可以理解成：
+// clicks → {current: 0}
+
+function handlePress() {
+  console.log(clicks.current); // 初次点击时，读取到 0
+  clicks.current = 5;          // 修改其中的值
+  console.log(clicks.current); // 5
+}</code></pre><p>这是组件中的教学片段，handlePress 作为事件回调使用。clicks 是你取的变量名，current 是 React 约定的属性名。它不是数组，所以不写 <code>const [clicks, setClicks] = useRef(0)</code>；也没有配套 setter，直接给 current 赋值即可。</p>
+<p><code>const clicks</code> 不妨碍修改 <code>clicks.current</code>。可以类比 Kotlin：<code>val box</code> 不允许 box 指向另一个对象，但 box 对象中的 <code>var current</code> 仍然可以修改。</p>
+<h4>② 和自己写 {current: 0} 有什么区别？</h4><pre><code data-language="tsx" data-example="ref-retention">function Example() {
+  const ordinary = {current: 0}; // 每次组件执行，都新建一个对象
+  const saved = useRef(0);       // React 为同一组件身份保留对象
+  // 其他逻辑和 JSX……
+}</code></pre><p>区别在<strong>组件再次执行时</strong>。普通对象声明重新执行，就创建新对象；useRef 再次调用时，React 返回先前保留的那个对象。</p>
+<div class="table-wrap"><table><thead><tr><th>过程</th><th>ordinary</th><th>saved</th></tr></thead><tbody>
+<tr><td>第一次组件执行</td><td>新对象 A，current=0</td><td>React 保存对象 R，current=0</td></tr>
+<tr><td>在事件中把两者的 current 改成 5</td><td>A.current=5</td><td>R.current=5</td></tr>
+<tr><td>随后因 state 或父级更新，再执行组件</td><td>创建新对象 B，current 又是 0</td><td>返回同一个 R，current 仍是 5</td></tr>
+</tbody></table></div>
+<p><strong>局部变量 saved 每次会重新声明，但它拿到的是同一个对象引用。</strong>useRef(0) 里的 0 是初始值，不会在每次调用时把 current 重置为 0。这种保留针对同一组件身份；卸载后重新挂载通常会创建新的 ref，它不是全局单例，也不会像 ViewModel 那样自动跨组件卸载保留。</p>
+<h4>③ 修改 current 后，为什么页面没变化？</h4>
+<p><strong>保存数据与通知界面更新，是两件事。</strong>修改 current 就像修改普通对象字段，不会因此调度 React 渲染。下面是可以放入 RN 工程的完整教学组件：</p><pre><code data-language="tsx" data-example="ref-demo">import {useRef, useState} from 'react';
+import {Button, Text, View} from 'react-native';
+
+export function RefDemo() {
+  const clicks = useRef(0);
+  const [shownCount, setShownCount] = useState(0);
+
+  function recordClick() {
+    clicks.current += 1;
+    console.log('实际记录的次数：', clicks.current);
+  }
+
+  function showCount() {
+    setShownCount(clicks.current);
+  }
+
+  return (
+    &lt;View&gt;
+      &lt;Text&gt;上次同步到界面的次数：{shownCount}&lt;/Text&gt;
+      &lt;Button title="只记录一次" onPress={recordClick} /&gt;
+      &lt;Button title="把次数显示出来" onPress={showCount} /&gt;
+    &lt;/View&gt;
+  );
+}</code></pre><ol><li>首次渲染：clicks.current 是 0，shownCount 也是 0，文本显示 0。</li><li>点击“只记录一次”：current 变成 1，控制台打印 1；没有调用状态 setter，文本仍显示 0。</li><li>再点两次：控制台依次打印 2、3，文本仍显示 0。</li><li>点击“把次数显示出来”：把 current 的值 3 交给 setShownCount，React 安排更新。</li><li>组件再次执行：useRef 返回之前的对象，current 仍是 3；useState 返回新的 shownCount=3，文本随后更新为 3。</li></ol>
+<p>这个组件故意把“内部记录的数”和“上次显示的数”分开，方便看出差别。如果产品要求每点一次就更新显示，直接用 useState 保存计数更合适，不必同时用两套数据。ref 与 state 不会自动互相同步。</p>
+<p><strong>用传统 Android View 理解：</strong>你修改 Activity 的一个字段 <code>clickCount++</code>，TextView 的文字不会自己改变；还需要执行 <code>textView.text = ...</code>。ref 类似那份不自动更新 UI 的字段，而 React 的 state setter 会通知框架按新状态重新计算界面。这是职责类比，ref 实际由 React 管理，并不是 Activity 字段。</p>
+<h4>④ 业务里什么时候该用？</h4>
+<div class="table-wrap"><table><thead><tr><th>需要保存什么</th><th>先选什么</th><th>理由</th></tr></thead><tbody>
+<tr><td>输入文字、加载状态、页面展示的数量</td><td>useState</td><td>变化需要反映到界面</td></tr>
+<tr><td>需要跨渲染、供多个回调访问的定时器句柄或订阅对象</td><td>useRef</td><td>需要记住它，但修改不必触发 UI 更新</td></tr>
+<tr><td>需要调用 focus 等方法的原生组件实例</td><td>useRef 配合组件 ref 属性</td><td>通过引用访问组件暴露的方法</td></tr>
+<tr><td>只在当前一次计算中用的临时结果</td><td>普通局部变量</td><td>不需要跨渲染保存</td></tr>
+</tbody></table></div>
+<p>不是所有句柄都要放 ref：如果定时器只在同一次 effect 的 setup 和 cleanup 里使用，局部变量加闭包已经够了。需要事件回调也能访问它时，再考虑 ref。</p>
+<p>“获取输入框并让它获得焦点”很接近 Android 开发经验：</p><pre><code data-language="tsx" data-example="ref-focus">import {useRef} from 'react';
+import {Button, TextInput, View} from 'react-native';
+
+export function FocusDemo() {
+  const inputRef = useRef&lt;TextInput&gt;(null);
+
+  return (
+    &lt;View&gt;
+      &lt;TextInput ref={inputRef} placeholder="请输入昵称" /&gt;
+      &lt;Button
+        title="开始输入"
+        onPress={() =&gt; inputRef.current?.focus()}
+      /&gt;
+    &lt;/View&gt;
+  );
+}</code></pre><p><code>useRef&lt;TextInput&gt;(null)</code> 中的尖括号是 TS 类型，表示这个 ref 用来引用 TextInput；初始 current 为 null。把它传给 <code>ref={inputRef}</code> 后，React 在组件挂载提交时设置引用，在卸载时清空。点击按钮时，通过 current 调用输入框的 focus 方法。</p>
+<p>你可以把操作目的类比成 <code>editText.requestFocus()</code>；但 JS 中拿到的是 RN 组件对外暴露的引用，不是任意一个 Java EditText 对象。可调用的方法以 RN 组件接口为准，尚未挂载或已卸载时 current 可能是 null，所以这里使用 <code>?.</code>。</p>
+<p><strong>最后接上闭包：</strong>旧回调如果保存的是 clicks 对象，并在执行时读取 clicks.current，就能读到后来写入的内容；如果先取出数字 <code>const savedCount = clicks.current</code>，回调再使用 savedCount，它仍可能是旧数字。不要把 ref 理解成“所有旧闭包都会自动更新”。一般在事件或 effect 中读写 ref，不要靠渲染期间随意修改 current 来驱动 UI。</p>
+
+<h3 id="hook-effect">4 · useEffect：在提交后建立外部同步，并交代怎么收尾</h3>
 <p>先回答“为什么需要它”：组件函数可能反复执行，渲染也可能被重试或放弃。如果直接在函数体里 <code>setInterval</code>、注册监听或连接服务，每次渲染都可能多建一份。Effect 用于把已经提交的组件数据与 React 之外的系统同步，例如定时器、事件源、网络或原生服务。</p>
 <p>以下计时器是可单独阅读的完整教学组件：</p>
 
