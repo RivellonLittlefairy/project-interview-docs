@@ -285,14 +285,106 @@ useEffect(() =&gt; {
 // 对“每次在原数值上加 1”的需求，回调改为：
 // setCount(previous =&gt; previous + 1);</code></pre><p>初次 count=0，空数组保留的定时器一直持有那轮回调，所以反复请求设为 1。改为 <code>setCount(previous =&gt; previous + 1)</code> 可以正确累加；但它不会顺便让回调里的其他旧 props 或 <code>console.log(count)</code> 自动变新。</p>
 <p>还有两条业务边界：异步请求可能先发后到，切换对象后应忽略旧结果或按 API 能力取消；不要直接写 <code>useEffect(async () =&gt; …)</code>，应在 setup 内定义并调用 async 函数，让 setup 能正常返回清理函数。</p>
-<h3 id="hook-callback">7 · useCallback / useMemo：知道缓存对象的区别即可</h3>
-<div class="table-wrap"><table><thead><tr><th>Hook</th><th>返回什么</th><th>依赖变化时</th></tr></thead><tbody><tr><td>useCallback(fn, deps)</td><td>函数引用</td><td>返回这一轮的新函数，不调用它</td></tr><tr><td>useMemo(calculate, deps)</td><td>计算结果</td><td>在渲染期间重新计算</td></tr></tbody></table></div>
-<p>两者都是缓存优化，不会创建后台线程，也不会自动修复旧闭包。useCallback 不阻止新函数被创建；依赖没变时，React 返回缓存的旧函数。只有消费者需要稳定引用或计算确有成本时再用。</p>
+<h3 id="hook-callback">7 · useCallback / useMemo：分别缓存函数引用和计算结果</h3>
+<p>这两个 Hook 都是<strong>性能优化工具</strong>。组件重新执行时，普通计算会重做，函数表达式也会产生新的函数。useMemo 可以复用之前的计算结果；useCallback 可以让你拿到之前的函数引用。先理解普通代码，再看它们省掉哪部分工作。</p>
+<h4>① 最直接的区别：一个返回数值，一个返回函数</h4><pre><code data-language="tsx" data-example="memo-vs-callback">// 组件中的教学片段，假设 a = 2、b = 3
+const total = useMemo(() =&gt; a + b, [a, b]);
+// total 是数字 5：React 在需要计算时调用传入的函数
+
+const calculate = useCallback(() =&gt; a + b, [a, b]);
+// calculate 是函数：useCallback 本身不执行 a + b
+const result = calculate(); // 你调用它时，才计算并得到 5</code></pre><p>两者都不是像 useState 一样返回数组。useMemo 返回计算函数的结果，可以是数字、字符串、数组或对象；useCallback 返回函数。<strong>calculate() 每次被调用，函数体都会执行；useCallback 不缓存它执行后的结果。</strong></p>
+<p>上面只是比较返回值，<code>a + b</code> 这么简单的运算通常直接计算就好。不要为使用 Hook 而使用 Hook。</p>
+<h4>② useMemo：数据没变时，不重复筛选列表</h4>
+<p>假设页面有搜索框和“切换主题”按钮。输入关键词要重新筛选列表；只切换主题时，关键词没有变，筛选结果可以继续使用。</p><pre><code data-language="tsx" data-example="memo-search-demo">import {useMemo, useState} from 'react';
+import {Button, Text, TextInput, View} from 'react-native';
+
+// 放在组件外，示例中这份数据不会随组件执行重新创建
+const BOOKS = [
+  {id: '1', title: 'Android 开发'},
+  {id: '2', title: 'React 入门'},
+  {id: '3', title: 'React Native 实战'},
+];
+
+export function SearchDemo() {
+  const [keyword, setKeyword] = useState('');
+  const [dark, setDark] = useState(false);
+
+  const visibleBooks = useMemo(() =&gt; {
+    return BOOKS.filter(book =&gt; book.title.includes(keyword));
+  }, [keyword]);
+
+  return (
+    &lt;View style={{backgroundColor: dark ? '#222' : '#fff'}}&gt;
+      &lt;TextInput
+        value={keyword}
+        onChangeText={setKeyword}
+        style={{color: dark ? '#fff' : '#111'}}
+      /&gt;
+      &lt;Button title="切换主题" onPress={() =&gt; setDark(v =&gt; !v)} /&gt;
+      {visibleBooks.map(book =&gt; (
+        &lt;Text key={book.id} style={{color: dark ? '#fff' : '#111'}}&gt;
+          {book.title}
+        &lt;/Text&gt;
+      ))}
+    &lt;/View&gt;
+  );
+}</code></pre><div class="table-wrap"><table><thead><tr><th>操作</th><th>组件函数</th><th>useMemo 里的筛选</th></tr></thead><tbody>
+<tr><td>首次显示</td><td>执行 SearchDemo</td><td>执行 filter，保存结果数组</td></tr>
+<tr><td>输入 React</td><td>因 keyword 更新而重新执行</td><td>keyword 变了，重新 filter，得到两本书</td></tr>
+<tr><td>切换深浅主题</td><td>因 dark 更新而重新执行</td><td>keyword 没变，通常直接返回之前的数组</td></tr>
+</tbody></table></div>
+<p><strong>它跳过的是筛选计算，不是整个组件的执行。</strong>JSX 和后面的 map 仍会随本次渲染计算，主题样式也仍然更新。正常情况下缓存按依赖复用，但它不是必须永久保留的业务存储；开发检查或 React 的缓存失效情形可能带来额外计算。</p>
+<p>如果不用 useMemo，可以直接写 <code>const visibleBooks = BOOKS.filter(...)</code>，功能一样，只是组件每次执行都做筛选。示例只有三本书，不值得专门优化；真正数据较多或计算有明显成本时再评估。若列表通过 props 传入，通常要依赖 <code>[books, keyword]</code>，不能照抄这里只有 keyword 的写法。</p>
+<p><strong>Android 类比：</strong>你缓存了“某份列表 + 某个关键词”的过滤结果。只改变页面颜色时继续用缓存；列表或关键词改变，缓存才失效。useMemo 帮你按依赖管理这一步。</p>
+<h4>③ useCallback：为什么要保留同一个函数？</h4>
+<p>先看普通 JS：下面两个函数写法一样，但它们是两次创建的函数对象。</p><pre><code data-language="tsx" data-example="callback-identity">const first = () =&gt; 1;
+const second = () =&gt; 1;
+console.log(first === second); // false</code></pre><p>因此，如果组件每次都执行 <code>const onPress = () =&gt; ...</code>，每次得到的函数引用也会变。大部分时候这没问题；但某个消费者会比较函数引用时，就可能影响它能否跳过重复工作。</p>
+<p>一个典型消费者是 <code>React.memo</code> 包装的子组件。它可以在 props 未变化时跳过父级带来的重新渲染，默认逐项用 Object.is 比较 props。父级每次传入新函数，这个 prop 就被认为变了。注意：React.memo 用于组件，useMemo 用于组件内的计算结果，它们不是同一个 API。</p><pre><code data-language="tsx" data-example="callback-child-demo">import {memo, useCallback, useState} from 'react';
+import {Button, Text, View} from 'react-native';
+
+type AddButtonProps = {onIncrement: () =&gt; void};
+
+// 定义在父组件外，避免每轮重新创建组件类型
+const AddButton = memo(function AddButton({onIncrement}: AddButtonProps) {
+  return &lt;Button title="加 1" onPress={onIncrement} /&gt;;
+});
+
+export function CallbackDemo() {
+  const [count, setCount] = useState(0);
+
+  const handleIncrement = useCallback(() =&gt; {
+    setCount(previous =&gt; previous + 1);
+  }, []);
+
+  return (
+    &lt;View&gt;
+      &lt;Text&gt;次数：{count}&lt;/Text&gt;
+      &lt;AddButton onIncrement={handleIncrement} /&gt;
+    &lt;/View&gt;
+  );
+}</code></pre><ol><li>首次执行父组件，useCallback 返回一个函数 F1，传给 AddButton。</li><li>用户点击按钮，F1 调用 setCount，请求 count 加 1。</li><li>父组件再次执行，数字文本需要更新；useCallback 的依赖没变，返回的仍是 F1。</li><li>AddButton 唯一的 prop 仍是 F1，React.memo 可以跳过这次由父级更新带来的子组件重新执行。</li></ol>
+<p>这里数字文本在父组件中，子组件只负责一个固定标题的按钮，所以子组件不需要读取 count。如果把 count 也传给子组件，那么 count 变化后它仍需要更新。子组件自身 state 或使用的 Context 更新，也可能让它重新渲染；React.memo 是优化，不是绝对不执行的保证。</p>
+<p>不用 useCallback，写成 <code>const handleIncrement = () =&gt; setCount(n =&gt; n + 1)</code>，功能仍然正确，但父级每次执行都会产生新函数，子组件的这个 prop 每次都不同。没有 memo 等需要稳定引用的消费者时，单独加 useCallback 往往没有实际收益。</p>
+<p><strong>一个重要细节：</strong>useCallback 不会阻止你传入的函数表达式被求值、创建新函数；依赖没变时，React 忽略这轮新传入的函数，返回缓存的旧函数。它稳定的是你最终拿到的引用。可以类比 Android 中保留并反复传递同一个监听器对象，但 useCallback 不会替你注册或执行监听器。</p>
+<h4>④ 依赖数组决定何时更新缓存，不会让旧闭包自动变新</h4>
+<p>上例为什么可以写 []？回调没有读取外层 count，而是用 React 提供 previous 的更新函数；setCount 自身的身份稳定。若回调读取 itemId、jumpUrl 等会变化的值，就要声明对应依赖。</p>
 <p><strong>项目实例：头像点击。</strong><code data-source-path="pikachu/pages/VipPin/src/components/NavBar/Avatar.tsx">pikachu/pages/VipPin/src/components/NavBar/Avatar.tsx</code>，66 行附近：</p><pre><code data-language="tsx" data-example="hook-project-avatar">const onPress = useCallback(() =&gt; {
   if (jumpUrl) {
     void ZRouter.openURL(jumpUrl)
   }
 }, [jumpUrl])</code></pre><p>jumpUrl 变化时得到读取新地址的回调；改成 [] 可能一直打开旧地址。同文件把 onPress 传给点击组件，useCallback 本身不会打开页面。依赖数组是缓存更新条件，不是闭包捕获列表。</p>
+<div class="table-wrap"><table><thead><tr><th>这一轮 jumpUrl</th><th>useCallback 返回什么</th><th>点击后的目标</th></tr></thead><tbody>
+<tr><td>首次为 A</td><td>保存并返回捕获 A 的函数 F1</td><td>A</td></tr>
+<tr><td>仍为 A，因其他原因重新渲染</td><td>通常复用 F1</td><td>A</td></tr>
+<tr><td>改为 B</td><td>返回本轮捕获 B 的新函数</td><td>B</td></tr>
+</tbody></table></div>
+<p>这段项目代码说明了正确声明 jumpUrl 依赖的含义；仅凭出现 useCallback，不能证明子组件一定跳过了渲染，也不能断言已经获得多少性能收益。</p>
+<h4>⑤ 写业务时，先记住这几条</h4>
+<ul><li><strong>需要复用计算结果：</strong>考虑 useMemo；需要稳定函数引用：考虑 useCallback。普通计算和普通回调完全可以直接写。</li><li><strong>依赖逐项比较：</strong>对象、数组、函数通常按引用判断；每次新建一个 options 对象再放进依赖，会使缓存经常失效。它们不进行深比较。</li><li><strong>不是后台线程：</strong>useMemo 的计算仍在渲染过程中同步执行，大计算依然可能卡住 JS。</li><li><strong>useMemo 计算要纯粹：</strong>不要在里面请求网络、注册监听或 setState；这些操作可能因重算而重复发生。useCallback 的回调可以在点击时执行请求，但 Hook 本身不会调用它。</li><li><strong>不要为少执行而漏依赖：</strong>稳定地保留一个读取旧数据的函数，仍然是错误。依赖数组是缓存更新条件，不是捕获列表。</li></ul>
+<p><strong>面试时能讲到这里即可：</strong>useMemo 按依赖缓存计算结果，useCallback 按依赖缓存函数引用。它们用于减少有必要避免的重复计算或更新，前提是依赖正确，并且实际场景能从缓存中受益。</p>
+
 <h3 id="hook-project">8 · 项目里的状态更新，以及 Hook 调用规则</h3>
 <p><code data-source-path="pikachu/pages/VipPin/src/PinIndex.tsx">pikachu/pages/VipPin/src/PinIndex.tsx</code>，115 行附近：</p><pre><code data-language="tsx" data-example="hook-project-follow">const handleFollowStatusChange = useCallback((isFollowing: boolean) =&gt; {
   setPageData(prev =&gt; ({

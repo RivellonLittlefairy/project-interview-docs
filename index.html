@@ -3,9 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="总览与导航：基于当前工作区源码证据整理的项目面试资料">
+  <meta name="description" content="Android 与 Kotlin 面试资料目录：学习专题、项目面试、源码仓库与参考归档，按阅读目的分类。">
   <title>项目面试资料导航｜项目面试资料</title>
   <link rel="stylesheet" href="assets/docs.css">
+  <link rel="stylesheet" href="assets/home.css">
   <script>
     try {
       const savedTheme = localStorage.getItem("interview-docs-theme");
@@ -14,7 +15,7 @@
     } catch {}
   </script>
 </head>
-<body>
+<body class="docs-home">
   <a class="skip-link" href="#main-content">跳到正文</a>
   <header class="topbar">
     <button class="icon-button menu-button" type="button" data-menu-toggle aria-label="打开文档导航" aria-expanded="false">☰</button>
@@ -29,137 +30,86 @@
   </header>
   <div class="drawer-backdrop" data-drawer-backdrop hidden></div>
   <div class="docs-layout">
-    <nav class="sidebar" data-sidebar aria-label="全站文档导航">
-      <div class="sidebar-heading">文档导航</div>
-      
-        <section class="nav-group">
-          <h2 class="nav-group-title">逐仓文档</h2>
-          <a class="nav-link" href="repositories.html">66 个仓库独立分析</a>
-        </section>
-        <section class="nav-group">
-          <h2 class="nav-group-title">开始使用</h2>
-          <a class="nav-link active" href="index.html" aria-current="page">总览与导航</a>
-<a class="nav-link" href="50-interview-project-summary.html">五条主讲项目线</a>
-<a class="nav-link" href="70-resume-and-star-stories.html">简历与 STAR</a>
-<a class="nav-link" href="60-interview-question-bank.html">70 道面试题</a>
-        </section>
+<nav class="sidebar" data-sidebar aria-label="资料分类导航"><div class="sidebar-heading">阅读导航</div><a class="nav-link active" href="index.html" aria-current="page">资料首页</a><section class="nav-group"><h2 class="nav-group-title">01 · 开始复习</h2><a class="nav-link" href="#start">先确定阅读目标</a><a class="nav-link" href="android-3-5-years-interview-guide.html">Android 面试知识地图</a></section><section class="nav-group"><h2 class="nav-group-title">02 · 技术专题</h2><a class="nav-link" href="#kotlin">Kotlin 基础</a><a class="nav-link" href="#android">Android 专题</a><a class="nav-link" href="#react-native">React 与 React Native</a><a class="nav-link" href="#network">网络协议</a></section><section class="nav-group"><h2 class="nav-group-title">03 · 项目面试</h2><a class="nav-link" href="50-interview-project-summary.html">项目主线与口述</a><a class="nav-link" href="60-interview-question-bank.html">项目源码面试题库</a><a class="nav-link" href="70-resume-and-star-stories.html">简历与 STAR 故事</a></section><section class="nav-group"><h2 class="nav-group-title">04 · 源码与仓库</h2><a class="nav-link" href="repositories.html">66 个仓库逐仓分析</a><a class="nav-link" href="00-repository-inventory.html">工作区仓库全量盘点</a><a class="nav-link" href="10-android-business-repositories.html">Android 业务链路</a><a class="nav-link" href="20-android-infrastructure-media.html">基础设施与媒体</a><a class="nav-link" href="30-cross-platform-rn-web.html">RN / Web 项目分析</a><a class="nav-link" href="31-tools-samples-and-assets.html">工具、样例与文档资产</a></section><section class="nav-group"><h2 class="nav-group-title">05 · 参考与归档</h2><a class="nav-link" href="#archive">复核、模板与建设记录</a><a class="nav-link" href="#reading-notes">资料使用说明</a></section><p class="sidebar-note">目录整理：2026-09-21<br>各文档的源码与版本快照以正文为准。</p></nav><main class="article-shell home-main" id="main-content">
+<header class="home-intro">
+  <p class="home-eyebrow">ANDROID · KOTLIN · REACT NATIVE</p>
+  <h1 id="项目面试资料导航">项目面试资料库</h1>
+  <p>先补知识，再准备项目表达；需要具体实现时，回到源码和仓库查证。</p>
+  <p class="home-inventory">现有 93 个页面：11 篇学习资料、3 篇项目面试材料、6 个源码与仓库入口、66 篇逐仓分析、6 篇参考归档，以及本首页。</p>
+</header>
+<section class="home-section" id="start" aria-labelledby="start-heading">
+  <div class="home-section-heading"><span>01</span><h2 id="start-heading">开始复习</h2></div>
+  <nav class="home-routes" aria-label="按阅读目的选择">
+    <a href="#study"><strong>补技术知识</strong><span>按 Kotlin、Android、RN、协议选专题 ↓</span></a>
+    <a href="#interview"><strong>准备项目面试</strong><span>选项目主线，练追问，整理简历 ↓</span></a>
+    <a href="#sources"><strong>查项目源码</strong><span>按业务、底层能力或仓库名称查证 ↓</span></a>
+  </nav>
+<div class="repository-grid">
+<a class="repository-card home-doc" data-doc="android-3-5-years-interview-guide.html" href="android-3-5-years-interview-guide.html"><span class="repository-card-category">先看全貌</span><strong>3～5 年 Android 面试知识地图</strong><span>按知识域查漏补缺，再进入下面的专项文章；适合确定今天先复习什么。</span></a>
+</div>
+</section>
+<span id="external-guides-heading" aria-hidden="true"></span><section class="home-section" id="study" aria-labelledby="study-heading">
+  <div class="home-section-heading"><span>02</span><h2 id="study-heading">技术专题</h2><small>10 篇专项文章</small></div>
+  <p class="home-section-description">结合上面的知识地图查漏补缺，按当前薄弱项选择一组阅读。</p>
+<section class="home-category" id="kotlin" aria-labelledby="kotlin-heading"><div class="home-category-heading"><h3 id="kotlin-heading">Kotlin 基础</h3><span>2 篇</span></div><p>先掌握语言与集合，再回到业务代码。</p><div class="repository-grid">
+<a class="repository-card home-doc" data-doc="guides/kotlin-keywords-interview-guide.html" href="guides/kotlin-keywords-interview-guide.html"><span class="repository-card-category">语言基础</span><strong>Kotlin 关键字</strong><span>关键字含义、Java 对照、Android 用法和容易混淆的概念。</span></a>
+<a class="repository-card home-doc" data-doc="kotlin-data-structures-guide.html" href="kotlin-data-structures-guide.html"><span class="repository-card-category">集合与选型</span><strong>Kotlin 数据结构与 API</strong><span>数组、List、Set、Map、栈队列的用法、优缺点、复杂度与常见坑。</span></a>
+</div></section>
+<section class="home-category" id="android" aria-labelledby="android-heading"><div class="home-category-heading"><h3 id="android-heading">Android 专题</h3><span>5 篇</span></div><p>按当前需要补充线程、生命周期与恢复、UI、架构或存储知识。</p><div class="repository-grid">
+<a class="repository-card home-doc" data-doc="android-lifecycle-process-death-guide.html" href="android-lifecycle-process-death-guide.html"><span class="repository-card-category">组件、View 与状态恢复</span><strong>生命周期与进程死亡</strong><span>Activity、Fragment、View 复用、四大组件与进程恢复，结合项目原码，附 24 道面试问答。</span></a>
+<a class="repository-card home-doc" data-doc="android-handler-looper-guide.html" href="android-handler-looper-guide.html"><span class="repository-card-category">线程与消息机制</span><strong>Handler / Looper 原理与项目实战</strong><span>从消息循环、延迟和取消，到项目中的 Toast、开屏广告、进度上传与后台重试，附常见面试问答。</span></a>
+<a class="repository-card home-doc" data-doc="guides/android-custom-view-interview-guide.html" href="guides/android-custom-view-interview-guide.html"><span class="repository-card-category">UI 基础</span><strong>Android 自定义 View</strong><span>测量、布局、绘制和触摸分发，结合源码准备追问。</span></a>
+<a class="repository-card home-doc" data-doc="guides/devkit-mvi-paging3-guide.html" href="guides/devkit-mvi-paging3-guide.html"><span class="repository-card-category">架构与分页</span><strong>MVI 与 Paging3</strong><span>从状态管理、分页原理到 DevKit 和业务调用实例。</span></a>
+<a class="repository-card home-doc" data-doc="android-storage-guide.html" href="android-storage-guide.html"><span class="repository-card-category">数据存储</span><strong>Android 存储方案</strong><span>SP、MMKV、DataStore、Room、文件与安全存储的选型。</span></a>
+</div></section>
+<section class="home-category" id="react-native" aria-labelledby="react-native-heading"><div class="home-category-heading"><h3 id="react-native-heading">React 与 React Native</h3><span>2 篇</span></div><p>推荐顺序：先读 React 基础，再看 RN 原理。</p><div class="repository-grid">
+<a class="repository-card home-doc" data-doc="react-basics-for-android.html" href="react-basics-for-android.html"><span class="repository-card-category">01 · 入门</span><strong>React 与前端基础</strong><span>面向 Android 开发者的 JS、闭包、组件、数据流与 Hook。</span></a>
+<a class="repository-card home-doc" data-doc="react-native-0.72-principles.html" href="react-native-0.72-principles.html"><span class="repository-card-category">02 · 原理与接入</span><strong>React Native 0.72 原理</strong><span>Android 宿主、Bridge、渲染与新架构，章节标注 P1 / P2 / P3。</span></a>
+</div></section>
+<section class="home-category" id="network" aria-labelledby="network-heading"><div class="home-category-heading"><h3 id="network-heading">网络协议</h3><span>1 篇</span></div><p>从通信模型理解协议与可靠性。</p><div class="repository-grid">
+<a class="repository-card home-doc" data-doc="mqtt-principles-guide.html" href="mqtt-principles-guide.html"><span class="repository-card-category">发布订阅</span><strong>MQTT 原理详解</strong><span>Topic、QoS、会话、保留消息、遗嘱与断线恢复。</span></a>
+</div></section>
+</section>
+<section class="home-section" id="interview" aria-labelledby="interview-heading">
+  <div class="home-section-heading"><span>03</span><h2 id="interview-heading">项目面试</h2><small>3 篇</small></div>
+  <p class="home-section-description">推荐顺序：确定自己参与过的项目主线 → 用题库练追问 → 整理成简历与 STAR 故事。</p>
+<div class="repository-grid">
+<a class="repository-card home-doc" data-doc="50-interview-project-summary.html" href="50-interview-project-summary.html"><span class="repository-card-category">01 · 选主线</span><strong>项目主线与口述</strong><span>整理五条项目线，准备 30 秒概述和 2 分钟展开。</span></a>
+<a class="repository-card home-doc" data-doc="60-interview-question-bank.html" href="60-interview-question-bank.html"><span class="repository-card-category">02 · 练追问</span><strong>项目源码面试题库</strong><span>围绕项目链路、设计取舍、异常处理和验证准备回答。</span></a>
+<a class="repository-card home-doc" data-doc="70-resume-and-star-stories.html" href="70-resume-and-star-stories.html"><span class="repository-card-category">03 · 写经历</span><strong>简历与 STAR 故事</strong><span>把自己实际参与的需求、动作和结果整理成简历与案例。</span></a>
+</div>
+</section>
+<section class="home-section" id="sources" aria-labelledby="sources-heading">
+  <div class="home-section-heading"><span>04</span><h2 id="sources-heading">源码与仓库</h2><small>6 个入口 · 66 篇逐仓分析</small></div>
+  <p class="home-section-description">知道仓库名时进入逐仓目录；想理解一条业务链路时，选择对应的综合分析。这里的 RN / Web 是项目分析，与前面的原理专题配合阅读。</p>
+<div class="repository-grid">
+<a class="repository-card home-doc" data-doc="repositories.html" href="repositories.html"><span class="repository-card-category">按仓库名查</span><strong>66 个仓库逐仓分析</strong><span>每仓一页：职责、源码入口、调用链、风险与面试追问。</span></a>
+<a class="repository-card home-doc" data-doc="00-repository-inventory.html" href="00-repository-inventory.html"><span class="repository-card-category">查看全貌</span><strong>工作区仓库全量盘点</strong><span>核对仓库分类、工程属性、构建入口与分析范围。</span></a>
+<a class="repository-card home-doc" data-doc="10-android-business-repositories.html" href="10-android-business-repositories.html"><span class="repository-card-category">按业务查</span><strong>Android 业务链路</strong><span>启动、首页、阅读、音频、评论、Feed 与账号等业务。</span></a>
+<a class="repository-card home-doc" data-doc="20-android-infrastructure-media.html" href="20-android-infrastructure-media.html"><span class="repository-card-category">按底层能力查</span><strong>基础设施与媒体</strong><span>MVI、网络、路由、Hybrid、播放器与 JNI 等基础设施。</span></a>
+<a class="repository-card home-doc" data-doc="30-cross-platform-rn-web.html" href="30-cross-platform-rn-web.html"><span class="repository-card-category">查项目用法</span><strong>RN / Web 项目分析</strong><span>工作区的跨端调用与业务实践，可配合 RN 原理专题阅读。</span></a>
+<a class="repository-card home-doc" data-doc="31-tools-samples-and-assets.html" href="31-tools-samples-and-assets.html"><span class="repository-card-category">查看其他仓库</span><strong>工具、样例与文档资产</strong><span>区分业务工程、个人样例、上游开源项目和资料仓库。</span></a>
+</div>
+</section>
+<section class="home-section" id="archive" aria-labelledby="archive-heading">
+  <div class="home-section-heading"><span>05</span><h2 id="archive-heading">参考与归档</h2><small>6 篇</small></div>
+  <p class="home-section-description">查证据复核过程、维护资料或回溯建设记录时，再展开这里。</p>
+  <details class="home-disclosure"><summary>展开复核、模板与建设记录 <span>6 篇</span></summary><div class="home-disclosure-body">
+<section class="home-category" aria-labelledby="evidence-heading"><h3 id="evidence-heading">证据复核</h3><div class="repository-grid">
+<a class="repository-card home-doc" data-doc="40-android-docs-evidence-review.html" href="40-android-docs-evidence-review.html"><span class="repository-card-category">复核记录</span><strong>Android 源码证据复核</strong><span>API、源码路径与表述的抽查记录。</span></a>
+<a class="repository-card home-doc" data-doc="41-full-workspace-coverage-review.html" href="41-full-workspace-coverage-review.html"><span class="repository-card-category">复核记录</span><strong>全工作区覆盖复核</strong><span>仓库覆盖、交叉证据与归因边界的历史复核。</span></a>
+</div></section><section class="home-category" aria-labelledby="templates-heading"><h3 id="templates-heading">模板与执行计划</h3><div class="repository-grid">
+<a class="repository-card home-doc" data-doc="ANALYSIS-TEMPLATE.html" href="ANALYSIS-TEMPLATE.html"><span class="repository-card-category">维护参考</span><strong>仓库分析模板</strong><span>需要新增仓库分析时使用的统一模板。</span></a>
+<a class="repository-card home-doc" data-doc="2026-07-24-all-repositories-analysis-plan.html" href="2026-07-24-all-repositories-analysis-plan.html"><span class="repository-card-category">历史计划</span><strong>全仓分析执行计划</strong><span>最初的资料建设范围、步骤和验收安排。</span></a>
+</div></section><section class="home-category" aria-labelledby="construction-heading"><h3 id="construction-heading">专题建设记录</h3><div class="repository-grid">
+<a class="repository-card home-doc" data-doc="guides/kotlin-keywords-interview-guide-design.html" href="guides/kotlin-keywords-interview-guide-design.html"><span class="repository-card-category">设计规格</span><strong>Kotlin 关键字指南设计</strong><span>记录专题的信息组织与设计约定。</span></a>
+<a class="repository-card home-doc" data-doc="guides/kotlin-keywords-interview-guide-plan.html" href="guides/kotlin-keywords-interview-guide-plan.html"><span class="repository-card-category">实施记录</span><strong>Kotlin 关键字指南实施计划</strong><span>记录专题编写、检查和交付的安排。</span></a>
+</div></section></div></details>
+<details class="home-disclosure" id="reading-notes"><summary>资料使用说明、阅读建议与项目边界</summary><div class="home-disclosure-body markdown-body"><p class="home-reference-note">以下保留早期仓库资料的使用说明与证据快照，供准备项目表达时查阅。全站现有分类和入口以上方目录为准。</p>
 
-        <section class="nav-group">
-          <h2 class="nav-group-title">仓库分析</h2>
-          <a class="nav-link" href="00-repository-inventory.html">全量仓库盘点</a>
-<a class="nav-link" href="10-android-business-repositories.html">Android 业务仓库</a>
-<a class="nav-link" href="20-android-infrastructure-media.html">基础设施与媒体</a>
-<a class="nav-link" href="30-cross-platform-rn-web.html">RN 与 Web</a>
-<a class="nav-link" href="31-tools-samples-and-assets.html">工具、样例与资产</a>
-        </section>
-
-        <section class="nav-group">
-          <h2 class="nav-group-title">质量复核</h2>
-          <a class="nav-link" href="40-android-docs-evidence-review.html">Android 证据复核</a>
-<a class="nav-link" href="41-full-workspace-coverage-review.html">全工作区覆盖复核</a>
-        </section>
-
-        <section class="nav-group">
-          <h2 class="nav-group-title">辅助材料</h2>
-          <a class="nav-link" href="ANALYSIS-TEMPLATE.html">仓库分析模板</a>
-<a class="nav-link" href="2026-07-24-all-repositories-analysis-plan.html">原始执行计划</a>
-        </section>
-
-        <section class="nav-group">
-          <h2 class="nav-group-title">Android 专题</h2>
-          <a class="nav-link" href="android-3-5-years-interview-guide.html">3～5 年 Android 面试知识地图</a>
-          <a class="nav-link" href="android-storage-guide.html">Android 存储方案</a>
-        </section>
-        <section class="nav-group">
-          <h2 class="nav-group-title">网络协议专题</h2>
-          <a class="nav-link" href="mqtt-principles-guide.html">MQTT 原理详解</a>
-        </section>
-        <section class="nav-group">
-          <h2 class="nav-group-title">跨端原理专题</h2>
-          <a class="nav-link" href="react-basics-for-android.html">React 与前端基础</a>
-          <a class="nav-link" href="react-native-0.72-principles.html">React Native 0.72 原理</a>
-        </section>
-      <p class="sidebar-note">离线资料 · 证据快照 2026-07-24</p>
-    </nav>
-    <main class="article-shell" id="main-content">
-      <div class="breadcrumbs"><a href="index.html">首页</a><span>/</span><span>开始使用</span><span>/</span><span>总览与导航</span></div>
-      
-    <section class="stats-grid" aria-label="资料统计">
-      <div class="stat-card"><strong>66/66</strong><span>有效仓库已覆盖</span></div>
-      <div class="stat-card"><strong>70</strong><span>道面试追问题</span></div>
-      <div class="stat-card"><strong>10</strong><span>个 STAR 模板</span></div>
-      <div class="stat-card"><strong>通过</strong><span>最终覆盖复核</span></div>
-    </section>
-    <a class="repository-cta" href="repositories.html">
-      <span><strong>进入 66 个仓库逐仓文档</strong><small>每个仓库独立一页：源码入口、调用链、亮点、风险、面试讲法、追问与证据</small></span>
-      <span aria-hidden="true">→</span>
-    </a>
-    <a class="repository-cta" href="android-storage-guide.html">
-      <span><strong>学习 Android 存储方案</strong><small>SP、MMKV、DataStore、Room、文件、MediaStore、SAF、Keystore，结合真实业务源码理解</small></span>
-      <span aria-hidden="true">→</span>
-    </a>
-    <a class="repository-cta" href="android-3-5-years-interview-guide.html">
-      <span><strong>3～5 年 Android 面试知识地图</strong><small>19 个知识域、186 个可折叠问答，从会用深入到原理、取舍、排障和项目表达</small></span>
-      <span aria-hidden="true">→</span>
-    </a>
-    <a class="repository-cta" href="react-basics-for-android.html">
-      <span><strong>React 与前端基础 · Android/Kotlin 开发者入门</strong><small>现代 JS、TypeScript、JSX、闭包、React 数据流与 Hook 详解，配合逐步执行过程和真实项目代码</small></span>
-      <span aria-hidden="true">→</span>
-    </a>
-    <a class="repository-cta" href="react-native-0.72-principles.html">
-      <span><strong>React Native 0.72 原理 · Android 开发者进阶</strong><small>结合 RN 0.72.10 官方机制和项目源码，理解 Bridge、Paper、Fabric、JSI、Hermes 与 Android 原生接入</small></span>
-      <span aria-hidden="true">→</span>
-    </a>
-    <a class="repository-cta" href="mqtt-principles-guide.html">
-      <span><strong>MQTT 原理详解</strong><small>发布订阅、报文流程、QoS 0/1/2、断线恢复、保留消息与遗嘱，结合智能设备控制理解可靠性边界</small></span>
-      <span aria-hidden="true">→</span>
-    </a>
-    <section class="external-guides" aria-labelledby="external-guides-heading">
-      <div class="repository-group-heading"><h2 id="external-guides-heading">docs 目录全部 HTML 入口</h2><span>5 篇</span></div>
-      <p>完成型专题直接用于复习；superpowers 下的计划与规格归入开发归档，保留入口但不作为主复习材料。</p>
-      
-    <section class="repository-group external-guide-group">
-      <div class="repository-group-heading"><h2>docs 根目录专题</h2><span>3 篇</span></div>
-      <div class="repository-grid">
-        <a class="repository-card" href="guides/android-custom-view-interview-guide.html">
-          <span class="repository-card-category">android-custom-view-interview-guide.html</span>
-          <strong>Android 自定义 View</strong>
-          <span>传统 View 体系、测量布局绘制、触摸分发与源码面试追问。</span>
-        </a>
-<a class="repository-card" href="guides/devkit-mvi-paging3-guide.html">
-          <span class="repository-card-category">devkit-mvi-paging3-guide.html</span>
-          <strong>DevKit MVI × Paging3</strong>
-          <span>从框架原理到盐言真实业务调用的 MVI 与 Paging3 专题。</span>
-        </a>
-<a class="repository-card" href="guides/kotlin-keywords-interview-guide.html">
-          <span class="repository-card-category">kotlin-keywords-interview-guide.html</span>
-          <strong>Kotlin 关键字</strong>
-          <span>面向 Android 客户端面试的 Kotlin 关键字、原理与 Java 对照。</span>
-        </a>
-      </div>
-    </section>
-
-    <section class="repository-group external-guide-group">
-      <div class="repository-group-heading"><h2>开发归档</h2><span>2 篇</span></div>
-      <div class="repository-grid">
-        <a class="repository-card" href="guides/kotlin-keywords-interview-guide-plan.html">
-          <span class="repository-card-category">superpowers/plans/2026-08-15-kotlin-keywords-interview-guide.html</span>
-          <strong>Kotlin 指南实施计划</strong>
-          <span>Kotlin 专题的实施步骤与验收记录，供回溯文档建设过程。</span>
-        </a>
-<a class="repository-card" href="guides/kotlin-keywords-interview-guide-design.html">
-          <span class="repository-card-category">superpowers/specs/2026-08-15-kotlin-keywords-interview-guide-design.html</span>
-          <strong>Kotlin 指南设计规格</strong>
-          <span>Kotlin 专题的信息架构与设计规格，不作为主复习内容。</span>
-        </a>
-      </div>
-    </section>
-    </section>
-      <article class="markdown-body">
-        <h1 id="项目面试资料导航">项目面试资料导航</h1>
 <blockquote class="callout"><p>适用对象：约三年 Android 经验的候选人。<br>证据快照：2026-07-24，基于 <code>C:\Users\msf\Desktop\code</code> 当前检出内容。<br>核心原则：先讲自己真实做过的业务接入，再用源码解释机制；不要把公司框架、团队仓库或上游项目包装成个人作品。</p>
 </blockquote>
-<h2 id="1-这套资料覆盖什么">1. 这套资料覆盖什么</h2>
+<h3 id="1-这套资料覆盖什么">1. 这套资料覆盖什么</h3>
 <ul>
 <li><a href="00-repository-inventory.html">仓库全量盘点</a> 记录了 67 个 <code>.git</code> 标记，其中 66 个是有效 Git 仓库；另有 <code>pikachu</code>、<code>xxxxx-html</code> 等非 Git 源码或资料目录。</li>
 <li><a href="10-android-business-repositories.html">Android 业务仓库</a> 深入或标准分析 23 个业务/主工程仓库。</li>
@@ -171,7 +121,7 @@
 <li><a href="41-full-workspace-coverage-review.html">全工作区覆盖复核</a> 已完成 66 个有效 Git 仓库的并集、大小写和交叉证据检查：覆盖、源码证据、个人归因措辞和敏感信息门禁均已通过。通过表示文档口径合格，不表示源码已经证明候选人的具体经历；使用综合材料时仍须逐条确认“需本人确认”项。</li>
 </ul>
 <p>这不是“所有仓库都是候选人的项目”的清单，也不是完整 Git 历史归属审计。它能证明当前源码中有什么、调用链如何工作、有哪些工程风险；不能单独证明候选人负责过什么。</p>
-<h2 id="2-三层证据边界">2. 三层证据边界</h2>
+<h3 id="2-三层证据边界">2. 三层证据边界</h3>
 <table>
 <thead>
 <tr>
@@ -200,7 +150,7 @@
 <p>安全表达模板：</p>
 <blockquote class="callout"><p>该框架/基础库由团队提供；如果这个调用点确实属于我的工作范围（需本人确认），我负责的是业务状态建模、接口接入、异常处理、联调或问题定位。结果只补充我能核验的真实数据。</p>
 </blockquote>
-<h2 id="3-先建立正确的模块关系">3. 先建立正确的模块关系</h2>
+<h3 id="3-先建立正确的模块关系">3. 先建立正确的模块关系</h3>
 <table>
 <thead>
 <tr>
@@ -240,15 +190,15 @@
 <td>适合讲 Android/RN 边界协作；不声称编写了 PRN 底层或整个 RN 工作区。</td>
 </tr>
 </tbody></table>
-<h2 id="4-推荐阅读顺序">4. 推荐阅读顺序</h2>
-<h3 id="30-分钟-先形成可说的项目故事">30 分钟：先形成可说的项目故事</h3>
+<h3 id="4-推荐阅读顺序">4. 推荐阅读顺序</h3>
+<h4 id="30-分钟-先形成可说的项目故事">30 分钟：先形成可说的项目故事</h4>
 <ol>
 <li>读 <a href="50-interview-project-summary.html">项目主线总结</a> 的 30 秒、2 分钟和五条主线。</li>
 <li>用 <a href="70-resume-and-star-stories.html">简历与 STAR 模板</a> 只选择本人真实参与的 1—2 条主线，补齐“需本人确认”和“结果待补”。</li>
 <li>从 <a href="60-interview-question-bank.html">面试题库</a> 选择对应主讲题，练习 40—90 秒的“边界—链路—取舍—验证”回答。</li>
 <li>回到对应专题文档，记住入口、关键状态、一个取舍、一个风险和两个源码锚点。</li>
 </ol>
-<h3 id="2-小时-准备源码追问">2 小时：准备源码追问</h3>
+<h4 id="2-小时-准备源码追问">2 小时：准备源码追问</h4>
 <ol>
 <li>读 <a href="10-android-business-repositories.html">Android 业务仓库</a> 的第 0、24、25 节，再读所选业务章节。</li>
 <li>读 <a href="20-android-infrastructure-media.html">Android 基础设施与媒体</a> 的第 0、34—36 节，再读相关基础库章节。</li>
@@ -257,7 +207,7 @@
 <li>用 <a href="41-full-workspace-coverage-review.html">全工作区覆盖复核</a> 核对 66 仓覆盖和个人归因门禁，再用 <a href="60-interview-question-bank.html">面试题库</a> 做源码追问、压力追问与模拟面试。</li>
 <li>最后在 <a href="70-resume-and-star-stories.html">简历与 STAR 模板</a> 中补本人动作、验证证据和真实结果；未确认的模板不进入简历。</li>
 </ol>
-<h3 id="全量审计-理解工作区边界">全量审计：理解工作区边界</h3>
+<h4 id="全量审计-理解工作区边界">全量审计：理解工作区边界</h4>
 <ol>
 <li>从 <a href="00-repository-inventory.html">仓库全量盘点</a> 核对仓库性质和当前 checkout。</li>
 <li>顺序阅读 <code>10</code>、<code>20</code>、<code>30</code>、<code>31</code>。</li>
@@ -265,7 +215,7 @@
 <li>以 <a href="41-full-workspace-coverage-review.html">全工作区覆盖复核</a> 收口全仓覆盖：当前结论是“最终通过，可进入综合面试材料”，但候选人仍须确认每项真实职责、动作和结果。</li>
 <li>再按 <a href="50-interview-project-summary.html">项目主线总结</a> → <a href="60-interview-question-bank.html">面试题库</a> → <a href="70-resume-and-star-stories.html">简历与 STAR 模板</a> 的顺序完成口述、追问和简历准备。</li>
 </ol>
-<h2 id="5-文档地图">5. 文档地图</h2>
+<h3 id="5-文档地图">5. 文档地图</h3>
 <table>
 <thead>
 <tr>
@@ -325,7 +275,7 @@
 <td>五组项目经历、十个 STAR 故事、岗位定制和真实性问卷</td>
 </tr>
 </tbody></table>
-<h2 id="6-面试前最后检查">6. 面试前最后检查</h2>
+<h3 id="6-面试前最后检查">6. 面试前最后检查</h3>
 <ul>
 <li><input disabled="" type="checkbox"> 只保留本人确实做过的需求和调用点。</li>
 <li><input disabled="" type="checkbox"> 能说清“公司已有能力”和“我的业务动作”的分界。</li>
@@ -337,31 +287,5 @@
 <li><input disabled="" type="checkbox"> 不复述 Token、密钥、内网地址或其他敏感配置。</li>
 </ul>
 
-      </article>
-      
-    <nav class="page-pager" aria-label="文档翻页">
-      <span></span>
-      <a class="next" href="50-interview-project-summary.html"><small>下一篇 →</small><span>五条主讲项目线</span></a>
-    </nav>
-      <footer class="article-footer">
-        本站由 Markdown 源文档离线生成。涉及个人职责、动作和结果的内容，请只使用本人可核验的部分。
-      </footer>
-    </main>
-    <aside class="page-toc" aria-label="本页目录">
-      <div class="toc-heading">本页目录</div>
-      <a class="toc-link level-2" href="#1-这套资料覆盖什么">1. 这套资料覆盖什么</a>
-<a class="toc-link level-2" href="#2-三层证据边界">2. 三层证据边界</a>
-<a class="toc-link level-2" href="#3-先建立正确的模块关系">3. 先建立正确的模块关系</a>
-<a class="toc-link level-2" href="#4-推荐阅读顺序">4. 推荐阅读顺序</a>
-<a class="toc-link level-3" href="#30-分钟-先形成可说的项目故事">30 分钟：先形成可说的项目故事</a>
-<a class="toc-link level-3" href="#2-小时-准备源码追问">2 小时：准备源码追问</a>
-<a class="toc-link level-3" href="#全量审计-理解工作区边界">全量审计：理解工作区边界</a>
-<a class="toc-link level-2" href="#5-文档地图">5. 文档地图</a>
-<a class="toc-link level-2" href="#6-面试前最后检查">6. 面试前最后检查</a>
-      <a class="back-to-top" href="#">↑ 返回顶部</a>
-    </aside>
-  </div>
-  <script src="assets/search-data.js"></script>
-  <script src="assets/docs.js"></script>
-</body>
-</html>
+      </div></details></section>
+<footer class="article-footer">本页按阅读目的整理，文章保留原地址。全文检索可使用顶部搜索框（Ctrl K）。源码事实与个人经历请分别核实。</footer></main><aside class="page-toc" aria-label="本页目录"><div class="toc-heading">本页目录</div><a class="toc-link level-2" href="#start">开始复习</a><a class="toc-link level-2" href="#study">技术专题</a><a class="toc-link level-3" href="#kotlin">Kotlin 基础</a><a class="toc-link level-3" href="#android">Android 专题</a><a class="toc-link level-3" href="#react-native">React 与 RN</a><a class="toc-link level-3" href="#network">网络协议</a><a class="toc-link level-2" href="#interview">项目面试</a><a class="toc-link level-2" href="#sources">源码与仓库</a><a class="toc-link level-2" href="#archive">参考与归档</a><a class="back-to-top" href="#">↑ 返回顶部</a></aside></div><script src="assets/search-data.js"></script><script src="assets/docs.js"></script></body></html>

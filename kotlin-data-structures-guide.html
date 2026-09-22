@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Kotlin 常用数据结构详解：数组、List、Set、Map、栈队列的 API、示例、优缺点、复杂度与 Android 选型。">
+  <title>Kotlin 常用数据结构与 API｜项目面试资料</title>
+  <link rel="stylesheet" href="assets/docs.css">
+  <script>
+    try {
+      const savedTheme = localStorage.getItem("interview-docs-theme");
+      const preferredDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      document.documentElement.dataset.theme = savedTheme || (preferredDark ? "dark" : "light");
+    } catch {}
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <header class="topbar">
+    <button class="icon-button menu-button" type="button" data-menu-toggle aria-label="打开文档导航" aria-expanded="false">☰</button>
+    <a class="brand" href="index.html"><span class="brand-mark">⌁</span><span>项目面试资料库</span></a>
+    <div class="search-shell">
+      <label class="sr-only" for="global-search">搜索所有文档</label>
+      <input id="global-search" type="search" data-search-input placeholder="搜索仓库、技术或面试题…" autocomplete="off">
+      <span class="search-shortcut">Ctrl K</span>
+      <div class="search-results" data-search-results hidden></div>
+    </div>
+    <button class="icon-button" type="button" data-theme-toggle aria-label="切换深浅主题">◐</button>
+  </header>
+  <div class="drawer-backdrop" data-drawer-backdrop hidden></div>
+
+  <div class="docs-layout">
+<nav class="sidebar" data-sidebar aria-label="Kotlin 数据结构导航"><div class="sidebar-heading">Kotlin 数据结构</div><a class="nav-link active" href="kotlin-data-structures-guide.html" aria-current="page">数据结构与常用 API</a><a class="nav-link" href="index.html">资料首页</a><a class="nav-link" href="guides/kotlin-keywords-interview-guide.html">Kotlin 关键字</a><a class="nav-link" href="android-3-5-years-interview-guide.html">Android 面试知识地图</a><section class="nav-group"><h2 class="nav-group-title">按需阅读</h2><a class="nav-link" href="#map">01 · 先选类型：你想怎么使用这批数据？</a><a class="nav-link" href="#mutability">02 · P1：val、只读集合、不可变集合不是一回事</a><a class="nav-link" href="#arrays">03 · P1：Array 和原生类型数组——固定长度的一排格子</a><a class="nav-link" href="#lists">04 · P1：List / ArrayList——有顺序、可重复的列表</a><a class="nav-link" href="#sets">05 · P1：Set——只关心有没有，不接受重复值</a><a class="nav-link" href="#maps">06 · P1：Map——通过唯一 key 找 value</a><a class="nav-link" href="#deque">07 · P2：用 ArrayDeque 实现栈和队列</a><a class="nav-link" href="#ordered">08 · P2：PriorityQueue 和 TreeMap / TreeSet</a><a class="nav-link" href="#operators">09 · P1：集合常用操作——筛选、变换、分组、排序</a><a class="nav-link" href="#sequence">10 · P2：Sequence——控制处理过程，不是新的存储容器</a><a class="nav-link" href="#costs">11 · P1：复杂度与选型速查</a><a class="nav-link" href="#android">12 · P2：Android 额外认识这些容器</a><a class="nav-link" href="#pitfalls">13 · P1：最容易踩的 6 类坑</a><a class="nav-link" href="#practice">14 · 串起来：分页数据去重、查找、选中与提交</a><a class="nav-link" href="#review">15 · 面试自测与官方参考</a></section><p class="sidebar-note">Android / Kotlin 视角 · 2026-09-21</p></nav><main class="article-shell" id="main-content"><div class="breadcrumbs"><a href="index.html">首页</a><span>/</span><span>Kotlin</span><span>/</span><span>数据结构</span></div><div class="article-grid"><article class="markdown-body"><h1>Kotlin 常用数据结构：API、用法与优缺点</h1><blockquote class="callout"><p>读完能回答三个问题：这批数据用什么装？常见增删查改怎么写？为什么选它，有什么代价？先看 P1，再按业务需要补 P2。</p></blockquote><h2 id="map">01 · 先选类型：你想怎么使用这批数据？</h2>
+<p>这篇面向 Android / Kotlin 开发者，讲解常用数据结构、API、执行结果和选型理由。以 <strong>Kotlin/JVM</strong> 为主要环境；Java 集合可直接从 Kotlin 使用。示例是独立片段，可分别放进 <code>fun main() { ... }</code> 中执行，彼此不共享变量。类名写全包名的地方，也可以改为文件顶部的 <code>import</code>。示例都是教学数据，不代表项目已经使用。</p>
+<blockquote class="callout"><p><strong>P1 先掌握：</strong>数组、List、Set、Map、只读与可变、常用操作和常见坑。<strong>P2 再看：</strong>栈与队列、优先队列、有序集合、Sequence 和 Android 专用容器。无需一遍背完全部 API。</p></blockquote>
+<table><thead><tr><th>需求</th><th>优先考虑</th><th>原因 / 代价</th></tr></thead><tbody><tr><td>固定数量的整数、坐标、采样值</td><td>IntArray / FloatArray</td><td>长度固定，按下标读写；JVM 原生数值数组避免泛型元素装箱</td></tr><tr><td>展示列表、保持顺序、允许重复</td><td>List；需要增删时 MutableList / ArrayList</td><td>有位置语义；数组列表中间插入和删除需要搬移</td></tr><tr><td>记录已选 ID、去重、判断存在</td><td>Set / MutableSet</td><td>不保留重复元素；不能把位置当作业务含义</td></tr><tr><td>按 userId 查用户、按 key 存配置</td><td>Map / MutableMap</td><td>key 唯一，value 可以重复；占用额外索引空间</td></tr><tr><td>先进先出的任务；后进先出的撤销记录</td><td>ArrayDeque</td><td>两端操作方便；普通双端队列不是线程安全任务通道</td></tr><tr><td>每次取优先级最高 / 数值最小的任务</td><td>java.util.PriorityQueue</td><td>只保证队头优先级；遍历不保证有序</td></tr><tr><td>始终按 key 或元素排序；找前驱后继</td><td>java.util.TreeMap / TreeSet</td><td>树结构维护有序性，基本操作通常 O(log n)</td></tr><tr><td>小规模、整数 key 的 Android 映射</td><td>SparseArray / LongSparseArray</td><td>节省 key 装箱及部分结构开销；不保证比 HashMap 更快</td></tr></tbody></table>
+<p><strong>先分清两个维度：</strong>“列表 / 集合 / 映射”描述数据关系，“数组 / 哈希表 / 树 / 链表”描述实现方法。<code>List</code>、<code>Set</code>、<code>Map</code> 是接口层概念；<code>ArrayList</code>、<code>HashSet</code>、<code>HashMap</code> 才是具体实现。复杂度要落到实现和操作上。</p>
+<h2 id="mutability">02 · P1：val、只读集合、不可变集合不是一回事</h2>
+<table><thead><tr><th>写法 / 概念</th><th>能做什么</th><th>不保证什么</th></tr></thead><tbody><tr><td><code>val items = mutableListOf(1)</code></td><td>不能给 items 重新赋另一对象；可以 items.add(2)</td><td>val 不会冻结对象</td></tr><tr><td><code>List&lt;Int&gt;</code></td><td>通过这个引用只读，没有 add / remove 接口</td><td>同一底层集合可能经由其他引用被修改</td></tr><tr><td><code>MutableList&lt;Int&gt;</code></td><td>接口允许增删改</td><td>不意味着线程安全，也不意味着元素不可变</td></tr><tr><td><code>source.toList()</code></td><td>创建内容快照，后续 source 结构变化不影响结果</td><td>浅拷贝；里面的可变对象仍然可能共用</td></tr><tr><td>不可变集合 / 持久化集合</td><td>依其实现提供更强的结构不变约束；持久化集合更新可共享结构</td><td>不是所有 listOf 返回值的统一承诺；也不会自动冻结元素对象</td></tr></tbody></table>
+<div class="code-block"><div class="code-toolbar"><span>Kotlin · readonly-view</span><button class="copy-button" type="button" data-copy-code>复制</button></div><pre><code class="language-kotlin" data-example="readonly-view">val source = mutableListOf(&quot;A&quot;)
+val readOnly: List&lt;String&gt; = source
+val snapshot = source.toList()
+source.add(&quot;B&quot;)
+println(readOnly) // 与 source 指向同一集合
+println(snapshot) // 调用 toList 时的内容
+// readOnly.add(&quot;C&quot;) // 编译不通过：只读接口没有 add
+// source = mutableListOf(&quot;C&quot;) // 编译不通过：source 是 val</code></pre></div>
+<p><strong>运行结果：</strong></p><pre><code>[A, B]
+[A]</code></pre>
+<p><code>listOf</code> / <code>setOf</code> / <code>mapOf</code> 返回只读接口，<code>mutableListOf</code> 等返回可变接口。不要用强制类型转换去“获得可变能力”：工厂函数在不同数量、平台或版本下可能采用不同实现，转换或写入可能失败。需要修改时明确调用 <code>toMutableList()</code>。</p>
+<h2 id="arrays">03 · P1：Array 和原生类型数组——固定长度的一排格子</h2>
+<p>数组创建后长度固定，但格子里的值可以替换。按下标访问类似直接打开某个编号的抽屉。Kotlin 的 <code>Array&lt;Int&gt;</code> 在 JVM 上保存装箱整数引用；<code>IntArray</code> 对应 <code>int[]</code>，没有每个元素的泛型装箱成本。<code>ByteArray</code> 常用于文件和网络字节，<code>FloatArray</code> 常用于图形或采样。</p>
+<table><thead><tr><th>API</th><th>用途</th><th>注意</th></tr></thead><tbody><tr><td><code>intArrayOf(1, 2)</code> / <code>IntArray(3) { it * 10 }</code></td><td>直接列值 / 按下标初始化</td><td>IntArray(3) 默认全 0；Array(3) { ... } 需初始化元素</td></tr><tr><td><code>arrayOf("A", "B")</code> / <code>arrayOfNulls&lt;String&gt;(3)</code></td><td>引用类型数组 / 全 null 数组</td><td>后者元素类型是 String?</td></tr><tr><td><code>a[i]</code>、<code>a[i] = v</code>、<code>size</code>、<code>indices</code></td><td>读取、改值、长度、合法下标范围</td><td>越界会抛异常</td></tr><tr><td><code>getOrNull(i)</code> / <code>getOrElse(i) { ... }</code></td><td>安全读取 / 提供越界默认值</td><td>避免用异常做普通分支</td></tr><tr><td><code>copyOf()</code> / <code>copyOf(newSize)</code></td><td>复制 / 复制到新长度</td><td>新数组；数值扩展部分补 0，引用数组扩展部分可出现 null，谨慎使用</td></tr><tr><td><code>contentEquals</code> / <code>contentDeepEquals</code></td><td>内容比较 / 嵌套引用数组深层比较</td><td>数组 == 不是逐元素比较</td></tr><tr><td><code>sort()</code> / <code>sorted()</code></td><td>原地排序 / 返回新的排序 List</td><td>需要排序数组副本时用 sortedArray()</td></tr><tr><td><code>toList()</code> / <code>asList()</code></td><td>内容快照 / 数组支持的列表视图</td><td>asList 会反映后续数组元素替换；别误当独立副本</td></tr></tbody></table>
+<div class="code-block"><div class="code-toolbar"><span>Kotlin · arrays</span><button class="copy-button" type="button" data-copy-code>复制</button></div><pre><code class="language-kotlin" data-example="arrays">val scores = intArrayOf(30, 10, 20)
+scores[0] = 40
+println(scores.getOrNull(8))
+val longer = scores.copyOf(5)
+println(longer.contentToString())
+println(scores == intArrayOf(40, 10, 20))
+println(scores.contentEquals(intArrayOf(40, 10, 20)))
+scores.sort()
+println(scores.contentToString())</code></pre></div>
+<p><strong>运行结果：</strong></p><pre><code>null
+[40, 10, 20, 0, 0]
+false
+true
+[10, 20, 40]</code></pre>
+<div class="code-block"><div class="code-toolbar"><span>Kotlin · array-view</span><button class="copy-button" type="button" data-copy-code>复制</button></div><pre><code class="language-kotlin" data-example="array-view">val values = intArrayOf(1, 2)
+val view = values.asList()
+val snapshot = values.toList()
+values[0] = 9
+println(view)
+println(snapshot)</code></pre></div>
+<p><strong>运行结果：</strong></p><pre><code>[9, 2]
+[1, 2]</code></pre>
+<p><strong>优点：</strong>下标访问快，固定长度数据简单直接，原生数值数组紧凑。<strong>缺点：</strong>长度不能原地增长，插入 / 删除通常需要新数组或移动元素；<code>a + value</code> 会创建新数组，循环中反复追加会产生大量复制。业务数据条数变化明显时通常选可变列表。</p>
+<h2 id="lists">04 · P1：List / ArrayList——有顺序、可重复的列表</h2>
+<p><code>List</code> 表达“第几个元素”的语义，元素允许重复。常规动态业务列表通常用数组列表；<code>mutableListOf</code> 在 Kotlin/JVM 的常见实现是 ArrayList，但需要明确实现特性时直接写 <code>ArrayList&lt;T&gt;()</code>。容量 capacity 是预留空间，size 才是已有元素数量。</p>
+<table><thead><tr><th>API</th><th>含义</th><th>返回值 / 细节</th></tr></thead><tbody><tr><td><code>listOf</code> / <code>mutableListOf</code> / <code>arrayListOf</code></td><td>只读接口 / 可变接口 / 明确 ArrayList</td><td>空集合需类型，例如 mutableListOf&lt;String&gt;()</td></tr><tr><td><code>get(i)</code> / <code>[i]</code> / <code>getOrNull(i)</code></td><td>按下标查元素</td><td>ArrayList O(1)，不能推广给所有 List</td></tr><tr><td><code>add(x)</code> / <code>add(i, x)</code> / <code>addAll(xs)</code></td><td>末尾追加 / 插入 / 批量追加</td><td>add(x) 返回 Boolean；add(i, x) 返回 Unit</td></tr><tr><td><code>set(i, x)</code> / <code>[i] = x</code></td><td>替换已有位置</td><td>set 返回原元素；赋值语句不用其返回值</td></tr><tr><td><code>remove(x)</code> / <code>removeAt(i)</code></td><td>删第一个匹配值 / 删指定下标</td><td>分别返回是否删除成功 / 被删元素</td></tr><tr><td><code>contains(x)</code> / <code>x in list</code> / <code>indexOf(x)</code></td><td>包含检查 / 查首个位置</td><td>未找到 indexOf 返回 -1；数组列表需要线性查找</td></tr><tr><td><code>firstOrNull()</code> / <code>lastOrNull()</code> / <code>find { ... }</code></td><td>首尾 / 首个符合条件元素</td><td>无结果返回 null；first() 在空集合上会抛异常</td></tr><tr><td><code>clear()</code> / <code>isEmpty()</code> / <code>size</code></td><td>清空 / 判空 / 数量</td><td>清空只解除集合持有的元素引用，不等于对象立即被回收</td></tr><tr><td><code>subList(from, to)</code></td><td>[from, to) 的子列表视图</td><td>与原列表相关联；原列表结构变化可能让视图失效</td></tr><tr><td><code>take(n)</code> / <code>drop(n)</code> / <code>slice(indices)</code></td><td>取前 n / 去前 n / 按下标选取</td><td>返回新列表结果，元素对象仍共享</td></tr></tbody></table>
+<div class="code-block"><div class="code-toolbar"><span>Kotlin · list-crud</span><button class="copy-button" type="button" data-copy-code>复制</button></div><pre><code class="language-kotlin" data-example="list-crud">val names = arrayListOf(&quot;A&quot;, &quot;B&quot;, &quot;B&quot;)
+names.add(&quot;C&quot;)
+names.add(1, &quot;X&quot;)
+println(names)
+println(names.set(0, &quot;Z&quot;))
+println(names.remove(&quot;B&quot;)) // 删值，只删第一个 B
+println(names.removeAt(1)) // 删下标 1 的 X
+println(names)
+println(names.indexOf(&quot;Q&quot;))
+println(names.getOrNull(99))</code></pre></div>
+<p><strong>运行结果：</strong></p><pre><code>[A, X, B, B, C]
+A
+true
+X
+[Z, B, C]
+-1
+null</code></pre>
+<div class="code-block"><div class="code-toolbar"><span>Kotlin · list-integer-remove</span><button class="copy-button" type="button" data-copy-code>复制</button></div><pre><code class="language-kotlin" data-example="list-integer-remove">val numbers = mutableListOf(10, 20, 30)
+numbers.remove(1)   // 删除值 1：不存在，所以不变
+println(numbers)
+numbers.removeAt(1) // 删除下标 1：移除 20
+println(numbers)
+val reserved = ArrayList&lt;Int&gt;(100)
+println(reserved.size) // 预留容量，不代表已经有 100 个元素</code></pre></div>
+<p><strong>运行结果：</strong></p><pre><code>[10, 20, 30]
+[10, 30]
+0</code></pre>
+<h3>ArrayList 和 LinkedList 怎么取舍？</h3>
+<table><thead><tr><th>操作 / 特性</th><th>ArrayList</th><th>java.util.LinkedList</th></tr></thead><tbody><tr><td>底层思路</td><td>可扩容数组</td><td>双向链表，每个节点带链接</td></tr><tr><td>按下标访问</td><td>O(1)</td><td>O(n)，需要从某一端走到对应节点</td></tr><tr><td>尾部追加</td><td>均摊 O(1)，扩容那次需要 O(n) 复制</td><td>O(1)</td></tr><tr><td>中间按下标插入 / 删除</td><td>O(n)，移动后面的元素</td><td>定位仍是 O(n)；已经用迭代器定位后，节点链接调整 O(1)</td></tr><tr><td>内存与遍历局部性</td><td>引用相邻存放，通常更紧凑</td><td>节点对象额外开销，遍历需沿链接跳转</td></tr><tr><td>选用建议</td><td>普通业务列表的常用起点</td><td>已定位节点附近反复增删等明确需求；仅做栈队列通常先看 ArrayDeque</td></tr></tbody></table>
+<p><strong>优点：</strong>顺序和重复值都保留，随机访问、遍历和尾部追加适合业务列表。<strong>缺点：</strong>按值查找和中间删除是线性成本。别把“链表增删 O(1)”理解成“按下标在任何位置增删都是 O(1)”。</p>
+<h2 id="sets">05 · P1：Set——只关心有没有，不接受重复值</h2>
+<p>例如已选用户 ID、已曝光内容 ID、权限集合。Set 保证元素唯一，但不同实现的遍历顺序不同；<strong>去重不等于排序</strong>。某些扩展函数允许 <code>elementAt(i)</code>，也不意味着 Set 具备列表的下标访问性能和位置语义。</p>
+<table><thead><tr><th>实现 / 工厂</th><th>顺序</th><th>优劣</th></tr></thead><tbody><tr><td><code>HashSet</code> / <code>hashSetOf</code></td><td>不承诺遍历顺序</td><td>哈希分布合理时增删查平均 O(1)，额外哈希空间</td></tr><tr><td><code>LinkedHashSet</code> / <code>linkedSetOf</code></td><td>插入顺序</td><td>去重且保持首次加入顺序，需要额外维护顺序</td></tr><tr><td><code>TreeSet</code> / <code>sortedSetOf</code></td><td>自然顺序或比较器顺序</td><td>增删查 O(log n)，支持范围操作；唯一性由比较结果决定</td></tr><tr><td><code>setOf</code> / <code>mutableSetOf</code></td><td>按工厂文档保留元素迭代顺序</td><td>只读 / 可变接口，不要把它们等同于 hashSetOf 的无序约定</td></tr></tbody></table>
+<div class="code-block"><div class="code-toolbar"><span>Kotlin · set-operations</span><button class="copy-button" type="button" data-copy-code>复制</button></div><pre><code class="language-kotlin" data-example="set-operations">val selected = linkedSetOf(&quot;B&quot;, &quot;A&quot;, &quot;B&quot;)
+println(selected)
+println(selected.add(&quot;A&quot;)) // 已存在
+println(selected.add(&quot;C&quot;))
+println(&quot;B&quot; in selected)
+println(selected.remove(&quot;B&quot;))
+val other = setOf(&quot;C&quot;, &quot;D&quot;)
+println(selected union other)
+println(selected intersect other)
+println(selected subtract other) // 不修改 selected
+println(selected)</code></pre></div>
+<p><strong>运行结果：</strong></p><pre><code>[B, A]
+false
+true
+true
+true
+[A, C, D]
+[C]
+[A]
+[A, C]</code></pre>
+<p><code>add</code> 返回是否真的新增，<code>remove</code> 返回是否真的删除；<code>contains</code> 和 <code>in</code> 用于判存在。<code>union</code>（并集）、<code>intersect</code>（交集）、<code>subtract</code>（差集）返回结果集合。<code>list.distinct()</code> 返回保留首次出现顺序的去重 List，<code>distinctBy { it.id }</code> 按指定字段去重并保留首个元素。</p>
+<p><strong>优点：</strong>表达唯一性，哈希集合适合频繁判存在。<strong>缺点：</strong>会丢掉重复次数，不适合按位置取值；元素参与 equals / hashCode 的字段不应在入集合后改变，详见常见坑。</p>
+<h2 id="maps">06 · P1：Map——通过唯一 key 找 value</h2>
+<p>例如 <code>userId → User</code>，不用每次遍历整份用户列表。key 唯一，重复写同一个 key 会覆盖 value；不同 key 的 value 可以相同。<code>"id" to 1</code> 创建一个 Pair，经常用来初始化 Map。Map 不继承 Collection，但 keys / values / entries 能供遍历。</p>
+<table><thead><tr><th>API</th><th>用途</th><th>注意</th></tr></thead><tbody><tr><td><code>mapOf</code> / <code>mutableMapOf</code></td><td>构建只读 / 可变映射</td><td>重复 key 保留后写入的 value；工厂保留条目迭代顺序</td></tr><tr><td><code>map[key]</code> / <code>get(key)</code></td><td>获取 value</td><td>不存在返回 null；允许可空 value 时可能与存储 null 混淆</td></tr><tr><td><code>map[key] = value</code> / <code>put(key, value)</code></td><td>写入或覆盖</td><td>put 返回旧值或 null</td></tr><tr><td><code>containsKey(key)</code> / <code>key in map</code></td><td>判断 key 存不存在</td><td>containsValue(value) 通常需要遍历，不是哈希 key 查找</td></tr><tr><td><code>getValue(key)</code></td><td>读取必须存在的 key</td><td>普通 Map 缺失时抛异常；withDefault 包装可提供隐式默认值</td></tr><tr><td><code>getOrDefault(k, d)</code> / <code>getOrElse(k) { d }</code></td><td>读不到时的默认值</td><td>前者在 key 缺失时给默认；后者对缺失或 null 给默认；均不写回</td></tr><tr><td><code>getOrPut(k) { value }</code></td><td>没有非 null 值时计算并写回</td><td>存储 null 也会调用默认函数；普通 MutableMap 不是原子操作</td></tr><tr><td><code>remove(k)</code> / <code>putAll(other)</code> / <code>clear()</code></td><td>删除 / 批量覆盖 / 清空</td><td>remove 返回被删值或 null</td></tr><tr><td><code>keys</code> / <code>values</code> / <code>entries</code></td><td>遍历 key / value / 键值对</td><td>这些视图会反映原 Map 后续变化，需要快照时复制</td></tr></tbody></table>
+<div class="code-block"><div class="code-toolbar"><span>Kotlin · map-crud</span><button class="copy-button" type="button" data-copy-code>复制</button></div><pre><code class="language-kotlin" data-example="map-crud">val names = linkedMapOf(1 to &quot;Alice&quot;, 2 to &quot;Bob&quot;)
+println(names.put(1, &quot;Alicia&quot;))
+names[3] = &quot;Carol&quot;
+println(names[9])
+println(names.getOrElse(9) { &quot;Unknown&quot; })
+println(9 in names) // getOrElse 没有写回
+names.getOrPut(9) { &quot;Guest&quot; }
+for ((id, name) in names) {
+    println(&quot;$id=$name&quot;)
+}</code></pre></div>
+<p><strong>运行结果：</strong></p><pre><code>Alice
+null
+Unknown
+false
+1=Alicia
+2=Bob
+3=Carol
+9=Guest</code></pre>
+<div class="code-block"><div class="code-toolbar"><span>Kotlin · map-null</span><button class="copy-button" type="button" data-copy-code>复制</button></div><pre><code class="language-kotlin" data-example="map-null">val cache = mutableMapOf&lt;String, String?&gt;(&quot;token&quot; to null)
+println(cache.containsKey(&quot;token&quot;))
+println(cache.getOrDefault(&quot;token&quot;, &quot;fallback&quot;))
+println(cache.getOrElse(&quot;token&quot;) { &quot;fallback&quot; })
+println(cache.getOrPut(&quot;token&quot;) { &quot;new-token&quot; })
+println(cache[&quot;token&quot;])</code></pre></div>
+<p><strong>运行结果：</strong></p><pre><code>true
+null
+fallback
+new-token
+new-token</code></pre>
+<table><thead><tr><th>实现</th><th>顺序</th><th>适合 / 代价</th></tr></thead><tbody><tr><td>HashMap / hashMapOf</td><td>不承诺遍历顺序</td><td>哈希分布合理时按 key 增删查平均 O(1)；有哈希结构开销</td></tr><tr><td>LinkedHashMap / linkedMapOf</td><td>通常为插入顺序</td><td>需要稳定遍历；JVM 构造器可显式启用访问顺序，为 LRU 提供基础但不会自动限制容量</td></tr><tr><td>TreeMap / sortedMapOf</td><td>按 key 排序</td><td>O(log n) 基本操作，适合范围查询；需要可比较的 key 或 Comparator</td></tr></tbody></table>
+<p><strong>优点：</strong>按 ID 查询直接，关系表达清楚。<strong>缺点：</strong>比纯列表多一层索引开销；重复 key 会覆盖，可能丢掉数据；哈希映射不是按 value 搜索的索引。</p>
+<h2 id="deque">07 · P2：用 ArrayDeque 实现栈和队列</h2>
+<p><strong>栈 Stack：</strong>后放进去的先取出（LIFO），例如撤销记录。<strong>队列 Queue：</strong>先放进去的先取出（FIFO），例如待处理任务。<strong>双端队列 Deque：</strong>两头都能进出，因此两种行为都能实现。</p>
+<table><thead><tr><th>行为</th><th>Kotlin ArrayDeque API</th><th>示例含义</th></tr></thead><tbody><tr><td>队列：尾部入、头部出</td><td>addLast(x) + removeFirstOrNull()</td><td>A、B 依次加入，取出顺序 A、B</td></tr><tr><td>栈：尾部入、尾部出</td><td>addLast(x) + removeLastOrNull()</td><td>A、B 依次加入，取出顺序 B、A</td></tr><tr><td>查看两端，不删除</td><td>firstOrNull() / lastOrNull()</td><td>空集合返回 null</td></tr><tr><td>必须有元素才删除</td><td>removeFirst() / removeLast()</td><td>空集合抛异常</td></tr><tr><td>从另一端插入</td><td>addFirst(x)</td><td>放到队头，不必移动全部元素</td></tr></tbody></table>
+<div class="code-block"><div class="code-toolbar"><span>Kotlin · deque</span><button class="copy-button" type="button" data-copy-code>复制</button></div><pre><code class="language-kotlin" data-example="deque">val queue = kotlin.collections.ArrayDeque&lt;String&gt;()
+queue.addLast(&quot;A&quot;)
+queue.addLast(&quot;B&quot;)
+println(queue.removeFirstOrNull())
+println(queue.removeFirstOrNull())
+println(queue.removeFirstOrNull())
+
+val stack = kotlin.collections.ArrayDeque&lt;String&gt;()
+stack.addLast(&quot;A&quot;)
+stack.addLast(&quot;B&quot;)
+println(stack.removeLastOrNull())
+println(stack.removeLastOrNull())</code></pre></div>
+<p><strong>运行结果：</strong></p><pre><code>A
+B
+null
+B
+A</code></pre>
+<p><strong>优点：</strong>基于可扩容环形数组，两端增删通常是均摊 O(1)，比用 ArrayList.removeAt(0) 搬移元素更适合队列。<strong>缺点：</strong>查找某个值或删除中间元素仍可能 O(n)，扩容会有复制成本，也不自带线程安全或背压。不要用普通队列代替协程 Channel 的通信语义。</p>
+<blockquote class="callout"><p><strong>两个 ArrayDeque 别混用：</strong><code>kotlin.collections.ArrayDeque</code> 自 Kotlin 1.4 起提供，可存 nullable 元素；<code>java.util.ArrayDeque</code> 是 JVM/Android 的 Java 容器，不允许 null，空队列安全取出用 <code>pollFirst()</code> / <code>pollLast()</code>，安全查看用 <code>peekFirst()</code>。Android 上 Java ArrayDeque 自 API 9 可用。如果 Kotlin 队列允许 null，取出 null 就不能单独区分“队列空了”和“取到 null”。</p></blockquote>
+<h2 id="ordered">08 · P2：PriorityQueue 和 TreeMap / TreeSet</h2>
+<h3>PriorityQueue：每次弹出当前最优先的元素</h3>
+<p>默认自然顺序把最小值放在队头；自定义比较器可以让高优先级任务先执行。其底层通常是堆，不是整体排好序的列表。<code>offer</code> 入队，<code>peek</code> 查看队头，<code>poll</code> 取出队头；peek / poll 在空队列返回 null，不能放 null 元素。</p>
+<div class="code-block"><div class="code-toolbar"><span>Kotlin · priority-queue</span><button class="copy-button" type="button" data-copy-code>复制</button></div><pre><code class="language-kotlin" data-example="priority-queue">data class Job(val name: String, val priority: Int)
+val queue = java.util.PriorityQueue&lt;Job&gt;(
+    compareByDescending&lt;Job&gt; { it.priority }.thenBy { it.name }
+)
+queue.offer(Job(&quot;download&quot;, 1))
+queue.offer(Job(&quot;payment&quot;, 5))
+queue.offer(Job(&quot;upload&quot;, 3))
+println(queue.peek()?.name)
+while (queue.isNotEmpty()) {
+    println(queue.poll().name)
+}</code></pre></div>
+<p><strong>运行结果：</strong></p><pre><code>payment
+payment
+upload
+download</code></pre>
+<p><strong>优点：</strong>入队 / 出队 O(log n)，看队头 O(1)，无需每次对所有任务排序。<strong>缺点：</strong>遍历和 <code>toList()</code> 不保证排序；查某个值 / 删除指定对象通常 O(n)。相同优先级不承诺 FIFO，业务需要稳定顺序就加入递增序号作为第二排序字段。不要直接修改队中对象的优先级；堆不会自动重排，应移除后修改再加入。</p>
+<h3>TreeMap / TreeSet：始终按比较规则维护顺序</h3>
+<div class="code-block"><div class="code-toolbar"><span>Kotlin · tree-map</span><button class="copy-button" type="button" data-copy-code>复制</button></div><pre><code class="language-kotlin" data-example="tree-map">val levels = java.util.TreeMap&lt;Int, String&gt;()
+levels[10] = &quot;beginner&quot;
+levels[30] = &quot;advanced&quot;
+levels[20] = &quot;intermediate&quot;
+println(levels.keys)
+println(levels.floorKey(25))   // 最大的 &lt;= 25 的 key
+println(levels.ceilingKey(25)) // 最小的 &gt;= 25 的 key
+println(levels.subMap(10, true, 30, false).keys)</code></pre></div>
+<p><strong>运行结果：</strong></p><pre><code>[10, 20, 30]
+20
+30
+[10, 20]</code></pre>
+<p><code>firstKey / lastKey</code> 取边界；<code>lowerKey / higherKey</code> 取严格小于 / 大于；<code>floorKey / ceilingKey</code> 可以等于。TreeMap 的范围结果是关联视图，独立保存时再复制。Android 的这些 NavigableMap 范围与邻近查询 API 需 API 9+。</p>
+<p><strong>优点：</strong>不用每次排序，可以做有序遍历和范围查找。<strong>缺点：</strong>单次查找通常比理想哈希查找成本高，有树节点开销。TreeSet 把比较器返回 0 的两个元素视作同一位置，即使它们的 equals 不同；自定义排序字段时必须同时考虑“谁算重复”。</p>
+<h2 id="operators">09 · P1：集合常用操作——筛选、变换、分组、排序</h2>
+<p>下面这些通常是 Kotlin 扩展函数，很多可用于多种集合。先问“返回什么”和“原集合变不变”，比死记方法名更容易。</p>
+<table><thead><tr><th>API</th><th>返回 / 行为</th><th>例子与常见误区</th></tr></thead><tbody><tr><td><code>filter { ... }</code> / <code>filterNot</code></td><td>List，筛选保留 / 排除</td><td>不修改原集合；Map 也有自己的 filter，返回 Map</td></tr><tr><td><code>map { ... }</code> / <code>mapNotNull</code></td><td>List，转换元素 / 转换并去 null</td><td>这里 map 是操作名，不等于 Map 数据结构</td></tr><tr><td><code>flatMap { ... }</code> / <code>flatten()</code></td><td>将多份元素集合展开成一份 List</td><td>flatMap 先转换再展开，flatten 直接展开</td></tr><tr><td><code>any</code> / <code>all</code> / <code>none</code></td><td>Boolean，可提前结束遍历</td><td>空集合 all 条件为 true，any 为 false，none 为 true</td></tr><tr><td><code>find</code> / <code>firstOrNull</code></td><td>首个符合条件的元素或 null</td><td>只要一个结果，不必 filter(...).firstOrNull()</td></tr><tr><td><code>groupBy { key }</code></td><td>Map&lt;K, List&lt;T&gt;&gt;</td><td>相同 key 收进列表，不丢失重复项</td></tr><tr><td><code>associateBy { key }</code></td><td>Map&lt;K, T&gt;</td><td>相同 key 保留最后一个，可能丢数据</td></tr><tr><td><code>associate { key to value }</code></td><td>Map&lt;K, V&gt;</td><td>同时变换 key / value，重复 key 后者覆盖</td></tr><tr><td><code>groupingBy { ... }.eachCount()</code></td><td>Map&lt;K, Int&gt;</td><td>仅需计数时，无需保存每组元素列表</td></tr><tr><td><code>sorted / sortedBy / sortedWith</code></td><td>新的排序 List</td><td>sort / sortBy / sortWith 才是原地改可变列表</td></tr><tr><td><code>fold(initial) { acc, x -&gt; ... }</code></td><td>累计结果，空集合返回初始值</td><td>reduce 没有初始值，空集合会抛异常</td></tr><tr><td><code>sumOf</code> / <code>count</code> / <code>joinToString</code></td><td>求和 / 计数 / 拼接字符串</td><td>不要为了计数先 filter 出中间列表</td></tr><tr><td><code>forEach</code> / <code>onEach</code></td><td>forEach 返回 Unit；集合 onEach 返回原接收者</td><td>onEach 不等于 map；Sequence.onEach 则是惰性的</td></tr><tr><td><code>filterTo / mapTo</code></td><td>向指定可变目标追加结果</td><td>不会先清空目标；适合复用明确受控的容器</td></tr></tbody></table>
+<div class="code-block"><div class="code-toolbar"><span>Kotlin · transform</span><button class="copy-button" type="button" data-copy-code>复制</button></div><pre><code class="language-kotlin" data-example="transform">data class User(val id: Int, val name: String, val team: String, val active: Boolean)
+val users = listOf(
+    User(1, &quot;Alice&quot;, &quot;Android&quot;, true),
+    User(2, &quot;Bob&quot;, &quot;Android&quot;, false),
+    User(3, &quot;Carol&quot;, &quot;iOS&quot;, true)
+)
+println(users.filter { it.active }.map { it.name })
+println(users.groupBy { it.team }.mapValues { it.value.size })
+println(users.associateBy { it.id }[2]?.name)
+println(users.groupingBy { it.team }.eachCount())
+println(users.any { it.active })
+println(users.joinToString(&quot; / &quot;) { it.name })</code></pre></div>
+<p><strong>运行结果：</strong></p><pre><code>[Alice, Carol]
+{Android=2, iOS=1}
+Bob
+{Android=2, iOS=1}
+true
+Alice / Bob / Carol</code></pre>
+<div class="code-block"><div class="code-toolbar"><span>Kotlin · duplicate-keys</span><button class="copy-button" type="button" data-copy-code>复制</button></div><pre><code class="language-kotlin" data-example="duplicate-keys">data class Item(val id: Int, val text: String)
+val items = listOf(Item(1, &quot;old&quot;), Item(1, &quot;new&quot;), Item(2, &quot;other&quot;))
+println(items.distinctBy { it.id }.map { it.text }) // 保留首个
+println(items.associateBy { it.id }.mapValues { it.value.text }) // 保留最后一个
+println(items.groupBy { it.id }.mapValues { it.value.map { item -&gt; item.text } })</code></pre></div>
+<p><strong>运行结果：</strong></p><pre><code>[old, other]
+{1=new, 2=other}
+{1=[old, new], 2=[other]}</code></pre>
+<div class="code-block"><div class="code-toolbar"><span>Kotlin · sorting-fold</span><button class="copy-button" type="button" data-copy-code>复制</button></div><pre><code class="language-kotlin" data-example="sorting-fold">val numbers = mutableListOf(3, 1, 2)
+println(numbers.sortedDescending())
+println(numbers) // 原集合不变
+numbers.sort()
+println(numbers)
+println(numbers.fold(0) { sum, x -&gt; sum + x })
+println(emptyList&lt;Int&gt;().fold(0) { sum, x -&gt; sum + x })
+println(listOf(listOf(1, 2), listOf(3)).flatten())</code></pre></div>
+<p><strong>运行结果：</strong></p><pre><code>[3, 2, 1]
+[3, 1, 2]
+[1, 2, 3]
+6
+0
+[1, 2, 3]</code></pre>
+<h2 id="sequence">10 · P2：Sequence——控制处理过程，不是新的存储容器</h2>
+<p>普通集合的 <code>filter().map().take()</code> 通常分阶段立即执行，各阶段可能建立中间列表。Sequence 将处理延迟到终止操作，按需把元素逐个通过处理链，可以减少中间集合和不必要的遍历。它不是协程 Flow，也不会自动切线程或并行。</p>
+<div class="code-block"><div class="code-toolbar"><span>Kotlin · sequence</span><button class="copy-button" type="button" data-copy-code>复制</button></div><pre><code class="language-kotlin" data-example="sequence">val numbers = listOf(1, 2, 3, 4, 5, 6)
+val result = numbers.asSequence()
+    .filter {
+        println(&quot;check $it&quot;)
+        it % 2 == 0
+    }
+    .map {
+        println(&quot;map $it&quot;)
+        it * 10
+    }
+    .take(2)
+println(&quot;before toList&quot;)
+println(result.toList())</code></pre></div>
+<p><strong>运行结果：</strong></p><pre><code>before toList
+check 1
+check 2
+map 2
+check 3
+check 4
+map 4
+[20, 40]</code></pre>
+<p>上面直到 <code>toList()</code> 才开始处理，找到两个结果后就不再检查 5、6。<strong>适合：</strong>多步转换、数据量较大、只需要前几个结果。<strong>代价：</strong>迭代器及函数调用开销，小集合不一定更快；<code>sorted()</code> 这类操作仍需先收集数据才能产出排序结果；Sequence 不是缓存，重复消费可能重新计算，有些序列甚至只允许消费一次。</p>
+<h2 id="costs">11 · P1：复杂度与选型速查</h2>
+<p><code>n</code> 是元素个数。O(1) 表示操作次数不随 n 线性增长，不是“耗时 1 毫秒”；O(log n) 增长较慢；O(n) 通常要扫描或移动一批元素。<strong>均摊</strong>指一串操作合起来分摊成本，例如数组列表偶尔扩容但多数追加很便宜；<strong>平均</strong>则依赖数据和哈希分布等假设。</p>
+<table><thead><tr><th>具体实现</th><th>读取 / 查找</th><th>插入</th><th>删除</th><th>顺序与注意</th></tr></thead><tbody><tr><td>Array / IntArray</td><td>下标 O(1)，按值 O(n)</td><td>无原地扩长；构造新数组 O(n)</td><td>通常要移动或构造新数组 O(n)</td><td>固定长度，按下标顺序</td></tr><tr><td>ArrayList</td><td>下标 O(1)，按值 O(n)</td><td>末尾均摊 O(1)；中间 O(n)</td><td>末尾 O(1)；中间或按值 O(n)</td><td>顺序可重复，扩容一次 O(n)</td></tr><tr><td>LinkedList</td><td>下标 / 按值 O(n)</td><td>两端 O(1)；按下标含定位 O(n)</td><td>两端 O(1)；按下标含定位 O(n)</td><td>已定位迭代器处修改可 O(1)</td></tr><tr><td>HashSet / HashMap</td><td>按元素 / key 平均 O(1)</td><td>平均 O(1)</td><td>平均 O(1)</td><td>哈希冲突或扩容可能更贵，不承诺遍历顺序</td></tr><tr><td>LinkedHashSet / LinkedHashMap</td><td>按元素 / key 平均 O(1)</td><td>平均 O(1)</td><td>平均 O(1)</td><td>维护顺序，增加内存开销</td></tr><tr><td>TreeSet / TreeMap</td><td>O(log n)</td><td>O(log n)</td><td>O(log n)</td><td>比较顺序；复杂度另受比较器自身成本影响</td></tr><tr><td>ArrayDeque</td><td>两端查看 O(1)，按值查找 O(n)</td><td>两端均摊 O(1)</td><td>两端通常 O(1)，按值删除 O(n)</td><td>适合栈队列；Kotlin 版本还支持按下标 O(1)</td></tr><tr><td>PriorityQueue</td><td>队头 O(1)，按值 O(n)</td><td>O(log n)</td><td>队头 O(log n)，指定对象 O(n)</td><td>只保证队头优先，不保证遍历顺序</td></tr></tbody></table>
+<p>哈希容器的平均 O(1) 假设 hashCode / equals 本身开销合理且分布良好；不能说任意输入的最坏情况都是 O(1)。具体 JVM/Android 实现对严重冲突的处理可能不同。业务里几条数据常常更应优先可读性；热路径上的大集合才值得测量并优化。</p>
+<div class="code-block"><div class="code-toolbar"><span>Kotlin · membership</span><button class="copy-button" type="button" data-copy-code>复制</button></div><pre><code class="language-kotlin" data-example="membership">val selectedIds = listOf(2, 4, 6).toHashSet()
+val allIds = listOf(1, 2, 3, 4, 5)
+println(allIds.filter { it in selectedIds })</code></pre></div>
+<p><strong>运行结果：</strong></p><pre><code>[2, 4]</code></pre>
+<p>如果 allIds 有 n 项、selectedIds 列表有 m 项，逐项做列表 contains 最坏需要 O(n × m) 次比较。先建 HashSet 的成本约 O(m)，随后在合理哈希假设下整体约 O(n + m)，代价是额外空间。只有一次查找或集合极小时，不一定值得建立索引。</p>
+<h2 id="android">12 · P2：Android 额外认识这些容器</h2>
+<table><thead><tr><th>类型</th><th>常用 API</th><th>适合</th><th>优缺点 / 边界</th></tr></thead><tbody><tr><td>android.util.SparseArray&lt;E&gt;</td><td>put / get / remove / size() / keyAt / valueAt</td><td>Int key 到对象的映射</td><td>避免 Integer key 装箱；基于排序数组，查找约 O(log n)，插入可能移动；get 用 key，keyAt / valueAt 用内部位置</td></tr><tr><td>android.util.LongSparseArray&lt;E&gt;</td><td>put / get / remove / keyAt / valueAt</td><td>Long key 到对象的映射</td><td>API 16+；相同思路，不能把它当作 Long 下标的普通 List</td></tr><tr><td>SparseIntArray / SparseBooleanArray</td><td>put / get / indexOfKey / delete</td><td>Int 到 Int / Boolean</td><td>key 和 value 都避免装箱；默认返回 0 / false，判断是否存在用 indexOfKey >= 0</td></tr><tr><td>androidx.collection.ArrayMap / ArraySet</td><td>put / get / remove；add / contains</td><td>较小集合、内存更敏感的地方</td><td>数组结构较紧凑，查找含二分与冲突扫描；写入有搬移，不宜假设总比哈希表快；需 AndroidX Collection 依赖</td></tr><tr><td>android.util.LruCache&lt;K, V&gt;</td><td>get / put / remove / evictAll / sizeOf</td><td>有容量上限的内存缓存</td><td>访问顺序淘汰；默认按条数，按字节需覆盖 sizeOf；不是磁盘缓存；多步操作仍需考虑原子性</td></tr><tr><td>java.util.concurrent.ConcurrentHashMap</td><td>get / put / putIfAbsent / compute</td><td>多个线程共享映射</td><td>不允许 null key / value；单次 API 的并发保证不自动覆盖先判断后写入；Android 方法可用性取决于 API / 脱糖配置</td></tr></tbody></table>
+<p>别直接把“整型 key 就必须 SparseArray”当规则：选择取决于数量、读写比例、内存与平台实现。Compose / StateFlow 场景还要考虑状态发布；普通 MutableList 的原地修改不会自动获得可观察能力。跨协程共享写入可考虑 Mutex 或单一协程持有状态；普通 MutableMap.getOrPut 不保证并发只计算或写入一次。</p>
+<p>本节是 API 选型说明，不提供未经 Android 工程验证的运行示例。需要 Android SDK / AndroidX 的代码应在自己的目标 minSdk 和依赖版本下编译。</p>
+<h2 id="pitfalls">13 · P1：最容易踩的 6 类坑</h2>
+<h3>① 浅拷贝只复制容器，不复制里面的对象</h3>
+<div class="code-block"><div class="code-toolbar"><span>Kotlin · shallow-copy</span><button class="copy-button" type="button" data-copy-code>复制</button></div><pre><code class="language-kotlin" data-example="shallow-copy">data class User(var name: String)
+val original = mutableListOf(User(&quot;Alice&quot;))
+val snapshot = original.toList()
+original[0].name = &quot;Bob&quot;
+println(snapshot[0].name)
+val copiedUsers = original.map { it.copy() }
+original[0].name = &quot;Carol&quot;
+println(copiedUsers[0].name)</code></pre></div>
+<p><strong>运行结果：</strong></p><pre><code>Bob
+Bob</code></pre>
+<p>这里 User 只有 String 字段，逐项 copy 足够隔离 name 的赋值；如果对象里面还有 MutableList，data class.copy() 仍会共用内部列表。深拷贝要按对象结构决定，不能只多加一个 toList。</p>
+<h3>② 哈希 key / Set 元素的相等性字段不能随意变化</h3>
+<div class="code-block"><div class="code-toolbar"><span>Kotlin · hash-key</span><button class="copy-button" type="button" data-copy-code>复制</button></div><pre><code class="language-kotlin" data-example="hash-key">data class Key(var id: Int)
+val key = Key(1)
+val lookup = hashMapOf(key to &quot;value&quot;)
+val before = key.hashCode()
+key.id = 2
+println(before != key.hashCode())
+// key 还在旧的哈希位置，后续按新 hashCode 查找可能失败。
+// 正确做法：使用稳定的 ID 作为 key。
+val stable = hashMapOf(1 to &quot;value&quot;)
+println(stable[1])</code></pre></div>
+<p><strong>运行结果：</strong></p><pre><code>true
+value</code></pre>
+<p>HashMap / HashSet 先通过 hashCode 缩小查找范围，再通过 equals 判断相等。自定义类若重写 equals，必须让“相等对象 hashCode 相等”；不同对象 hashCode 相同只是碰撞，不代表相等。data class 会根据主构造参数生成这些方法，所以可变主构造字段尤其要谨慎。</p>
+<h3>③ 遍历期间删除：使用匹配的迭代器，或集合过滤 API</h3>
+<div class="code-block"><div class="code-toolbar"><span>Kotlin · safe-remove</span><button class="copy-button" type="button" data-copy-code>复制</button></div><pre><code class="language-kotlin" data-example="safe-remove">val numbers = mutableListOf(1, 2, 3, 4)
+val iterator = numbers.iterator()
+while (iterator.hasNext()) {
+    if (iterator.next() % 2 == 0) iterator.remove()
+}
+println(numbers)
+numbers.removeAll { it &gt; 1 }
+println(numbers)</code></pre></div>
+<p><strong>运行结果：</strong></p><pre><code>[1, 3]
+[1]</code></pre>
+<p>不要在 <code>for (item in list)</code> 里直接 <code>list.remove(item)</code>，这会破坏普通迭代过程，在常见 JVM 集合中可能抛 ConcurrentModificationException。这个异常也能发生在单线程，名字里的 Concurrent 不等于一定有多个线程；不要依赖它必然抛出。</p>
+<h3>④ plus / minus 返回新集合，循环追加容易反复复制</h3>
+<div class="code-block"><div class="code-toolbar"><span>Kotlin · plus-vs-add</span><button class="copy-button" type="button" data-copy-code>复制</button></div><pre><code class="language-kotlin" data-example="plus-vs-add">val old = listOf(1, 2)
+val updated = old + 3
+println(old)
+println(updated)
+val builder = mutableListOf&lt;Int&gt;()
+repeat(3) { builder.add(it) }
+println(builder)</code></pre></div>
+<p><strong>运行结果：</strong></p><pre><code>[1, 2]
+[1, 2, 3]
+[0, 1, 2]</code></pre>
+<p>循环里 <code>var result = emptyList&lt;Int&gt;(); result = result + x</code> 可能累计 O(n²) 复制。批量构建时可用可变容器，结束后按需要 toList。<code>+=</code> 究竟原地增加还是重赋新集合，受接收者静态类型和操作符解析影响；学习阶段用显式 add 或赋值更清楚。</p>
+<h3>⑤ subList 是视图，长期保存之前考虑复制</h3>
+<div class="code-block"><div class="code-toolbar"><span>Kotlin · sublist-view</span><button class="copy-button" type="button" data-copy-code>复制</button></div><pre><code class="language-kotlin" data-example="sublist-view">val all = mutableListOf(&quot;A&quot;, &quot;B&quot;, &quot;C&quot;)
+val window = all.subList(0, 2)
+window[0] = &quot;X&quot;
+println(all)
+val saved = window.toList()
+all.add(&quot;D&quot;)
+// 此后不再使用旧 window：原列表的结构变了。
+println(saved)</code></pre></div>
+<p><strong>运行结果：</strong></p><pre><code>[X, B, C]
+[X, B]</code></pre>
+<h3>⑥ 空值、空集合、排序规则的边界</h3>
+<div class="code-block"><div class="code-toolbar"><span>Kotlin · empty-boundaries</span><button class="copy-button" type="button" data-copy-code>复制</button></div><pre><code class="language-kotlin" data-example="empty-boundaries">val empty = emptyList&lt;Int&gt;()
+println(empty.firstOrNull())
+println(empty.any { it &gt; 0 })
+println(empty.all { it &gt; 0 })
+println(empty.none { it &gt; 0 })
+val words = listOf(&quot;a&quot;, &quot;b&quot;, &quot;cc&quot;)
+val byLength = java.util.TreeSet&lt;String&gt;(compareBy { it.length })
+byLength.addAll(words)
+println(byLength) // a 和 b 比较结果为 0，只留下一个
+val complete = java.util.TreeSet&lt;String&gt;(compareBy&lt;String&gt; { it.length }.thenBy { it })
+complete.addAll(words)
+println(complete)</code></pre></div>
+<p><strong>运行结果：</strong></p><pre><code>null
+false
+true
+true
+[a, cc]
+[a, b, cc]</code></pre>
+<p>空集合上 all 返回 true，因为没有违反条件的元素；如果业务要求“至少有一个且全部满足”，写 <code>items.isNotEmpty() &amp;&amp; items.all { ... }</code>。排序比较整数别简单写 <code>a - b</code>，可能溢出；用 compareTo、compareBy、thenBy。</p>
+<h2 id="practice">14 · 串起来：分页数据去重、查找、选中与提交</h2>
+<p>假设页面已有一批卡片，新一页可能含重复 ID。我们的规则是：<strong>首次出现的 ID 决定位置，后到数据更新内容</strong>；选中状态按 ID 维护；提交时保持页面顺序。这里用 LinkedHashMap 做合并索引，用 Set 表达选中，用 List 提供展示顺序。</p>
+<div class="code-block"><div class="code-toolbar"><span>Kotlin · page-merge</span><button class="copy-button" type="button" data-copy-code>复制</button></div><pre><code class="language-kotlin" data-example="page-merge">data class Card(val id: Long, val title: String)
+val current = listOf(Card(1L, &quot;A&quot;), Card(2L, &quot;B-old&quot;))
+val nextPage = listOf(Card(2L, &quot;B-new&quot;), Card(3L, &quot;C&quot;))
+val byId = linkedMapOf&lt;Long, Card&gt;()
+for (card in current) byId[card.id] = card
+for (card in nextPage) byId[card.id] = card
+val display = byId.values.toList()
+println(display.map { it.title })
+println(byId[2L]?.title)
+val selectedIds = mutableSetOf(1L, 3L)
+selectedIds.remove(1L)
+val submitted = display.filter { it.id in selectedIds }
+println(submitted.map { it.id })</code></pre></div>
+<p><strong>运行结果：</strong></p><pre><code>[A, B-new, C]
+B-new
+[3]</code></pre>
+<p>为什么不用 HashMap？我们需要保持位置。为什么不直接 distinctBy？它保留首个 ID 对应的旧内容。为什么选中状态不单纯用 List？这里关心 ID 唯一及包含检查。为什么 values.toList？让展示列表的结构独立于后续 Map 修改；Card 的字段是 val，也让这个示例的元素内容更容易控制。合并过程在合理哈希假设下约 O(n + m)，额外空间与不同 ID 数量有关。</p>
+<p>这段只演示容器用法，不含网络请求、线程切换和状态发布。用于 Android UI 时，仍需通过你的 StateFlow / LiveData / Compose 状态机制提交新数据；对 DiffUtil / ListAdapter，保留旧列表和旧元素的稳定内容才能可靠比较，避免先修改旧数据再提交。</p>
+<h2 id="review">15 · 面试自测与官方参考</h2>
+<details><summary>val 修饰 MutableList，为什么还能 add？</summary><p>val 限制变量重新绑定，不限制对象内部修改。List 是只读接口，底层对象可能还有可变引用。</p></details>
+<details><summary>Array&lt;Int&gt; 与 IntArray 怎么选？</summary><p>固定长度纯整数数据可用 IntArray，JVM 下避免泛型元素装箱；需要 nullable 元素等不同语义时再选引用数组。</p></details>
+<details><summary>ArrayList 的增删查复杂度？</summary><p>随机访问 O(1)，按值查找 O(n)，尾追加均摊 O(1)，中间插删 O(n)。说明操作位置，比笼统说“增删慢”更准确。</p></details>
+<details><summary>保序去重怎么做？</summary><p>只要第一次出现的元素可 distinct / distinctBy；集合形式可 LinkedHashSet。若同 ID 后者更新内容且保留位置，可显式 LinkedHashMap 合并。</p></details>
+<details><summary>Map.get 返回 null，是不是 key 不存在？</summary><p>不一定，Map 可能存储 null。需要区分时用 containsKey。</p></details>
+<details><summary>associateBy 和 groupBy 有什么区别？</summary><p>前者每个 key 对应一个元素，重复时后者覆盖；后者每个 key 对应一组元素。</p></details>
+<details><summary>为什么不一律用 LinkedList？</summary><p>按下标仍需遍历，节点开销更大；只有已定位节点处修改的链接调整才是 O(1)。栈队列通常可先考虑 ArrayDeque。</p></details>
+<details><summary>Sequence 一定更快吗？</summary><p>不一定；惰性、短路和减少中间集合可能有收益，小集合和简单操作可能被迭代开销抵消。</p></details>
+<details><summary>toList 和 data class.copy 是深拷贝吗？</summary><p>不是。前者复制容器结构，后者复制字段值；字段若是可变对象引用仍会共享。</p></details>
+<details><summary>HashMap 能直接用于多线程共享写入吗？</summary><p>普通 HashMap 不提供这种安全保证。选并发容器或锁 / 单一状态拥有者，同时处理多步逻辑的原子性。</p></details>
+<p>下列是 Kotlin 和 Android 官方的进一步阅读入口。本文以基础稳定 API 为主，Java 容器段落针对 Kotlin/JVM；实际项目还应核对 Kotlin 版本、Android API 级别和依赖。</p>
+<ul><li><a href="https://kotlinlang.org/docs/collections-overview.html">Kotlin 集合概览</a></li><li><a href="https://kotlinlang.org/docs/arrays.html">Kotlin 数组</a></li><li><a href="https://kotlinlang.org/docs/collection-operations.html">集合操作概览</a></li><li><a href="https://kotlinlang.org/docs/collection-transformations.html">集合变换与分组</a></li><li><a href="https://kotlinlang.org/docs/collection-ordering.html">集合排序</a></li><li><a href="https://kotlinlang.org/docs/sequences.html">Sequence</a></li><li><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/-array-deque/">Kotlin ArrayDeque API</a></li><li><a href="https://developer.android.com/reference/android/util/SparseArray">Android SparseArray</a></li><li><a href="https://developer.android.com/reference/java/util/PriorityQueue">Android PriorityQueue</a></li><li><a href="https://developer.android.com/reference/java/util/TreeMap">Android TreeMap</a></li><li><a href="https://developer.android.com/reference/android/util/LruCache">Android LruCache</a></li></ul><footer class="article-footer">内容整理：2026-09-21。示例使用 Kotlin/JVM 基础 API；Android 专用容器单独标明。与 <a href="guides/kotlin-keywords-interview-guide.html">Kotlin 关键字专题</a> 配合阅读。</footer></article><aside class="page-toc" aria-label="本页目录"><div class="toc-heading">本页目录</div><a class="toc-link level-2" href="#map">01 · 先选类型：你想怎么使用这批数据？</a><a class="toc-link level-2" href="#mutability">02 · P1：val、只读集合、不可变集合不是一回事</a><a class="toc-link level-2" href="#arrays">03 · P1：Array 和原生类型数组——固定长度的一排格子</a><a class="toc-link level-2" href="#lists">04 · P1：List / ArrayList——有顺序、可重复的列表</a><a class="toc-link level-2" href="#sets">05 · P1：Set——只关心有没有，不接受重复值</a><a class="toc-link level-2" href="#maps">06 · P1：Map——通过唯一 key 找 value</a><a class="toc-link level-2" href="#deque">07 · P2：用 ArrayDeque 实现栈和队列</a><a class="toc-link level-2" href="#ordered">08 · P2：PriorityQueue 和 TreeMap / TreeSet</a><a class="toc-link level-2" href="#operators">09 · P1：集合常用操作——筛选、变换、分组、排序</a><a class="toc-link level-2" href="#sequence">10 · P2：Sequence——控制处理过程，不是新的存储容器</a><a class="toc-link level-2" href="#costs">11 · P1：复杂度与选型速查</a><a class="toc-link level-2" href="#android">12 · P2：Android 额外认识这些容器</a><a class="toc-link level-2" href="#pitfalls">13 · P1：最容易踩的 6 类坑</a><a class="toc-link level-2" href="#practice">14 · 串起来：分页数据去重、查找、选中与提交</a><a class="toc-link level-2" href="#review">15 · 面试自测与官方参考</a><a class="back-to-top" href="#">↑ 返回顶部</a></aside></div></main></div><script src="assets/search-data.js"></script><script src="assets/docs.js"></script></body></html>

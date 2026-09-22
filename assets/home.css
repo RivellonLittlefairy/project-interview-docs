@@ -1,0 +1,39 @@
+/* Homepage catalog: scoped to avoid changing article layouts. */
+.docs-home .home-intro { margin-bottom: 34px; }
+.docs-home .home-eyebrow { margin: 0 0 12px; color: var(--accent); font-size: 11px; font-weight: 700; letter-spacing: .08em; }
+.docs-home h1 { margin: 0 0 14px; font-size: clamp(28px, 3.6vw, 38px); line-height: 1.25; }
+.docs-home .home-intro > p:not(.home-eyebrow) { margin: 10px 0; color: var(--muted); }
+.docs-home .home-inventory { font-size: 12px; line-height: 1.9; }
+.docs-home .home-section { margin-top: 42px; padding-top: 26px; border-top: 1px solid var(--border); }
+.docs-home .home-section-heading { display: flex; align-items: baseline; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+.docs-home .home-section-heading > span { color: var(--accent); font: 600 12px/1.5 ui-monospace, Consolas, monospace; }
+.docs-home .home-section-heading h2 { margin: 0; font-size: 23px; line-height: 1.4; }
+.docs-home .home-section-heading small { color: var(--muted); font-size: 12px; }
+.docs-home .home-section-description { margin: 0 0 20px; color: var(--muted); font-size: 14px; }
+.docs-home .home-routes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 0 0 14px; }
+.docs-home .home-routes a { min-width: 0; padding: 13px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface); color: var(--text); text-decoration: none; }
+.docs-home .home-routes strong, .docs-home .home-routes span { display: block; }
+.docs-home .home-routes strong { color: var(--accent); font-size: 14px; }
+.docs-home .home-routes span { margin-top: 5px; color: var(--muted); font-size: 12px; }
+.docs-home .home-routes a:hover { border-color: var(--accent); background: var(--accent-soft); }
+.docs-home #start > .repository-grid { grid-template-columns: minmax(0, 1fr); }
+.docs-home .home-category { margin: 26px 0; }
+.docs-home .home-category-heading { display: flex; align-items: baseline; gap: 12px; }
+.docs-home .home-category h3 { margin: 0 0 9px; font-size: 18px; }
+.docs-home .home-category-heading > span { color: var(--muted); font-size: 12px; }
+.docs-home .home-category > p { margin: 0 0 13px; color: var(--muted); font-size: 13px; }
+.docs-home .home-doc { height: 100%; }
+.docs-home .home-doc strong { font-size: 16px; }
+.docs-home .home-doc > span:last-child { color: var(--muted); line-height: 1.7; }
+.docs-home .home-disclosure { margin: 14px 0; border: 1px solid var(--border); border-radius: 10px; }
+.docs-home .home-disclosure > summary { padding: 14px 16px; cursor: pointer; font-weight: 600; }
+.docs-home .home-disclosure > summary > span { margin-left: 8px; color: var(--muted); font-size: 12px; font-weight: 400; }
+.docs-home .home-disclosure[open] > summary { border-bottom: 1px solid var(--border); }
+.docs-home .home-disclosure-body { padding: 4px 16px 16px; }
+.docs-home .home-reference-note { color: var(--muted); font-size: 13px; }
+.docs-home a:focus-visible, .docs-home summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+@media (max-width: 760px) {
+  .docs-home .home-routes { grid-template-columns: minmax(0, 1fr); }
+  .docs-home .home-section { margin-top: 32px; padding-top: 22px; }
+  .docs-home .home-section-heading small { flex-basis: 100%; }
+}
