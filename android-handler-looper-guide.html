@@ -13,6 +13,22 @@
       document.documentElement.dataset.theme = savedTheme || (preferredDark ? "dark" : "light");
     } catch {}
   </script>
+
+<style>
+.handler-flow { margin: 24px 0; padding: 20px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); }
+.handler-flow figcaption { margin-bottom: 18px; font-weight: 700; font-size: 18px; }
+.handler-flow .flow-zone { padding: 16px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-soft); }
+.handler-flow .flow-label { margin: 0 0 12px; color: var(--accent); font-weight: 700; }
+.handler-flow .flow-node { padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); min-width: 0; }
+.handler-flow .flow-node strong, .handler-flow .flow-node small { display: block; }
+.handler-flow small { color: var(--muted); line-height: 1.65; margin-top: 5px; }
+.handler-flow .flow-arrow { text-align: center; padding: 7px 0; color: var(--accent); font-weight: 600; }
+.handler-flow .flow-queue { border: 2px solid var(--accent); background: var(--accent-soft); text-align: center; }
+.handler-flow .flow-branches { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.handler-flow .flow-note { margin: 12px 0 0; font-size: 14px; }
+@media (max-width: 600px) { .handler-flow { padding: 12px; } .handler-flow .flow-zone { padding: 10px; } .handler-flow .flow-branches { grid-template-columns: 1fr; } }
+@media print { .handler-flow { box-shadow: none; } .handler-flow .flow-node { break-inside: avoid; } }
+</style>
 </head>
 <body>
   <a class="skip-link" href="#main-content">跳到正文</a>
@@ -65,6 +81,34 @@ task.run() 或 Handler 的消息处理逻辑</code></pre></div>
     }</code></pre></div>
 <p><code>ThreadLocal</code> 给每个线程保存自己的 Looper；同一线程重复 prepare 会报错。它不是“复制一个共享 Looper”，也不负责创建线程。<code>Looper.myLooper()</code> 获取当前线程的 Looper，可能为 null；<code>getMainLooper()</code> 获取当前进程的主 Looper。不要在 Activity 里自行调用 prepare 或 loop。</p>
 <h2 id="pipeline">03 · P1：从 post 到执行，完整走一遍</h2>
+<figure class="handler-flow" id="handler-message-flow" aria-labelledby="handler-flow-caption">
+<figcaption id="handler-flow-caption">一张图看懂：消息怎么从发送方到达回调？</figcaption>
+<div class="flow-zone">
+<p class="flow-label">① 发送线程 · 例如网络请求所在的工作线程</p>
+<div class="flow-node"><strong>调用 Handler 的发送 API</strong><code>post(task) / postDelayed(task, delay) / sendMessage(msg)</code><small>Handler 已绑定目标 Looper。调用发送 API 不会让当前代码切换线程。</small></div>
+<div class="flow-arrow" aria-hidden="true">↓</div>
+<div class="flow-node"><strong>准备 Message 并入队</strong><span>post 把 Runnable 放入 <code>msg.callback</code>；设置 <code>target = handler</code>、执行时间 <code>when</code>。</span><small>调用 enqueueMessage 加锁入队，必要时唤醒目标线程；发送方随后继续执行自己的代码。</small></div>
+</div>
+<div class="flow-arrow">↓ 写入队列</div>
+<div class="flow-node flow-queue"><strong>MessageQueue · 目标 Looper 的消息队列</strong><span>保存待处理消息，按时间与可分发条件选择下一条。</span><small>它是双方访问的数据结构，不是额外线程；不会自己执行 Runnable。</small></div>
+<div class="flow-arrow">↓ 由目标线程调用 next() 取出</div>
+<div class="flow-zone">
+<p class="flow-label">② 目标线程 · 例如 Handler 绑定的主线程</p>
+<div class="flow-node"><strong>Looper.loop() → MessageQueue.next()</strong><span>无可分发消息：进入等待；被唤醒或等待超时后重新检查。</span><small>这段取消息逻辑一直属于目标线程。没有可执行消息时，不会忙循环持续占满 CPU。</small></div>
+<div class="flow-arrow">↓ 取到可分发消息，离开队列锁</div>
+<div class="flow-node"><strong>msg.target.dispatchMessage(msg)</strong><span>找到接收这个消息的 Handler，选择回调入口。</span></div>
+<div class="flow-arrow">↓ 按 msg.callback 是否存在分支</div>
+<div class="flow-branches">
+<div class="flow-node"><strong>A · msg.callback 非空</strong><span>通常来自 post / postDelayed</span><div class="flow-arrow" aria-hidden="true">↓</div><code>msg.callback.run()</code><small>执行你提交的 Runnable。</small></div>
+<div class="flow-node"><strong>B · msg.callback 为空</strong><span>通常来自 sendMessage</span><div class="flow-arrow" aria-hidden="true">↓</div><span>先尝试构造 Handler 时传入的 <code>Handler.Callback</code>。</span><small>不存在，或 handleMessage 返回 false → 再调用 Handler 自己的 handleMessage；返回 true → 本条消息已被处理。</small></div>
+</div>
+<div class="flow-arrow">↓ 两条分支完成后汇合</div>
+<div class="flow-node"><strong>回收 Message → 回到 next() 处理下一条</strong><small>正常回调返回后继续循环。没有被处理的异常可能中断循环；耗时回调会延误后面的消息。</small></div>
+</div>
+<p class="flow-note"><strong>延时不等于准点：</strong>postDelayed 的 when 是最早可执行时间。目标线程如果正在执行别的任务，即使时间到了也要等它有空；同步屏障也会影响消息选择。</p>
+<p class="flow-note"><strong>用 Android 场景记：</strong>工作线程拿到接口结果 → mainHandler.post → 主线程取消息 → Runnable 更新 TextView。发送线程也可以就是目标线程，此时依然是入队等待分发，不是立刻调用 Runnable。</p>
+</figure>
+
 <ol><li>发送方调用 <code>handler.post(runnable)</code>。这一步通常在调用者线程立即执行。</li><li>Handler 用 <code>Message.obtain()</code> 取一个可复用消息，把 Runnable 放进 <code>message.callback</code>。</li><li>计算 <code>when = SystemClock.uptimeMillis() + delay</code>，设置 <code>message.target = handler</code>。</li><li>进入目标 MessageQueue 的 <code>enqueueMessage</code>，加锁插入队列，必要时唤醒等待中的目标线程。</li><li>目标线程的 Looper 调用 <code>MessageQueue.next()</code>。有可分发消息就取出，没有则按条件等待。</li><li>Looper 在自己的线程中执行 <code>msg.target.dispatchMessage(msg)</code>，完成后按框架流程回收消息。</li></ol>
 <p><strong>AOSP Android 13 原码：</strong><code>Handler.java</code>，第 927—931 行。</p>
 <div class="code-block"><div class="code-toolbar"><span>Handler.java · android-13.0.0_r1</span><button type="button" data-copy-code>复制</button></div><pre><code class="language-java" data-source="aosp/Handler.java" data-lines="927-931">    private static Message getPostMessage(Runnable r) {
