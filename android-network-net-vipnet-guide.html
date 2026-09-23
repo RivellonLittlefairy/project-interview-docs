@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="从 DNS、TCP、HTTPS、HTTP 缓存到 Retrofit、OkHttp，结合 Net 和 VipNet 源码理解代理、拦截器、线程、Cookie、QUIC 与 SSE。">
+  <title>Android 网络基础与 Net / VipNet 封装详解｜项目面试资料</title>
+  <link rel="stylesheet" href="assets/docs.css">
+  <script>
+    try {
+      const savedTheme = localStorage.getItem("interview-docs-theme");
+      const preferredDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      document.documentElement.dataset.theme = savedTheme || (preferredDark ? "dark" : "light");
+    } catch {}
+  </script>
+
+
+<style>
+.net-flow { margin: 24px 0; padding: 18px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
+.net-flow figcaption { font-weight: 700; margin-bottom: 14px; }
+.net-flow ol { list-style: none; padding: 0; margin: 0; counter-reset: net-step; }
+.net-flow li { counter-increment: net-step; padding: 12px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); margin: 0 0 12px; }
+.net-flow li strong { display: block; margin-bottom: 5px; }
+.net-flow li strong::before { content: counter(net-step) " · "; }
+.net-flow li span { display: block; }
+.net-part { color: var(--accent); font-weight: 700; margin: 28px 0 8px; }
+@media(max-width:600px) { .net-flow { padding: 12px; } .net-flow li { padding: 10px; } }
+@media print { .net-flow li { break-inside: avoid; } }
+</style></head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <header class="topbar">
+    <button class="icon-button menu-button" type="button" data-menu-toggle aria-label="打开文档导航" aria-expanded="false">☰</button>
+    <a class="brand" href="index.html"><span class="brand-mark">⌁</span><span>项目面试资料库</span></a>
+    <div class="search-shell">
+      <label class="sr-only" for="global-search">搜索所有文档</label>
+      <input id="global-search" type="search" data-search-input placeholder="搜索仓库、技术或面试题…" autocomplete="off">
+      <span class="search-shortcut">Ctrl K</span>
+      <div class="search-results" data-search-results hidden></div>
+    </div>
+    <button class="icon-button" type="button" data-theme-toggle aria-label="切换深浅主题">◐</button>
+  </header>
+  <div class="drawer-backdrop" data-drawer-backdrop hidden></div>
+
+  <div class="docs-layout">
+<nav class="sidebar" data-sidebar aria-label="网络专题导航"><div class="sidebar-heading">网络基础与项目封装</div><a class="nav-link" href="index.html#network">返回网络专题</a><a class="nav-link" href="#reading">01 · 阅读顺序：先懂请求，再读封装</a><a class="nav-link" href="#journey">02 · P1：点一下按钮，一次 HTTPS 请求经历什么？</a><a class="nav-link" href="#dns">03 · P1：DNS、HTTPDNS 和“有网却请求失败”</a><a class="nav-link" href="#tcp">04 · P1：TCP 为什么要握手、确认和重传？</a><a class="nav-link" href="#tls">05 · P1：HTTPS 到底保护了什么？</a><a class="nav-link" href="#http">06 · P1：HTTP 方法、状态码、请求头与业务结果</a><a class="nav-link" href="#versions">07 · P2：HTTP/1.1、HTTP/2、HTTP/3 和连接复用</a><a class="nav-link" href="#cache">08 · P1：HTTP 缓存、业务缓存和预请求有什么区别？</a><a class="nav-link" href="#auth">09 · P1：Cookie、Token、签名和加密分别做什么？</a><a class="nav-link" href="#timeouts">10 · P1：超时、重试、取消与幂等</a><a class="nav-link" href="#libraries">11 · P1：Retrofit、OkHttp、RxJava 各负责哪一段？</a><a class="nav-link" href="#interceptor-basics">12 · P1：拦截器为什么按相反顺序处理响应？</a><a class="nav-link" href="#long-connections">13 · P2：轮询、SSE、WebSocket 怎么选？</a><a class="nav-link" href="#inventory">14 · 仓库盘点：Net 与 VipNet 有哪些共同点和差异？</a><a class="nav-link" href="#business">15 · P1：从真实业务入口开始追，不先钻底层</a><a class="nav-link" href="#net-entry">16 · P1：Net 是门面，真正实现由 Provider 提供</a><a class="nav-link" href="#proxy">17 · P2：为什么项目还要在 Retrofit 外包一层代理？</a><a class="nav-link" href="#init">18 · P2：Retrofit 初始化、Converter 与重复初始化</a><a class="nav-link" href="#clients">19 · P1：为什么分 API、IMAGE、WEB 等 Client？</a><a class="nav-link" href="#assembly">20 · P1：Client 是按什么顺序装起来的？</a><a class="nav-link" href="#decorators">21 · P1：业务怎么扩展网络库？看 VipAppDecorator</a><a class="nav-link" href="#threads">22 · P1：请求线程、回调线程与 Dispatcher 排队</a><a class="nav-link" href="#response">23 · P1：simplifyRequest 具体替业务做了什么？</a><a class="nav-link" href="#cookies">24 · P2：Cookie、超时、签名和压缩的实际封装</a><a class="nav-link" href="#dns-quic">25 · P2：自定义 DNS 与 QUIC 选择，哪些是有条件的？</a><a class="nav-link" href="#net-extra">26 · P3：Net 多出的动态域名与 SSE 包装</a><a class="nav-link" href="#preload">27 · P2：VIP 首页预请求怎么复用结果？</a><a class="nav-link" href="#observability">28 · P1：请求慢或失败，按什么顺序查？</a><a class="nav-link" href="#interview">29 · 常见面试题与参考答案</a><a class="nav-link" href="#references">30 · 源码索引与继续阅读</a></nav><main class="article-shell" id="main-content"><div class="breadcrumbs"><a href="index.html">首页</a><span>/</span><a href="index.html#network">网络专题</a><span>/</span><span>Net / VipNet</span></div><div class="article-grid"><article class="markdown-body"><h1>Android 网络：从面试基础到 Net / VipNet 的实际封装</h1><blockquote class="callout"><p>先弄清一条请求经历了什么，再看项目为什么这样封装。基础与源码分开讲，遇到线程、取消、缓存和错误处理时，再把它们接起来。含两张流程图、项目原码和 28 道面试题。</p></blockquote><h2 id="reading">01 · 阅读顺序：先懂请求，再读封装</h2><p>Android 网络面试通常会从“HTTPS 请求怎么发出去”问起，再追到 OkHttp、Retrofit、线程、缓存和异常处理。会用接口不难，难的是说清楚：请求慢在哪里、失败后该不该重试、页面退出后谁取消请求，以及封装替业务处理了什么。</p><p>本文分成两部分。第 2 至 13 节讲网络基础，第 14 节开始读 Net 和 VipNet 的代码。第一次先看 P1；HTTP/2、QUIC、SSE 和实现细节标为 P2/P3，可以第二轮再看。最后有排障顺序和面试问答，不用一次背完整篇。</p><div class="table-wrap"><table><thead><tr><th>范围</th><th>本文采用的依据</th></tr></thead><tbody><tr><td>Net 仓库</td><td>本地 HEAD：e237e2e；重点对比新增域名切换和 SSE</td></tr><tr><td>VipNet 仓库</td><td>本地 HEAD：b8e8c1a；普通 API 请求以此为主要讲解对象</td></tr><tr><td>源码日期</td><td>2026-09-22 工作区快照；两个仓库都有脚本文件未提交改动，本篇只读源码，不改业务工程</td></tr><tr><td>底层库</td><td>仓库依赖自维护的 zhihuokhttp；底层内部实现不在本次查阅的这两个仓库内。标准 OkHttp 原理与项目扩展会分开说明</td></tr><tr><td>上线情况</td><td>构建条件、远程开关和运行日志共同决定实际行为。源码存在某个功能，不能证明所有线上请求都启用了它</td></tr></tbody></table></div><p>配套阅读：<a href="android-handler-looper-guide.html">Handler 与线程调度</a>、<a href="android-lifecycle-process-death-guide.html">生命周期与请求取消</a>。</p><p class="net-part">第一部分 · 面试常问的网络基础</p><h2 id="journey">02 · P1：点一下按钮，一次 HTTPS 请求经历什么？</h2><p>假设用户在详情页点“订阅”。业务知道的是作者 ID 和接口方法，网络层要把这些信息变成能发送的数据，再把服务端响应变回 Kotlin/Java 对象。先沿着一次没有命中缓存、也没有现成连接可用的普通 HTTPS 请求走一遍。</p><figure class="net-flow"><figcaption>从按钮到结果：普通 HTTPS 请求示意</figcaption><ol><li><strong>业务组织请求</strong><span>接口地址、HTTP 方法、参数、请求体，以及账号和设备相关请求头。</span></li><li><strong>安排执行</strong><span>异步请求先经过线程与并发调度；排队时间也属于用户等待时间。</span></li><li><strong>DNS 查询</strong><span>把域名解析成可尝试连接的 IP 地址。</span></li><li><strong>建立连接</strong><span>HTTP/1.1、HTTP/2 常见路径先建立 TCP，再进行 TLS 握手。HTTP/3 走 QUIC，流程不同。</span></li><li><strong>发送请求、接收响应</strong><span>发送请求头/请求体；服务端处理后返回响应头/响应体。</span></li><li><strong>解码与转换</strong><span>按 Content-Encoding 解压，再把 JSON 等内容转换成业务对象。</span></li><li><strong>业务检查并更新 UI</strong><span>判断 HTTP 状态和业务结果；需要改 View 时切回主线程。</span></li></ol></figure><p>真实请求不一定每次走全套。DNS 可能命中缓存，连接池可能有可复用连接，HTTP 缓存也可能直接返回内容。因此，看不到本次 DNS 或 TLS 事件，不一定是埋点漏了。排查耗时要先判断走了哪条路径。</p><p>URL 中，scheme 指协议，host 指主机名，port 指端口，path 和 query 指服务资源与参数。URL 的 fragment（# 后面的部分）通常由客户端处理，不会作为 HTTP 请求目标发给服务器。HTTP 是应用层协议；TCP/UDP 负责传输；TLS 为通信提供加密、完整性保护和身份验证。</p><h2 id="dns">03 · P1：DNS、HTTPDNS 和“有网却请求失败”</h2><p>DNS 解决“这个域名对应哪些 IP”。它可能返回多个 IPv4/IPv6 地址，客户端按策略尝试连接。解析成功只说明拿到了地址，不代表 TCP 能连上，更不代表 HTTPS 证书有效或接口业务可用。</p><div class="table-wrap"><table><thead><tr><th>方式 / 现象</th><th>怎么理解</th><th>Android 开发要关注什么</th></tr></thead><tbody><tr><td>系统 DNS</td><td>通常交给系统配置的解析链路</td><td>缓存、网络切换、解析超时、运营商环境，以及 IPv4/IPv6 可达性</td></tr><tr><td>HTTPDNS</td><td>通过 HTTP/HTTPS 向特定解析服务查询地址</td><td>接入方式、TTL、回退策略；厂商 HTTPDNS 不一定就是标准 DoH</td></tr><tr><td>DoH</td><td>DNS over HTTPS，有标准协议定义</td><td>解析通信受 HTTPS 保护，但仍要处理解析服务本身的可用性</td></tr><tr><td>连上 Wi-Fi 但接口失败</td><td>Wi-Fi 连接只是本地链路状态</td><td>可能有认证页、DNS 失败、出口被阻断或服务端故障</td></tr><tr><td>UnknownHostException</td><td>没有成功获得可用的主机解析结果</td><td>检查域名、解析事件、网络切换与 DNS 回退，不能直接归为“服务器挂了”</td></tr></tbody></table></div><p>DNS 缓存会受 TTL 和实现策略影响。网络从 Wi-Fi 切到移动网络后，旧地址或旧连接可能不再合适；清缓存也不是所有问题的通用修复。项目如何选择自定义 DNS、未初始化时怎么回退，后面会读 DnsWrapper。</p><p>如果自定义 DNS 返回 IP，通常仍应保留原 URL 域名，让 HTTP Host、TLS SNI 和证书主机名校验按正确的域名工作。把 URL 直接改成 IP、只手动补一个 Host 头，往往不足以保证 TLS 能正确校验。</p><h2 id="tcp">04 · P1：TCP 为什么要握手、确认和重传？</h2><p>TCP 为应用提供可靠、有序的字节流。它通过序号、确认和重传处理丢包、乱序等问题，但“对端 TCP 已收到字节”不等于“服务端已经完成了订阅、支付等业务”。这两个层次的成功，要分别判断。</p><div class="code-block"><div class="code-toolbar"><span>TCP 三次握手（简化，不含 TCP Fast Open 等扩展）</span><button type="button" data-copy-code>复制</button></div><pre><code >客户端                         服务端
+  SYN，seq = x  ───────────────→
+                 ←───────────  SYN + ACK，seq = y，ack = x + 1
+  ACK，ack = y + 1 ────────────→
+  双方建立连接，随后传输应用数据</code></pre></div><p>握手让双方交换初始序号，并确认双方都具备发送、接收能力。第三次确认也有助于避免服务端把过期的连接请求直接当成可用连接。面试别只背“三次保证可靠”，要说明确认的是什么。</p><div class="table-wrap"><table><thead><tr><th>机制</th><th>解决什么</th><th>容易答错的点</th></tr></thead><tbody><tr><td>序号与 ACK</td><td>知道哪些字节已经收到、哪些还需要补发</td><td>ACK 不表示业务事务成功</td></tr><tr><td>重传</td><td>数据或确认丢失后再次发送</td><td>重传会增加延迟，TCP 也不保证永远能送达</td></tr><tr><td>流量控制</td><td>接收方用窗口告诉发送方还能接多少</td><td>关注接收方能力</td></tr><tr><td>拥塞控制</td><td>根据网络拥塞情况控制发送速度</td><td>关注网络承载能力；不是同一个窗口问题</td></tr><tr><td>字节流</td><td>应用读到连续字节</td><td>一次 write 不保证对应一次 read，需要应用层分帧</td></tr></tbody></table></div><p>“粘包、半包”通常是在说字节流没有保留业务消息边界。HTTP/1.1 用消息格式、Content-Length、chunked 等规则识别消息体结束；HTTP/2 用帧；业务不应自己按一次 socket read 就解析一个 JSON。</p><p>TCP 关闭两个方向的数据流通常需要 FIN 和 ACK，常说“四次挥手”，但实际报文可能合并。主动关闭方通常经历 TIME_WAIT，让迟到的旧报文有时间消失，也能在必要时再次确认对方重发的 FIN。不要把关闭过程、Keep-Alive 和业务退出页面混成一个概念。</p><h2 id="tls">05 · P1：HTTPS 到底保护了什么？</h2><p>HTTPS 是在安全传输之上使用 HTTP。常见 TLS 握手会协商协议参数，验证证书与主机名，完成密钥协商，再用对称加密保护后续通信。不同 TLS 版本、恢复会话与是否已有连接，会影响具体消息和耗时。</p><div class="table-wrap"><table><thead><tr><th>要点</th><th>面试时怎么讲</th></tr></thead><tbody><tr><td>证书校验</td><td>校验证书链、有效期、信任关系和目标主机名；证书可信不代表所有业务返回都可信</td></tr><tr><td>非对称与对称密码</td><td>握手中的认证、密钥协商会使用非对称密码机制；大量应用数据通常用对称加密</td></tr><tr><td>TLS 1.3</td><td>完整握手通常需要 1 RTT；TCP 建连等耗时要另算。恢复会话也不等于每次都能零等待</td></tr><tr><td>0-RTT</td><td>某些恢复场景允许提前发送数据，但存在重放风险，不能直接用于不能重复执行的写操作</td></tr><tr><td>抓包</td><td>HTTPS 正常情况下不会给中间人明文；调试代理需要客户端信任相应证书，并受证书固定等策略影响</td></tr></tbody></table></div><p>TLS 1.3 不能简单讲成“客户端生成一个 AES 密钥，用服务器公钥加密发过去”。这不符合现代握手的通用流程。理解到“验证对方身份、协商密钥、保护数据”后，再按指定 TLS 版本展开。</p><p>遇到证书错误，应检查证书链、域名、设备时间和代理环境。把 TrustManager 改成全部信任、关闭主机名校验，会失去重要安全保障，不能当作正常修复。项目里的签名、请求体加密属于额外业务协议，它们不会自动替代 HTTPS。</p><h2 id="http">06 · P1：HTTP 方法、状态码、请求头与业务结果</h2><p>HTTP 请求由方法、目标地址、请求头和可选请求体组成。Retrofit 注解只是让你用接口声明这些内容，最终仍要落成 HTTP。</p><div class="table-wrap"><table><thead><tr><th>项目中会遇到的写法</th><th>对应含义</th></tr></thead><tbody><tr><td>@GET + @Query</td><td>查询参数进入 URL；参数需编码，敏感内容不应因为放在 query 就被当作安全</td></tr><tr><td>@POST + @Body</td><td>发送请求体；最终 JSON 等格式由 Converter 决定</td></tr><tr><td>@Path</td><td>替换路径中的变量，和查询参数不同</td></tr><tr><td>@Header / @Headers</td><td>设置 HTTP 请求头；需区分业务发送给服务端的头和客户端内部控制头</td></tr><tr><td>@Url</td><td>动态指定 URL；要考虑地址来源、凭证是否误带到其他主机</td></tr><tr><td>Content-Type / Accept</td><td>前者说明当前内容的类型，后者表达希望接收什么类型</td></tr><tr><td>Content-Encoding / Accept-Encoding</td><td>前者说明采用何种压缩编码，后者说明客户端支持何种编码</td></tr></tbody></table></div><p>GET 按语义用于读取，POST 常用于提交或创建，PUT/DELETE 按协议语义通常具有幂等性。幂等的意思是重复执行同一个操作，期望对服务器状态产生相同效果，不要求每次状态码或响应内容完全相同。具体服务端如果没有遵守语义，客户端不能只凭方法名放心重试。</p><div class="table-wrap"><table><thead><tr><th>状态</th><th>常见含义</th><th>客户端要做什么</th></tr></thead><tbody><tr><td>200 / 201 / 204</td><td>成功、创建成功、成功但没有响应体</td><td>204 不能强求返回一个非空 JSON 对象</td></tr><tr><td>301 / 302 / 307 / 308</td><td>重定向；不同状态对保留方法/请求体的规则不同</td><td>关注新地址、凭证与签名；不是普通业务重试</td></tr><tr><td>304</td><td>条件请求表明已有表示仍有效</td><td>使用缓存内容；它不是完整新响应体</td></tr><tr><td>400 / 401 / 403 / 404</td><td>请求问题、认证问题、拒绝访问、资源不存在</td><td>分清用户提示、登录处理和参数问题</td></tr><tr><td>408 / 429</td><td>请求超时、请求过多</td><td>考虑是否可重试，并尊重 Retry-After 与退避</td></tr><tr><td>500 / 502 / 503 / 504</td><td>服务端、网关或上游故障</td><td>结合幂等性、次数和总时间决定重试</td></tr></tbody></table></div><p>还要区分三层结果：网络有没有拿到响应；HTTP 是否成功；响应里的业务字段是否成功。例如 HTTP 200 返回了 isSuccess=false，网络和 HTTP 都成功了，订阅业务却没有成功。后面 SubscriptDialogViewModel 正好有这个判断。</p><h2 id="versions">07 · P2：HTTP/1.1、HTTP/2、HTTP/3 和连接复用</h2><div class="table-wrap"><table><thead><tr><th>协议</th><th>主要特点</th><th>仍然要考虑的问题</th></tr></thead><tbody><tr><td>HTTP/1.1</td><td>支持持久连接，客户端通常通过多个连接并行请求</td><td>同一连接上的响应顺序约束，以及连接数带来的成本</td></tr><tr><td>HTTP/2</td><td>二进制帧、多个 stream 复用连接、HPACK 头部压缩</td><td>TCP 丢包可能让同一连接上的多个 stream 都等待补包</td></tr><tr><td>HTTP/3</td><td>使用 QUIC，运行在 UDP 之上，采用 QPACK</td><td>UDP 可达性、握手/恢复策略、实现版本、回退和拥塞控制</td></tr></tbody></table></div><p>HTTP/2 可以让多个请求的帧交错传输，减少 HTTP/1.1 层面的队头等待，但共享的 TCP 字节流仍要有序交付。HTTP/3 的 QUIC 把可靠传输组织到独立 stream，减少了丢包对无关 stream 的这种阻塞；连接仍然共享带宽和拥塞控制，不能理解成“某个流永远不会影响其他流”。</p><p>HTTP Keep-Alive 表示可以复用连接，TCP keepalive 是传输层探测空闲连接的机制，WebSocket ping/pong 或业务心跳又是另一层。保持连接可以省建连成本，但不保证 NAT、代理或服务器永远不关闭它。</p><p>OkHttpClient 通常应该复用，以复用连接池和调度资源。用现有 client.newBuilder() 派生 Client，和每次 new 一个全新 Client 含义不同；具体哪些资源共享，要查对应版本。项目对 Dispatcher 的共享是显式写出来的，后面可以直接用源码证明。</p><p>仓库里的 QUIC / H2 名称体现其策略分类，不足以证明当前请求实际协商成了标准 HTTP/3 或 HTTP/2。需要结合底层库版本、协议协商和运行指标确认。</p><h2 id="cache">08 · P1：HTTP 缓存、业务缓存和预请求有什么区别？</h2><p>HTTP 缓存按协议决定响应能不能存、什么时候还算新、过期后如何验证。业务缓存可能直接保存解析后的列表、数据库记录。预请求则是提前发起一次可能马上用到的请求，它未必使用 HTTP 缓存。</p><div class="table-wrap"><table><thead><tr><th>机制 / 头</th><th>行为</th><th>容易混淆的点</th></tr></thead><tbody><tr><td>Cache-Control: max-age</td><td>在计算出的新鲜期内，可以直接使用符合条件的缓存</td><td>不是客户端随便指定一个永久缓存时间</td></tr><tr><td>Cache-Control: no-cache</td><td>使用前需要向服务器验证</td><td>可以存；不等于完全禁止缓存</td></tr><tr><td>Cache-Control: no-store</td><td>不应存储这次请求/响应的缓存内容</td><td>和 no-cache 不同</td></tr><tr><td>ETag / If-None-Match</td><td>拿之前的验证标识发条件请求</td><td>304 表示可继续使用缓存内容，不是又下载了一份 body</td></tr><tr><td>Last-Modified / If-Modified-Since</td><td>用修改时间验证</td><td>精度与适用场景有所限制</td></tr><tr><td>Vary</td><td>告诉缓存哪些请求头会影响响应表示</td><td>只按 URL 存一份，可能返回错误语言或编码版本</td></tr><tr><td>业务缓存 / 预请求</td><td>按业务条件复用数据或提前请求结果</td><td>账号、地区、筛选参数等都可能影响是否还能复用</td></tr></tbody></table></div><p>缓存命中仍有几种情况：直接使用新鲜缓存、发请求验证后复用旧内容、完全走网络。观察性能时要区分，否则把 304 当成“请求失败”，或把预请求当成“网络库自带缓存”，都会得出错误结论。</p><p>这两个仓库声明了 netcache 依赖，也有业务 Decorator 接口，但仅凭依赖不能说所有 API 都配置了标准磁盘 HTTP Cache。VipAppDecorator 的首页预请求有实际代码，后面单独分析。</p><h2 id="auth">09 · P1：Cookie、Token、签名和加密分别做什么？</h2><div class="table-wrap"><table><thead><tr><th>名词</th><th>解决的问题</th><th>常见误区</th></tr></thead><tbody><tr><td>Cookie</td><td>服务端通过 Set-Cookie 提供状态，客户端按域、路径、Secure、过期等规则发送</td><td>App 的 OkHttp CookieJar 不会天然和 WebView CookieManager 同步</td></tr><tr><td>Token</td><td>业务授权凭据，常通过 Authorization 等约定携带</td><td>Token 可能过期；有凭据不表示对所有资源都有权限</td></tr><tr><td>请求签名</td><td>按约定证明特定请求内容未被篡改或来自持有凭据的一方</td><td>防重放还需要时间、随机数、服务端校验等机制，不是加一个签名头就完成</td></tr><tr><td>请求体加密</td><td>按业务协议变换请求体内容</td><td>Base64 只是编码；不能当成加密</td></tr><tr><td>HTTPS</td><td>保护传输过程，并认证通信对端</td><td>不能替业务判断权限，也不能替本地日志自动脱敏</td></tr></tbody></table></div><p>Token 过期后的刷新是常见追问：多个请求同时 401，不能各自无限刷新。一般要协调成一次刷新，其余请求等待结果；重试前再次确认凭据是否已经更新，失败则结束登录态处理。请求体是否能重新发送、重试次数和幂等性也要考虑。这是设计建议，本篇不会在没找到实现时说 Net 已经自动完成了这一套。</p><p>Cookie 或账号切换尤其容易出错：内存清掉了，磁盘里是否还有；旧请求回来会不会把旧账号数据写回；不同用户的缓存是否隔离。日志里完整打印 Cookie、Token 或请求体，也可能泄漏敏感信息。</p><h2 id="timeouts">10 · P1：超时、重试、取消与幂等</h2><div class="table-wrap"><table><thead><tr><th>超时</th><th>主要约束什么</th><th>不能直接等同于</th></tr></thead><tbody><tr><td>connectTimeout</td><td>建立连接的等待限制，细节依传输实现</td><td>整次请求最长耗时</td></tr><tr><td>readTimeout</td><td>等待读取数据的超时限制，细节依协议/实现</td><td>只要总耗时超过这个值就失败</td></tr><tr><td>writeTimeout</td><td>写出数据时的等待限制</td><td>服务器处理业务的时间</td></tr><tr><td>callTimeout / 总截止时间</td><td>如果对应实现支持，可限制整次调用的总时间预算</td><td>任意旧版本或定制库必然具有同样 API</td></tr></tbody></table></div><p>一个请求可能依次排队、解析域名、建连、重定向、重试、读 body。只设几个局部超时，不代表总耗时就是其中最大值。业务最好另外想清楚：用户愿意等多久，超过这个时间展示什么，后台是否还允许继续。</p><p>重试前要回答：错误是否暂时、操作能否重复、请求体能否再发、已经试了几次、还剩多少时间。退避可以逐次增加间隔，并加随机抖动，避免大量客户端同一时刻再次压向服务器。不同层都重试时，次数还可能相乘。</p><p>最典型的危险是“请求超时，但服务器其实已经成功”。比如提交订阅、订单或支付，客户端没收到响应就重发，服务端可能执行两次。需要通过幂等键、业务流水号、状态查询等方式与服务端配合。TCP 可靠、HTTP 失败、业务是否成功，必须分开判断。</p><p>取消请求表示客户端不再继续这次工作，不能撤回服务器已执行的操作。Rx dispose、协程取消是否传到网络 Call，取决于适配器和调用方式；页面旧结果是否仍会更新 UI，也要检查回调和状态归属。</p><h2 id="libraries">11 · P1：Retrofit、OkHttp、RxJava 各负责哪一段？</h2><div class="table-wrap"><table><thead><tr><th>层</th><th>负责什么</th><th>不会自动包办什么</th></tr></thead><tbody><tr><td>Retrofit</td><td>解析接口注解和参数，构造调用；通过 Converter 和 CallAdapter 转换数据与返回类型</td><td>不是自己实现 TCP/TLS 的网络栈</td></tr><tr><td>OkHttp</td><td>执行 HTTP 调用，处理连接、拦截器、协议、缓存等</td><td>业务成功判断、UI 生命周期不是它天然知道的</td></tr><tr><td>Converter</td><td>对象与请求/响应数据之间转换，例如 Jackson 读写 JSON</td><td>不会因为叫转换器就自动切主线程</td></tr><tr><td>CallAdapter</td><td>把调用适配成 Call、Observable 等使用方式</td><td>返回 Observable 不等于一定已发请求，也不等于回调在主线程</td></tr><tr><td>RxJava / 协程</td><td>组合异步工作、调度、传递结果和取消</td><td>不能让服务端已经执行的业务回滚</td></tr><tr><td>项目 Net 封装</td><td>统一创建、公共策略、监控与业务扩展入口</td><td>还要检查每个入口覆盖哪些返回类型、哪些 Client</td></tr></tbody></table></div><p>Retrofit 的接口通常通过动态代理实现。调用接口方法时，框架根据方法注解和参数准备 HTTP 调用；第一次可能要解析方法元数据，之后复用缓存。Converter 处理“数据长什么样”，CallAdapter 处理“业务用什么方式拿结果”。项目还在 Retrofit 外面包了一层动态代理，不要把这两层当成同一层。</p><p>标准 OkHttp 的 execute 在调用线程同步执行，enqueue 交给异步调度，回调通常也不会自动来到主线程。项目使用了定制库，还增加了 callbackExecutor，实际回调线程需要继续往下看。普通 Android UI 更新仍要安排到主线程。</p><h2 id="interceptor-basics">12 · P1：拦截器为什么按相反顺序处理响应？</h2><p>拦截器拿到请求后，可以修改请求，再调用 chain.proceed 把它交给后面。proceed 返回时，后面的拦截器和网络处理已经把响应交回来了，这时当前拦截器还可以修改响应。</p><div class="code-block"><div class="code-toolbar"><span>拦截器调用顺序示意，不是可直接运行的实现</span><button type="button" data-copy-code>复制</button></div><pre><code >请求：业务 → A 的前半段 → B 的前半段 → 网络
+响应：业务 ← A 的后半段 ← B 的后半段 ← 网络
+
+A.intercept:
+  准备请求
+  response = chain.proceed(request)  // 进入 B，等待它返回
+  处理 response
+  return response</code></pre></div><div class="table-wrap"><table><thead><tr><th>拦截器</th><th>适合放什么</th><th>调用特点</th></tr></thead><tbody><tr><td>应用拦截器</td><td>公共参数、业务响应处理、统一日志、业务缓存等</td><td>看到逻辑调用；可以直接返回响应，不一定真的访问网络</td></tr><tr><td>网络拦截器</td><td>关注实际网络交换，例如网络层签名、网络细节统计</td><td>缓存直接命中时不一定调用；重定向等可能带来多次网络交换</td></tr></tbody></table></div><p>理解标准 OkHttp 时，可以先记这条常见链：应用拦截器 → 重试与重定向 → Bridge → Cache → Connect → 网络拦截器 → CallServer。请求出去时正向走，响应回来时逐层返回。类名和具体执行细节会随版本变化；项目的双网络栈和回调扩展，还得查自维护底层库，不能直接拿官方某一版代码当线上实况。</p><p>ResponseBody 是一次性流。拦截器里调用 string()/bytes() 读完后，下游不能再当作没读过；要么限制读取方式，要么重新构造 body。不要为了打印日志把大文件全部读进内存。一个应用拦截器如果再次 proceed，还应处理上一次响应体的关闭和重复请求风险。</p><h2 id="long-connections">13 · P2：轮询、SSE、WebSocket 怎么选？</h2><div class="table-wrap"><table><thead><tr><th>方式</th><th>通信特点</th><th>适合 / 代价</th></tr></thead><tbody><tr><td>轮询</td><td>客户端隔一段时间问一次</td><td>实现直观；请求频率、延迟、电量和流量要权衡</td></tr><tr><td>SSE</td><td>服务端通过持续 HTTP 响应发送事件，常用 text/event-stream</td><td>文本流、状态推送；要处理事件边界、心跳、断线重连与取消</td></tr><tr><td>WebSocket</td><td>建立后支持双向消息通信</td><td>需要双方频繁主动发送；仍要处理心跳、鉴权与重连</td></tr><tr><td>MQTT</td><td>发布订阅协议，另有会话与 QoS 机制</td><td>适合相应消息场景；不能仅凭“长连接”就与 SSE 等同</td></tr></tbody></table></div><p>长连接不会免除生命周期管理。页面离开后，要明确连接属于页面、账号还是整个进程；登录切换、网络切换、退后台与进程死亡都要处理。SSE 的 Last-Event-ID 可以把最后见到的事件 ID 告诉服务端，但能否补发、如何去重，需要服务端配合。第 26 节会看 Net 中的 SSE 实现；VipNet 当前目录没有这套代码。</p><p class="net-part">第二部分 · 沿着 Net / VipNet 的代码读实现</p><h2 id="inventory">14 · 仓库盘点：Net 与 VipNet 有哪些共同点和差异？</h2><p>两个仓库都有 net-api 与 net 模块。net-api 放业务可见入口、接口和 Rx 工具；net 放 Provider 实现、Client 组装、拦截器、转换器、DNS 包装和网络栈选择。README 都把它们描述为基于 Retrofit 与 OkHttp 的封装，实际源码比 README 更详细。</p><div class="table-wrap"><table><thead><tr><th>本地源码快照</th><th>Net</th><th>VipNet</th></tr></thead><tbody><tr><td>net/src/main 下 Java/Kotlin 文件</td><td>70</td><td>58</td></tr><tr><td>net-api/src/main 下 Java/Kotlin 文件</td><td>39</td><td>32</td></tr><tr><td>version.gradle：Retrofit</td><td>2.9.0</td><td>2.4.0</td></tr><tr><td>version.gradle：RxJava</td><td>2.2.18</td><td>2.2.18</td></tr><tr><td>version.gradle：zhihuokhttp</td><td>2.1.38</td><td>2.1.35</td></tr><tr><td>version.gradle：netdns</td><td>0.0.52</td><td>0.0.45</td></tr><tr><td>普通请求入口</td><td>Net → NetProviderImpl</td><td>相同结构，当前 NetProviderImpl 文件内容一致</td></tr><tr><td>额外代码</td><td>SSE、动态域名与 Volc 域名相关扩展</td><td>当前目录中没有这些扩展</td></tr></tbody></table></div><p>统计只算两个模块 src/main 中的 .java/.kt 文件，不含测试、构建产物和 Gradle 脚本。同路径文件比较中，net 有 7 个文件不同，net-api 有 5 个文件不同；Net 另有 19 个独有源文件。两者结构相近，但不能混用行号或拿一个仓库的能力替另一个背书。</p><p><strong>项目原码：</strong><code>yyyyy-cdoe/VipAndroid/app/build.gradle</code>，第 642 至 649 行。</p><div class="code-block"><div class="code-toolbar"><span>build.gradle</span><button type="button" data-copy-code>复制</button></div><pre><code data-source="yyyyy-cdoe/VipAndroid/app/build.gradle" data-lines="642-649">    // mr, beta, debug 内部版本使用 okhttp 4.9.3 的 net
+    if (isInternalFlavor(currentFlavor) &amp;&amp; enableNewOkhttp) {
+        println(&quot;当前 Flavor is $currentFlavor, 是内部版本且开关是:${enableNewOkhttp}，使用 net:5.0.2（升级 okhttp 4.9.3）&quot;)
+        api &quot;com.zhihu.android.library:net:5.0.2&quot;
+    } else {
+        println(&quot;当前 Flavor is $currentFlavor, 不是内部版本或开关是:${enableNewOkhttp}，使用 net:${versions.net}&quot;)
+        api &quot;com.zhihu.android.library:net:${versions.net}&quot;
+    }</code></pre></div><p>宿主也不是永远用同一份依赖：VipAndroid 的构建分支会在内部包且 enableNewOkhttp 开启时选择 net:5.0.2，否则取 versions.net；当前 version.gradle:162 的值为 4.2.144-TEMP_VIP11。仓库自己的 version.gradle 是声明值，最终 APK 用了什么，仍要看构建 flavor、依赖解析、锁定与源码替换。</p><h2 id="business">15 · P1：从真实业务入口开始追，不先钻底层</h2><p><strong>项目原码：</strong><code>yyyyy-cdoe/VipCommon/vip_common/src/main/java/com/zhihu/android/vip_common/service/VipFollowService.kt</code>，第 46 至 51 行。</p><div class="code-block"><div class="code-toolbar"><span>VipFollowService.kt</span><button type="button" data-copy-code>复制</button></div><pre><code data-source="yyyyy-cdoe/VipCommon/vip_common/src/main/java/com/zhihu/android/vip_common/service/VipFollowService.kt" data-lines="46-51">    //订阅
+    @POST(&quot;km-indep-home-comm/member/subscribe&quot;)
+    fun subscriptUser(@Body followBody: SubscribeModel): Observable&lt;Response&lt;SuccessResult&gt;&gt;
+
+    @DELETE(&quot;km-indep-home-comm/member/subscribe&quot;)
+    fun deleteSubscriptUser(@Query(&quot;target_id&quot;) token: String, @Query(&quot;type&quot;) type: String = &quot;user&quot;): Observable&lt;Response&lt;SuccessResult&gt;&gt;</code></pre></div><p>这里 POST 的相对路径是订阅接口，@Body 表示把 SubscribeModel 放进请求体；它返回 Observable&lt;Response&lt;SuccessResult&gt;&gt;。DELETE 则通过 @Query 携带 target_id 和 type。相对 URL 是否以 / 开头，会影响与 baseUrl 路径的拼接，别只看最后的域名一样就认为等价。</p><p><strong>项目原码：</strong><code>yyyyy-cdoe/VipCommon/vip_common/src/main/java/com/zhihu/android/vip_common/SubscriptDialogViewModel.kt</code>，第 19 至 31 行。</p><div class="code-block"><div class="code-toolbar"><span>SubscriptDialogViewModel.kt</span><button type="button" data-copy-code>复制</button></div><pre><code data-source="yyyyy-cdoe/VipCommon/vip_common/src/main/java/com/zhihu/android/vip_common/SubscriptDialogViewModel.kt" data-lines="19-31">    private val service = Net.createService(VipFollowService::class.java)
+
+    fun subscript(memberToken: String){
+        service.subscriptUser(SubscribeModel(memberToken))
+            .compose(NetworkUtils.simplifyRequest())
+            .subscribe({
+                if (it.isSuccess){
+                    _subscribed.postValue(true)
+                }
+            }, {
+                KmLog.e(&quot;SubscriptDialogViewModel&quot;, it.toString())
+            })
+    }</code></pre></div><p>读这段业务代码，可以按四步理解：拿到 Service；准备 SubscribeModel；通过 simplifyRequest 拆出响应对象并安排线程；最后检查 isSuccess，再更新 LiveData。网络错误会到错误回调，HTTP 成功后业务仍可能失败，所以还有 isSuccess 这一关。</p><p>这里没有向 simplifyRequest 传 LifecycleTransformer，也没有在这段代码中保存返回的 Disposable。因此，不能把它讲成“这个请求已自动跟 ViewModel 清理”。外部基类是否另有处理，需要查实现；当前调用本身没有证明这一点。原码按实际情况保留，用来学习调用链，不直接当作生命周期模板。</p><h2 id="net-entry">16 · P1：Net 是门面，真正实现由 Provider 提供</h2><p><strong>项目原码：</strong><code>yyyyy-cdoe/VipNet/net-api/src/main/java/com/zhihu/android/api/net/Net.java</code>，第 34 至 43 行。</p><div class="code-block"><div class="code-toolbar"><span>Net.java</span><button type="button" data-copy-code>复制</button></div><pre><code data-source="yyyyy-cdoe/VipNet/net-api/src/main/java/com/zhihu/android/api/net/Net.java" data-lines="34-43">public final class Net {
+    private static final NetProvider netProvider = InstanceProvider.get(NetProvider.class);
+
+    /**
+     * 创建 Retrofit service。
+     */
+    @SuppressWarnings(&quot;unchecked&quot;)
+    public static &lt;T&gt; T createService(@NonNull Class&lt;T&gt; service) {
+        return netProvider.createService(service);
+    }</code></pre></div><p>业务只调用静态入口 Net.createService。Net 通过 InstanceProvider 查到 NetProvider，再把工作交给它。net 模块里的 NetProviderImpl 标了 @AutoService(NetProvider.class)，为模块系统提供实现。这样业务依赖稳定接口，具体网络实现可以留在另一个模块。</p><figure class="net-flow"><figcaption>项目封装的完整请求路线</figcaption><ol><li><strong>业务代码</strong><span>SubscriptDialogViewModel → VipFollowService.subscriptUser</span></li><li><strong>统一入口</strong><span>Net.createService → InstanceProvider 中的 NetProviderImpl</span></li><li><strong>项目自己的代理</strong><span>缓存 Service；Observable 返回值用 defer 包装，订阅时再调用 Retrofit 代理</span></li><li><strong>Retrofit</strong><span>解析注解、序列化请求体，通过 CallAdapter 适配 Rx 调用</span></li><li><strong>OkHttpFamily.API()</strong><span>统一 Client、应用拦截器、业务 Decorator、网络拦截器与调度</span></li><li><strong>实际网络执行</strong><span>按配置选择网络栈，处理解析、连接、协议与响应</span></li><li><strong>结果返回</strong><span>解压 / 响应处理 → Converter → Response&lt;T&gt; → simplifyRequest → 业务判断 → UI</span></li></ol></figure><p>图表示职责与大致方向。缓存、短路返回、重定向或不同网络栈都会改变实际经过的步骤，不能据图推断每个请求都建立新连接。</p><h2 id="proxy">17 · P2：为什么项目还要在 Retrofit 外包一层代理？</h2><p><strong>项目原码：</strong><code>yyyyy-cdoe/VipNet/net/src/main/java/com/zhihu/android/net/common/NetProviderImpl.java</code>，第 74 至 100 行。</p><div class="code-block"><div class="code-toolbar"><span>NetProviderImpl.java</span><button type="button" data-copy-code>复制</button></div><pre><code data-source="yyyyy-cdoe/VipNet/net/src/main/java/com/zhihu/android/net/common/NetProviderImpl.java" data-lines="74-100">    public &lt;T&gt; T createService(@NonNull Class&lt;T&gt; service) {
+        T serviceImpl = (T) SERVICE_MAP.get(service);
+        if (serviceImpl == null) {
+            serviceImpl = createWrapperService(sRetrofit, service);
+            SERVICE_MAP.put(service, serviceImpl);
+        }
+        return serviceImpl;
+    }
+
+    @SuppressWarnings(&quot;unchecked&quot;)
+    @VisibleForTesting
+    private &lt;T&gt; T createWrapperService(Retrofit retrofit, Class&lt;T&gt; service) {
+        return (T) Proxy.newProxyInstance(service.getClassLoader(), new Class&lt;?&gt;[]{service}, new InvocationHandler() {
+            @Override
+            public Object invoke(Object proxy, Method method, @Nullable Object[] args) throws Throwable {
+                if (method.getReturnType() == Observable.class) {
+                    // 如果方法返回值是 Observable 的话，则包一层再返回
+                    return Observable
+                            .defer(() -&gt; {
+                                final T service = getRetrofitService();
+                                final Observable ob = ((Observable) getRetrofitMethod(service, method).invoke(service, args));
+                                // 如果是 Async 模式的话，无需 subscribeOn
+                                return sAsync ? ob : ob.subscribeOn(Schedulers.io());
+                            })
+                            .subscribeOn(Schedulers.io());
+                }
+</code></pre></div><p>SERVICE_MAP 用接口 Class 作 key，保存创建出来的 Service。缓存减少反复创建的成本，不过这里 get、创建、put 不是一个原子操作；并发首次调用时可能创建不止一个代理，不能把 ConcurrentHashMap 直接解释成“创建过程绝对只执行一次”。</p><p>外层 Proxy 在调用方法时检查返回值是否恰好是 Observable.class。符合条件才使用 Observable.defer：先返回一个可订阅对象，等订阅发生，再取得 Retrofit Service、反射调用对应方法。这样可以把实际 Service 创建和方法调用推迟到订阅阶段。getRetrofitService 内还有 volatile 与同步检查，实现自身的懒加载。</p><p>这个分支并没有自动覆盖 Flowable、Single、Call 或 suspend。它们怎么执行，要看其他适配器或入口。defer 也不等于共享一次请求；多个订阅通常可能分别触发请求，业务需要共享时还得设计共享和缓存策略。</p><p>包装层外面已经 subscribeOn(IO)。sAsync 为 false 时，内部 Observable 还会加 subscribeOn(IO)，使同步适配的调用避开主线程；sAsync 为 true 时用异步适配器。但最终网络回调和业务 UI 回调在哪里执行，还要继续看 Client 的 callbackExecutor 与 observeOn。</p><h2 id="init">18 · P2：Retrofit 初始化、Converter 与重复初始化</h2><p><strong>项目原码：</strong><code>yyyyy-cdoe/VipNet/net/src/main/java/com/zhihu/android/net/common/NetProviderImpl.java</code>，第 203 至 232 行。</p><div class="code-block"><div class="code-toolbar"><span>NetProviderImpl.java</span><button type="button" data-copy-code>复制</button></div><pre><code data-source="yyyyy-cdoe/VipNet/net/src/main/java/com/zhihu/android/net/common/NetProviderImpl.java" data-lines="203-232">    public synchronized void initialize(@NonNull Context context,
+                                               boolean isAsync,
+                                               @Nullable StackSampler stackSampler,
+                                               @Nullable String encryptVersion) {
+        okHttpFamilyProvider.init(context, stackSampler, encryptVersion);
+        sAsync = isAsync;
+        if (sRetrofit == null) {
+            Retrofit.Builder builder = new Retrofit.Builder();
+            builder.client(OkHttpFamily.API());
+            builder.baseUrl(ApiEnv.getInstance().getBaseUrl());
+            Converter.Factory factory = getCusConvertFactory();
+            if (factory != null) {
+                builder.addConverterFactory(factory);
+            } else {
+                if (LaunchPerfOptions.lazyConv()) {
+                    Log.d(&quot;Net&quot;, &quot;initialize: using lazy converter&quot;);
+                    builder.addConverterFactory(LazyJacksonConverterFactory.create(JsonUtils.getDefaultObjectMapper()));
+                } else {
+                    builder.addConverterFactory(JacksonConverterFactory.create(JsonUtils.getDefaultObjectMapper()));
+                }
+            }
+
+            builder.addCallAdapterFactory(
+                    sAsync ? RxJava2CallAdapterFactory.createAsync() : RxJava2CallAdapterFactory.create()
+            );
+            sRetrofit = builder.build();
+        }
+        //网络库 AB 实验获取
+        NetAB.init();
+    }</code></pre></div><p>初始化首先配置 OkHttpFamilyProvider，再设置 sAsync。首次创建 Retrofit 时，统一使用 OkHttpFamily.API 和 ApiEnv 的 baseUrl。Converter 优先采用业务提供的 ConverterFactoryProvider，否则按开关选 LazyJacksonConverterFactory 或普通 Jackson；CallAdapter 则按 sAsync 选 createAsync 或 create。</p><p><strong>项目原码：</strong><code>yyyyy-cdoe/VipNet/net/src/main/java/com/zhihu/android/net/converter/JacksonResponseBodyConverter.java</code>，第 33 至 46 行。</p><div class="code-block"><div class="code-toolbar"><span>JacksonResponseBodyConverter.java</span><button type="button" data-copy-code>复制</button></div><pre><code data-source="yyyyy-cdoe/VipNet/net/src/main/java/com/zhihu/android/net/converter/JacksonResponseBodyConverter.java" data-lines="33-46">    @Override
+    public T convert(ResponseBody value) throws IOException {
+        try {
+            return getAdapter().readValue(value.charStream());
+        } catch (Exception e) {
+            if (!disable) {
+                doReport(e);
+            }
+            throw e;
+        } finally {
+            value.close();
+        }
+    }
+</code></pre></div><p>这个自定义 Jackson Converter 在 convert 时读取响应，解析异常按配置上报后继续抛出，最后关闭 ResponseBody。ObjectReader 延迟到第一次使用时创建并缓存，可以把部分初始化工作往后推，但解析成本仍然存在。它何时被选中，要看自定义工厂与 lazyConv 开关。</p><p>宿主 T_VipNetInit 根据包类型或开关调用 Net.initialize，传入加密版本。该文件第 51 行还会再次调用 Net.initialize(app, true, VIP_ENCRYPT_VERSION)。NetProviderImpl 只在 sRetrofit 为 null 时构建适配器，第二次调用却仍会更新 sAsync，因此存在“标记已变，但原 Retrofit 适配器没重建”的可能。初始化应明确只执行一次还是支持重配置，不能只看 synchronized 就认为重复调用没有语义影响。</p><p>这里只指出源码中的执行关系，没有改变宿主初始化逻辑，也没有实测某个构建条件下是否触发问题。</p><h2 id="clients">19 · P1：为什么分 API、IMAGE、WEB 等 Client？</h2><p><strong>项目原码：</strong><code>yyyyy-cdoe/VipNet/net/src/main/java/com/zhihu/android/net/common/OkHttpFamilyProviderImpl.java</code>，第 158 至 176 行。</p><div class="code-block"><div class="code-toolbar"><span>OkHttpFamilyProviderImpl.java</span><button type="button" data-copy-code>复制</button></div><pre><code data-source="yyyyy-cdoe/VipNet/net/src/main/java/com/zhihu/android/net/common/OkHttpFamilyProviderImpl.java" data-lines="158-176">    public OkHttpClient PAPA() {
+        if (PAPA == null) {
+            synchronized (ClientType.PAPA) {
+                if (PAPA == null) {
+                    // 不是 Robolectric 的内部版本，不允许主线程
+                    if (!BuildConfigHelper.isRobolectric() &amp;&amp; BuildConfigHelper.isInternalFlavor() &amp;&amp; isMainThread()) {
+                        Log.e(&quot;OkHttpFamily&quot;, &quot;你不能在主线程调用这个方法！你是第一个调用的，这么做很耗时！&quot;);
+                    }
+                    PAPA = inflateBuilder(BaseApplication.get(),
+                            new OkHttpClient.Builder().cookieJar(sCookieJar),
+                            ClientType.PAPA,
+                            InstanceProvider.loadService(BuilderDecorator.class))
+                            .retryOnConnectionFailure(true)
+                            .build();
+                }
+            }
+        }
+        return PAPA;
+    }</code></pre></div><p><strong>项目原码：</strong><code>yyyyy-cdoe/VipNet/net/src/main/java/com/zhihu/android/net/common/OkHttpFamilyProviderImpl.java</code>，第 184 至 197 行。</p><div class="code-block"><div class="code-toolbar"><span>OkHttpFamilyProviderImpl.java</span><button type="button" data-copy-code>复制</button></div><pre><code data-source="yyyyy-cdoe/VipNet/net/src/main/java/com/zhihu/android/net/common/OkHttpFamilyProviderImpl.java" data-lines="184-197">    public OkHttpClient API() {
+        if (API == null) {
+            synchronized (ClientType.API) {
+                if (API == null) {
+                    API = inflateBuilder(BaseApplication.get(),
+                            PAPA().newBuilder(),
+                            ClientType.API,
+                            InstanceProvider.loadService(BuilderDecorator.class))
+                            .build();
+                }
+            }
+        }
+        return API;
+    }</code></pre></div><p>PAPA 是公共基础 Client，API 通过 PAPA().newBuilder() 派生，再按 API 类型补充配置。WEB、IMAGE 等也有自己的入口，避免业务到处复制 OkHttpClient.Builder。不同请求可以共用公共能力，又保留超时、拦截器或调度上的区别。</p><div class="table-wrap"><table><thead><tr><th>VipNet Client</th><th>当前源码里的配置特点</th></tr></thead><tbody><tr><td>API</td><td>基于 PAPA 派生；补 API 相关加密、环境及业务处理</td></tr><tr><td>IMAGE</td><td>基于 PAPA；setDelayable(false)，连接 15 秒、读取 20 秒</td></tr><tr><td>WEB</td><td>基于 PAPA；对应 Web 请求使用的策略，不能直接等同 WebView 全部网络都经过它</td></tr><tr><td>WS</td><td>基于 PAPA；连接 60 秒，读取 Integer.MAX_VALUE 毫秒。WebSocket 仍需心跳和关闭管理</td></tr><tr><td>FILE_DOWNLOAD</td><td>使用新 Builder + 公共 CookieJar，setDelayable(false)，读取 20 秒</td></tr><tr><td>VIDEO_CACHE / SUGAR</td><td>分别有自己的创建分支；不要把所有类型都写成 API 的完全复制</td></tr></tbody></table></div><p>setDelayable、stackSampler、callbackExecutor 等是这里依赖的定制库扩展，不是所有官方 OkHttp 版本都有的 API。Client 是复用入口，不代表每次调用都复用同一条 TCP 连接；连接是否可复用还受地址、协议、连接状态等影响。</p><h2 id="assembly">20 · P1：Client 是按什么顺序装起来的？</h2><p><strong>项目原码：</strong><code>yyyyy-cdoe/VipNet/net/src/main/java/com/zhihu/android/net/common/OkHttpFamilyProviderImpl.java</code>，第 412 至 445 行。</p><div class="code-block"><div class="code-toolbar"><span>OkHttpFamilyProviderImpl.java</span><button type="button" data-copy-code>复制</button></div><pre><code data-source="yyyyy-cdoe/VipNet/net/src/main/java/com/zhihu/android/net/common/OkHttpFamilyProviderImpl.java" data-lines="412-445">    private OkHttpClient.Builder inflateBuilder(Context context,
+                                                       OkHttpClient.Builder builder,
+                                                       ClientType type,
+                                                       List&lt;BuilderDecorator&gt; decorators) {
+        // 0. 首先添加统一的度量管理
+        composeGlobalMetrics(builder);
+        // 1. 添加 应用 interceptors
+        composeAppInterceptors(type, builder);
+        // 2. 处理 外部（业务） SPI 注册的 decorators
+        composeDecorators(decorators, type, builder);
+        // 3. 添加 网络库内部的应用 interceptors
+        internalAppInterceptors(type, builder);
+        // 4. 给特定的 client 使能 doh
+        if (NetworkPrefs.isHttpDNSOn(context) &amp;&amp;
+                (type == ClientType.API || type == ClientType.IMAGE || type == ClientType.WEB)) {
+            builder.dns(initDns());
+        }
+        // 5. 添加网络 interceptors
+        composeNetInterceptors(type, builder);
+        // 6. 添加 quic 配置
+        composeNetQuicConfig(type, builder);
+        // 7. 支持动态配置 connectTimeout，readTimeout，writeTimeout，pingInterval
+        composeNetBuildConfig(type, builder);
+        // 8. 添加 dispatcher 监控功能
+        getDispatcher().setDispatcherListener(DispatcherMonitor.getInstance());
+        // 9. 检查 Interceptors，去掉同一个 client 下重复的 Interceptor
+        checkInterceptors(builder, type);
+        // 10. ClientType API 支持设置最大并发数
+        if(type == ClientType.API) {
+            getDispatcher().setMaxRequestsPerHost(NetOkHttpConfig.getMaxRequestsPerHost());
+        }
+        // 11. 添加统一 net 线程池 dispatcher
+        return builder.dispatcher(getDispatcher());
+    }</code></pre></div><p>inflateBuilder 是这个仓库值得重点读的方法。它把零散能力集中装进 Builder：事件监控、应用拦截器、外部业务 Decorator、内部解压等处理、自定义 DNS、网络拦截器、QUIC 配置、超时和 Dispatcher。最后还会按拦截器的 Class 去重，保留先遇到的实例。</p><div class="table-wrap"><table><thead><tr><th>位置</th><th>具体职责与条件</th></tr></thead><tbody><tr><td>公共应用处理</td><td>ExceptionWrapInterceptor 包装意外异常；PAPA / FILE_DOWNLOAD 加 trace ID 与 NetworkExtension</td></tr><tr><td>API 应用处理</td><td>按条件切环境；安装请求体加密；再装业务 Decorator</td></tr><tr><td>内部应用处理</td><td>API 的内部功能、QUIC 记录、HostChange；API / WEB 的 Brotli 解压</td></tr><tr><td>自定义 DNS</td><td>HttpDNS 开关开启且 Client 为 API / IMAGE / WEB 时安装</td></tr><tr><td>网络拦截器</td><td>非 PAPA 安装 SignInterceptor；IMAGE 加图片监控；内部包另有调试检查</td></tr><tr><td>公共调度</td><td>所有这里创建的 Client 使用 getDispatcher() 返回的共享 Dispatcher</td></tr></tbody></table></div><p>别直接把表格里的出现顺序当作最终拦截器数组。API 继承 PAPA 的 Builder，再补自己的配置，最后去重；外部 Decorator 也会添加处理。准确顺序要结合继承后的列表看。去重按类名而非对象配置判断，所以同一类的两个不同配置实例也不会都保留。</p><p>Brotli 为什么放在外部业务拦截器后面？请求正向走，响应反向返回。这样响应先解压，再到会读取或替换 body 的业务拦截器，能避免业务提前消费压缩流导致后面解压失败。</p><h2 id="decorators">21 · P1：业务怎么扩展网络库？看 VipAppDecorator</h2><p><strong>项目原码：</strong><code>yyyyy-cdoe/VipNet/net/src/main/java/com/zhihu/android/net/common/OkHttpFamilyProviderImpl.java</code>，第 538 至 555 行。</p><div class="code-block"><div class="code-toolbar"><span>OkHttpFamilyProviderImpl.java</span><button type="button" data-copy-code>复制</button></div><pre><code data-source="yyyyy-cdoe/VipNet/net/src/main/java/com/zhihu/android/net/common/OkHttpFamilyProviderImpl.java" data-lines="538-555">    private void composeDecorators(List&lt;BuilderDecorator&gt; decorators,
+                                          ClientType type,
+                                          OkHttpClient.Builder builder) {
+        for (BuilderDecorator decorator : decorators) {
+            String decoratorName = decorator.getClass().getCanonicalName();
+            if (decoratorMap.contains(decoratorName)) {
+                decorator.decorate(builder, type);
+                // 如果是内部版本，并且没有通过 rational check 的话，就直接崩掉！
+                if (BuildConfigHelper.isInternalFlavor() &amp;&amp; !checkRational(builder, type)) {
+                    throw new IllegalStateException(&quot;Client &quot; + type.getName() + &quot; rational check failed!&quot;);
+                }
+            } else if (BuildConfigHelper.isInternalFlavor()) {
+                // 如果发现了未注册的 decorator 实现，就直接抛出 runtime 异常崩掉！
+                // 请向 Net 提 MR 注册
+                throw new IllegalStateException(&quot;未注册的 BuilderDecorator 实现： &quot; + decoratorName);
+            }
+        }
+    }</code></pre></div><p>BuilderDecorator 让账号、监控、VIP 业务等模块给 Client 补充自己的逻辑。实现由 InstanceProvider.loadService 取得，但还要命中 decoratorMap 白名单；内部包发现未登记实现会抛异常。所以，“写了一个实现类”不等于它一定会生效，还需要模块注册、白名单和对应 Client 条件。</p><p><strong>项目原码：</strong><code>yyyyy-cdoe/VipAndroid/app/src/main/java/com/zhihu/android/app/util/VipAppDecorator.java</code>，第 63 至 70 行。</p><div class="code-block"><div class="code-toolbar"><span>VipAppDecorator.java</span><button type="button" data-copy-code>复制</button></div><pre><code data-source="yyyyy-cdoe/VipAndroid/app/src/main/java/com/zhihu/android/app/util/VipAppDecorator.java" data-lines="63-70">                if (VipUserSettings.INSTANCE.getCloseRecommend()) {
+                    requestBuilder.header(&quot;x-close-recommend&quot;, Boolean.TRUE.toString());
+                }
+                if (appMode != null &amp;&amp; appMode.getAppMode() == AppMode.MODE_TYPE_BROWSE) {
+                    requestBuilder.header(&quot;x-app-mode&quot;, String.valueOf(AppMode.MODE_TYPE_BROWSE));
+                }
+
+                return chain.proceed(requestBuilder.build());</code></pre></div><p>VipAppDecorator 只对 API 类型添加这段拦截器。这里按用户设置补关闭推荐标记，按浏览模式补 x-app-mode；同文件还对 /templates 和指定资源请求调整版本头。业务差异留在宿主 Decorator 中，网络库不用直接依赖每个 VIP 页面。</p><p>账号模块 AccountDecorator 也通过这个接口安装响应处理。它会读错误响应体、尝试解析 ApiError，再处理账号安全和未授权等逻辑；读取后重建 ResponseBody 供下游继续使用。本篇只确认这个调用点，不把它直接等同于“所有 401 都自动刷新 Token 并重试”。</p><h2 id="threads">22 · P1：请求线程、回调线程与 Dispatcher 排队</h2><p><strong>项目原码：</strong><code>yyyyy-cdoe/VipNet/net/src/main/java/com/zhihu/android/net/common/OkHttpFamilyProviderImpl.java</code>，第 366 至 375 行。</p><div class="code-block"><div class="code-toolbar"><span>OkHttpFamilyProviderImpl.java</span><button type="button" data-copy-code>复制</button></div><pre><code data-source="yyyyy-cdoe/VipNet/net/src/main/java/com/zhihu/android/net/common/OkHttpFamilyProviderImpl.java" data-lines="366-375">    private static Dispatcher getDispatcher() {
+        if (sDispatcher == null) {
+            synchronized (OkHttpFamilyProviderImpl.class) {
+                if (sDispatcher == null) {
+                    sDispatcher = new Dispatcher(NetThreadPool.INSTANCE);
+                }
+            }
+        }
+        return sDispatcher;
+    }</code></pre></div><p>API、图片、下载等 Client 在 inflateBuilder 末尾都拿同一个 Dispatcher。API 初始化时调用 setMaxRequestsPerHost，修改的也是这个共享对象，因此不能说它只影响 API 自己的队列。多种请求共用资源时，要考虑优先级和互相等待。</p><p><strong>项目原码：</strong><code>yyyyy-cdoe/VipNet/net/src/main/java/com/zhihu/android/net/common/NetThreadPool.kt</code>，第 16 至 22 行。</p><div class="code-block"><div class="code-toolbar"><span>NetThreadPool.kt</span><button type="button" data-copy-code>复制</button></div><pre><code data-source="yyyyy-cdoe/VipNet/net/src/main/java/com/zhihu/android/net/common/NetThreadPool.kt" data-lines="16-22">internal object NetThreadPool : RulerThreadPoolExecutor(
+        0,
+        Int.MAX_VALUE,
+        60,
+        TimeUnit.SECONDS,
+        SynchronousQueue(),
+        Util.threadFactory(&quot;NetUniversalThread&quot;, false)) {</code></pre></div><p>NetThreadPool 配置的是 core=0、max=Int.MAX_VALUE、60 秒空闲时间和 SynchronousQueue。不要看这个最大值就说应用会同时开无限个请求：异步请求还有 Dispatcher 的调度限制。不过，线程池配置、请求限流和连接数是不同层次，不能拿一个数字替代另外两个。</p><p>PAPA 还设置了 callbackExecutor(AsyncResponseCallManager.getInstance().getExecutor())。这里把响应回调安排到另一套 executor，而不是 UI 主线程。AsyncResponseCallManager 的代码使用 LinkedBlockingQueue 无界队列，即使注释写了“限制 128 个任务”，也不能据注释认定队列真有限。其父类是自定义执行器，最终行为还要继续查父类。</p><div class="table-wrap"><table><thead><tr><th>步骤</th><th>当前源码能说明的线程关系</th></tr></thead><tbody><tr><td>调用 Service 方法</td><td>发生在调用方线程；外层代理可先返回 defer 的 Observable</td></tr><tr><td>订阅与延迟创建</td><td>外层 subscribeOn(IO) 把相应工作安排到 IO 调度器</td></tr><tr><td>异步 HTTP 执行</td><td>createAsync 适配进入异步调用，使用 Client 的调度能力</td></tr><tr><td>响应处理 / 转换</td><td>与底层回调路径有关；这里还有定制 callbackExecutor，不能说必定是主线程</td></tr><tr><td>simplifyRequest 后面的业务回调</td><td>默认 observeOn(AndroidSchedulers.mainThread())；业务也可选择不切线程或后续再次切换</td></tr></tbody></table></div><p>提高并发数不一定让首页更快。连接、带宽、服务端限流、CPU 解析和主线程渲染都可能成为瓶颈。先看排队与各阶段耗时，再调整调度。</p><h2 id="response">23 · P1：simplifyRequest 具体替业务做了什么？</h2><p><strong>项目原码：</strong><code>yyyyy-cdoe/VipNet/net-api/src/main/java/com/zhihu/android/app/util/SimplifyRequestTransformer.java</code>，第 122 至 143 行。</p><div class="code-block"><div class="code-toolbar"><span>SimplifyRequestTransformer.java</span><button type="button" data-copy-code>复制</button></div><pre><code data-source="yyyyy-cdoe/VipNet/net-api/src/main/java/com/zhihu/android/app/util/SimplifyRequestTransformer.java" data-lines="122-143">    @Override
+    public ObservableSource&lt;T&gt; apply(Observable&lt;Response&lt;T&gt;&gt; upstream) {
+        if (mLifecycleTransformer != null) {
+            upstream = upstream.compose(mLifecycleTransformer);
+        }
+        if (mSwitchThread) {
+            upstream = upstream.subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread());
+        }
+        return upstream
+                .flatMap(response -&gt; {
+                    if (response.isSuccessful()) {
+                        T t = response.body();
+                        if (t == null) {
+                            return Observable.error(new IllegalArgumentException(&quot;解析出为 null&quot;));
+                        } else {
+                            return Observable.just(t);
+                        }
+                    } else {
+                        return Observable.error(new RetrofitAPIError(response));
+                    }
+                });
+    }</code></pre></div><p>按执行顺序读：传了 LifecycleTransformer 就 compose；mSwitchThread 为 true 就把订阅安排到 IO、结果切到主线程；随后判断 HTTP 是否成功，成功取 body，非成功生成 RetrofitAPIError。成功但 body 为 null，也会变成错误。</p><div class="table-wrap"><table><thead><tr><th>输入结果</th><th>这个 Observable 分支会怎样</th></tr></thead><tbody><tr><td>2xx + 非空 body</td><td>把 Response&lt;T&gt; 拆成 T，业务成功回调收到对象</td></tr><tr><td>2xx + null body</td><td>发送 IllegalArgumentException；204 等无 body 接口不能直接套用这种预期</td></tr><tr><td>非 2xx</td><td>发送 RetrofitAPIError，把 Response 留在异常对象中</td></tr><tr><td>HTTP 200 + isSuccess=false</td><td>仍会输出这个业务对象；内部业务字段要由业务继续判断</td></tr><tr><td>网络连接或 JSON 解析异常</td><td>沿错误链传播；不等同所有错误都叫 HTTP 失败</td></tr></tbody></table></div><p>默认 simplifyRequest() 没有 LifecycleTransformer，所以不会自动绑定页面生命周期。getScheduler 只负责线程；throwAPIError 只在 HTTP 不成功时抛错，仍保留 Response。不同工具做的事不同，别看到 compose 就认为已经把线程、取消、业务错误全部处理完了。</p><p>这个分支的 flatMap 位于 observeOn(main) 之后，因此拆 body 和成功判断发生在主线程；这不表示 JSON 是在这里才解析。后续如果继续在主线程做大列表转换，一样会卡。退出页面时还需要处理 Disposable 或使用正确的生命周期变换器。</p><h2 id="cookies">24 · P2：Cookie、超时、签名和压缩的实际封装</h2><p><strong>项目原码：</strong><code>yyyyy-cdoe/VipNet/net/src/main/java/com/zhihu/android/net/common/CookieJarImpl.kt</code>，第 14 至 27 行。</p><div class="code-block"><div class="code-toolbar"><span>CookieJarImpl.kt</span><button type="button" data-copy-code>复制</button></div><pre><code data-source="yyyyy-cdoe/VipNet/net/src/main/java/com/zhihu/android/net/common/CookieJarImpl.kt" data-lines="14-27">internal class CookieJarImpl() : CookieJar {
+
+    val cookieStore: CookieStore by lazy {
+        CookieStoreImpl()
+    }
+
+    override fun saveFromResponse(url: HttpUrl, cookies: List&lt;Cookie&gt;) {
+        cookieStore.add(url, cookies)
+    }
+
+    override fun loadForRequest(url: HttpUrl): List&lt;Cookie&gt; {
+        return cookieStore.get(url)
+    }
+}</code></pre></div><p>CookieJar 的两件事很直观：响应回来时把 Cookie 放进 CookieStore，请求出去时按 URL 取 Cookie。CookieStoreImpl 用 ConcurrentHashMap 存内存数据，get 会过滤过期和不匹配 URL 的 Cookie；初始化还会读取私有目录里的 JSON 文件。</p><p><strong>项目原码：</strong><code>yyyyy-cdoe/VipNet/net/src/main/java/com/zhihu/android/net/common/CookieStoreImpl.kt</code>，第 83 至 94 行。</p><div class="code-block"><div class="code-toolbar"><span>CookieStoreImpl.kt</span><button type="button" data-copy-code>复制</button></div><pre><code data-source="yyyyy-cdoe/VipNet/net/src/main/java/com/zhihu/android/net/common/CookieStoreImpl.kt" data-lines="83-94">    override fun add(httpUrl: HttpUrl, cookies: List&lt;Cookie&gt;) {
+        cookies.forEach {
+            if (it.matches(httpUrl)) {
+                val cookieKey = it.getKey()
+                memoryCookies[cookieKey] = it
+            }
+        }
+    }
+
+    override fun get(httpUrl: HttpUrl): List&lt;Cookie&gt; {
+        return memoryCookies.values.filter { !it.hasExpired() &amp;&amp; it.matches(httpUrl) }
+    }</code></pre></div><p>但当前 add 这里只改内存，removeAll 也只清内存。文件里虽然有 updatePersistentCookies，不能据此说每次接收或清空 Cookie 都已落盘；其调用需要逐个核对。另一个细节是 NetProviderImpl 与 OkHttpFamilyProviderImpl 各自 new 了 CookieJarImpl，前者 getCookieStore 暴露的对象不应未经检查就当作请求 Client 的同一份内存 Store。这些是源码可见的检查点，尚未在完整 App 中验证实际影响。</p><p><strong>项目原码：</strong><code>yyyyy-cdoe/VipNet/net/src/main/java/com/zhihu/android/net/interceptors/NetworkExtension.java</code>，第 49 至 57 行。</p><div class="code-block"><div class="code-toolbar"><span>NetworkExtension.java</span><button type="button" data-copy-code>复制</button></div><pre><code data-source="yyyyy-cdoe/VipNet/net/src/main/java/com/zhihu/android/net/interceptors/NetworkExtension.java" data-lines="49-57">        builder.removeHeader(CONNECT_TIMEOUT);
+        builder.removeHeader(READ_TIMEOUT);
+        builder.removeHeader(WRITE_TIMEOUT);
+
+        return chain
+                .withConnectTimeout(connectTimeout, TimeUnit.MILLISECONDS)
+                .withReadTimeout(readTimeout, TimeUnit.MILLISECONDS)
+                .withWriteTimeout(writeTimeout, TimeUnit.MILLISECONDS)
+                .proceed(builder.build());</code></pre></div><p>NetworkExtension 先读取请求头里约定的连接、读取、写入超时，转换成毫秒值，再删除这些内部控制头，调用 with…Timeout 执行请求。这样业务可以针对单次请求调整等待时间，不必到处新建 Client。字段解析用 Integer.parseInt，调用方要保证格式和值有效。</p><p>安全处理分成两层：API 的应用拦截器按配置决定是否加密请求体；SignInterceptor 是网络拦截器，会根据请求是否已加密、是否已签名等条件决定签名。它允许某些客户端签名请求在重定向后重新签名，因为路径可能变了。这里讲的是封装位置和条件，不展开私有密码实现，也不能从类名推断算法安全性。</p><p><strong>项目原码：</strong><code>yyyyy-cdoe/VipNet/net/src/main/java/com/zhihu/android/net/interceptors/BrotliInterceptor.java</code>，第 33 至 51 行。</p><div class="code-block"><div class="code-toolbar"><span>BrotliInterceptor.java</span><button type="button" data-copy-code>复制</button></div><pre><code data-source="yyyyy-cdoe/VipNet/net/src/main/java/com/zhihu/android/net/interceptors/BrotliInterceptor.java" data-lines="33-51">  @Override
+  public Response intercept(Chain chain) throws IOException {
+    Response result;
+    Request originRequest = chain.request();
+    if (originRequest.header(&quot;Accept-Encoding&quot;) == null) {
+      Request newRequest = originRequest.newBuilder().header(&quot;Accept-Encoding&quot;, &quot;br,gzip&quot;).build();
+      Response response = chain.proceed(newRequest);
+      try {
+        result = uncompress(response);
+        BrotliMonitor.getInstance().record(response, null);
+      }catch (Exception ioException){
+        BrotliMonitor.getInstance().record(response, ioException);
+        throw ioException;
+      }
+    } else {
+      result = chain.proceed(originRequest);
+    }
+    return result;
+  }</code></pre></div><p>请求没带 Accept-Encoding 时，VipNet 的 BrotliInterceptor 才自行声明 br,gzip，并处理对应响应。解压后会删除原 Content-Encoding 和 Content-Length，重新提供解压后的 body；原长度描述的是压缩数据，继续保留会误导下游。如果调用方自己带了编码头，这段就直接放行，不能默认它仍会替你解压所有编码。</p><h2 id="dns-quic">25 · P2：自定义 DNS 与 QUIC 选择，哪些是有条件的？</h2><p><strong>项目原码：</strong><code>yyyyy-cdoe/VipNet/net/src/main/java/com/zhihu/android/net/dns/DnsWrapper.java</code>，第 37 至 43 行。</p><div class="code-block"><div class="code-toolbar"><span>DnsWrapper.java</span><button type="button" data-copy-code>复制</button></div><pre><code data-source="yyyyy-cdoe/VipNet/net/src/main/java/com/zhihu/android/net/dns/DnsWrapper.java" data-lines="37-43">    @Override
+    public List&lt;InetAddress&gt; lookup(@NonNull String hostname) throws UnknownHostException {
+        if (impl != null) {
+            return impl.lookup(hostname);
+        }
+        return Dns.SYSTEM.lookup(hostname);
+    }</code></pre></div><p>DnsWrapper 的实现还没设置好时，用 Dns.SYSTEM；设置后交给 impl.lookup。Client 组装时也有条件：只有 HttpDNS 开关打开、且类型在 API/IMAGE/WEB 范围内，才装入自定义 DNS。initDns 再根据初始化开关直接取 MainDns，或先拿 DnsWrapper。MainDns 在另一个 Netdns 仓库里，这里不把包装器误当完整解析算法。</p><p><strong>项目原码：</strong><code>yyyyy-cdoe/VipNet/net/src/main/java/com/zhihu/android/net/quic/QuicStackSampler.java</code>，第 42 至 72 行。</p><div class="code-block"><div class="code-toolbar"><span>QuicStackSampler.java</span><button type="button" data-copy-code>复制</button></div><pre><code data-source="yyyyy-cdoe/VipNet/net/src/main/java/com/zhihu/android/net/quic/QuicStackSampler.java" data-lines="42-72">    @Override
+    public Request sample(@NotNull Request originRequest) {
+        //如果是 quic 请求,正常应该目前只有开屏请求是 quic 请求
+        // 1.没有加载成功, 则切换到 okhttp
+        // 2.加载成功, 则检查当前设备是否支持 quic, 如果不支持, 则切换到 okhttp
+        if(originRequest.getTargetStack() == NetStack.QUIC || originRequest.getTargetStack() == NetStack.QUIC_OKHTTP){
+            //不支持 quic,没有加载成功, quic不可用, 则切换到 okhttp
+            if(!QuicLoadHelper.getInstance().isSoLoadedSuccess()
+                    || !QuicController.getInstance().enableQuic(originRequest)
+                    || !QuicRecordManager.getInstance().isQuicAvailable()
+                    || !LightDns.getInstance().isAsyncQuerySuccess()){
+                NetLogger.debug(&quot;[QuicStackSampler] reset to okhttp: &quot;  + originRequest.url());
+                originRequest = originRequest.newBuilder().targetStack(NetStack.OKHTTP).build();
+            }
+        }else{
+            //如果不是指定发送 quic 请求,
+            //没有加载成功, 不做处理
+            if (QuicLoadHelper.getInstance().isSoLoadedSuccess()) {
+                //如果 quic so 加载了, 则检查是否需要切换
+                originRequest = samepleQuicRequest(originRequest);
+                // log for debug.
+                if (BuildConfigHelper.isInternalFlavor()) {
+                    NetStack currentStack = originRequest.getTargetStack() == null ?
+                            NetStack.OKHTTP : originRequest.getTargetStack();
+                    NetLogger.debug(&quot;[QuicStackSampler] sample host: &quot; + originRequest.url().host() + &quot; to stack: &quot;
+                            + currentStack);
+                }
+            }
+        }
+        return originRequest;
+    }</code></pre></div><p>即使原请求指定 QUIC，也要检查 SO 是否加载成功、配置是否允许、当前 QUIC 是否可用，以及异步 DNS 是否成功。任一条件不满足，就改回 OKHTTP。没有显式指定的请求，也会在加载成功后进一步采样。</p><p><strong>项目原码：</strong><code>yyyyy-cdoe/VipNet/net/src/main/java/com/zhihu/android/net/quic/QuicStackSampler.java</code>，第 79 至 99 行。</p><div class="code-block"><div class="code-toolbar"><span>QuicStackSampler.java</span><button type="button" data-copy-code>复制</button></div><pre><code data-source="yyyyy-cdoe/VipNet/net/src/main/java/com/zhihu/android/net/quic/QuicStackSampler.java" data-lines="79-99">    private Request samepleQuicRequest(Request originRequest) {
+        if (QuicController.getInstance().enableQuic(originRequest)) {
+            Request.Builder builder = originRequest.newBuilder();
+            switch (QuicPriorityManager.getInstance().getPriority(originRequest)) {
+                case QuicPriorityManager.H2_ONLY:
+                    builder.targetStack(NetStack.OKHTTP);
+                    break;
+                case QuicPriorityManager.H2_FALLBACK_QUIC:
+                    builder.targetStack(NetStack.OKHTTP_QUIC);
+                    break;
+                case QuicPriorityManager.QUIC_ONLY:
+                    builder.targetStack(NetStack.QUIC).build();
+                    break;
+                case QuicPriorityManager.QUIC_FALLBACK_H2:
+                    builder.targetStack(NetStack.QUIC_OKHTTP);
+                    break;
+            }
+            return builder.build();
+        }
+        return originRequest;
+    }</code></pre></div><p>策略里有仅 H2、H2 失败后考虑 QUIC、仅 QUIC、QUIC 后备 H2 等选择，通过 targetStack 表达给底层。NetStackSamplerManager 按顺序调用 QuicStackSampler 和 NetTestSampler，网络变化时还会重置优先级和记录。真正怎样失败切栈、是否重发、协议最终协商成什么，由底层实现和运行配置决定，不在这里凭枚举名推断。</p><h2 id="net-extra">26 · P3：Net 多出的动态域名与 SSE 包装</h2><p>Net 的 inflateBuilder 会对 API 加入 DynamicDomainInterceptor 和 VolcDomainInterceptor；VipNet 当前没有这两项。DynamicDomainInterceptor 按下发配置把指定主机替换为备用域名，并保持 HTTPS。VolcDomainInterceptor 还涉及实验配置。换域名时要一起考虑 Cookie、授权头、签名、TLS 主机名、缓存 key 和监控归因，不只是改一个字符串。</p><p><strong>项目原码：</strong><code>yyyyy-cdoe/Net/net/src/main/java/com/zhihu/android/net/common/NetSseProviderImpl.java</code>，第 61 至 75 行。</p><div class="code-block"><div class="code-toolbar"><span>NetSseProviderImpl.java</span><button type="button" data-copy-code>复制</button></div><pre><code data-source="yyyyy-cdoe/Net/net/src/main/java/com/zhihu/android/net/common/NetSseProviderImpl.java" data-lines="61-75">    private Retrofit getRetrofit() {
+        if (sRetrofit == null) {
+            synchronized (NetSseProviderImpl.class) {
+                if (sRetrofit == null) {
+                    sRetrofit = new Retrofit.Builder()
+                            .client(OkHttpFamily.SSE())
+                            .baseUrl(ApiEnv.getInstance().getBaseUrl())
+                            .addConverterFactory(JacksonConverterFactory.create(JsonUtils.getDefaultObjectMapper()))
+                            .addCallAdapterFactory(RxSseCallAdapterFactory.create(OkHttpFamily.SSE()))
+                            .build();
+                }
+            }
+        }
+        return sRetrofit;
+    }</code></pre></div><p>SSE 有独立的 NetSseProviderImpl、OkHttpFamily.SSE 和 RxSseCallAdapterFactory，复用接口声明方式，但不是把普通 JSON 响应整体读完再返回。SSE Client 设置 readTimeout=0，允许长时间等流数据；是否需要业务心跳/断连判断由另一层处理，不能把无限读取等待当成永远健康。</p><p><strong>项目原码：</strong><code>yyyyy-cdoe/Net/net/src/main/java/com/zhihu/android/net/sse/SseCallImpl.kt</code>，第 318 至 330 行。</p><div class="code-block"><div class="code-toolbar"><span>SseCallImpl.kt</span><button type="button" data-copy-code>复制</button></div><pre><code data-source="yyyyy-cdoe/Net/net/src/main/java/com/zhihu/android/net/sse/SseCallImpl.kt" data-lines="318-330">    private fun buildSseRequest(baseRequest: Request, includeLastEventId: Boolean): Request {
+        val builder = baseRequest.newBuilder()
+            .header(&quot;Accept&quot;, &quot;text/event-stream&quot;)
+            .header(&quot;Cache-Control&quot;, &quot;no-cache&quot;)
+
+        if (includeLastEventId) {
+            lastEventId.get()?.let { id -&gt;
+                builder.header(LAST_EVENT_ID_HEADER, id)
+            }
+        }
+
+        return builder.build()
+    }</code></pre></div><p>建立请求时补 Accept: text/event-stream 和 Cache-Control: no-cache；重连时按条件发送 Last-Event-ID。处理响应时读取事件，记录最新 ID，并接收 retry 字段调整重连间隔。cancel 路径会取消当前 Call 和已安排的重连，避免页面退出后又偷偷重连。</p><p>SseRetryPolicy 区分取消、证书/URL 错误和可重试网络错误；HTTP 408/429、5xx 与普通 4xx 的策略不同，另有次数限制。不过“允许重试”不代表已经实现随机退避、尊重所有 Retry-After 或业务恰好处理一次。SSE 事件补发和重复事件处理仍需客户端、服务端共同设计。</p><h2 id="preload">27 · P2：VIP 首页预请求怎么复用结果？</h2><p><strong>项目原码：</strong><code>yyyyy-cdoe/VipAndroid/app/src/main/java/com/zhihu/android/app/util/VipAppDecorator.java</code>，第 94 至 119 行。</p><div class="code-block"><div class="code-toolbar"><span>VipAppDecorator.java</span><button type="button" data-copy-code>复制</button></div><pre><code data-source="yyyyy-cdoe/VipAndroid/app/src/main/java/com/zhihu/android/app/util/VipAppDecorator.java" data-lines="94-119">                    if (isNeedAwait) {
+                        if (preResponse == null) {
+                            //代表预先请求的接口的结果，还没回来，先阻塞当前线程。
+                            //阻塞当前线程，等待预先请求的数据
+                            //拿到塔斯下发的最大延迟时间时间，单位是毫秒。
+                            int deadlineTime = T_HomePreNetInit.getDeadlinePreRequestTime();
+                            //现在是配置的 等待 3 秒钟。
+                            try {
+                                boolean await = countDownLatch.await(deadlineTime, TimeUnit.MILLISECONDS);
+                            } catch (InterruptedException ignored) {
+                            }
+                        }
+                        final okhttp3.Response oldResponse = preResponse;
+                        final byte[] oldResponseBytes = preResponseByte;
+                        ResponseBody oldResponseBody = null;
+                        if (oldResponse != null) {
+                            oldResponseBody = oldResponse.body();
+                        }
+                        cleanData();
+                        if (oldResponse != null &amp;&amp; oldResponse.isSuccessful() &amp;&amp; oldResponseBody != null &amp;&amp; oldResponseBytes != null) {
+                            ResponseBody newResponseBody = ResponseBody.create(oldResponseBody.contentType(), oldResponseBytes);
+                            okhttp3.Response.Builder newResponseBuilder = oldResponse.newBuilder();
+                            //返回预先请求的数据
+                            return newResponseBuilder.body(newResponseBody).build();
+                        }
+                    }</code></pre></div><p>VipAppDecorator 在预请求开关允许且 URL 匹配时，尝试复用提前请求的响应。需要等待时，会按配置的 deadlineTime 等 CountDownLatch；拿到成功响应和保存的字节后，重新创建 ResponseBody，直接返回给下游。没有可用结果则继续普通请求。</p><p>第一次请求会读取 body.bytes，保存响应及字节，并安排最多 10 秒后的清理。由于原 body 已被读取，返回给调用方前要重新构造。它是业务预请求结果复用，不等于标准 HTTP Cache，也不证明跨进程、跨账号缓存安全。</p><p>面试可以沿这段追问：匹配 URL 是否足够，账号和请求参数变化怎么办；等待有没有占住网络工作线程；CountDownLatch 和 isFirst 的寿命是否与预请求轮次一致；大 body 全读入内存是否合适。源码中的 await 返回值没有被使用，因此最后仍要看缓存对象是否就绪。当前片段还不能证明所有竞态都已处理。</p><h2 id="observability">28 · P1：请求慢或失败，按什么顺序查？</h2><p><strong>项目原码：</strong><code>yyyyy-cdoe/VipNet/net/src/main/java/com/zhihu/android/net/metrics/GlobalOkHttpEventListener.java</code>，第 40 至 51 行。</p><div class="code-block"><div class="code-toolbar"><span>GlobalOkHttpEventListener.java</span><button type="button" data-copy-code>复制</button></div><pre><code data-source="yyyyy-cdoe/VipNet/net/src/main/java/com/zhihu/android/net/metrics/GlobalOkHttpEventListener.java" data-lines="40-51">        public EventListener create(@NonNull Call call) {
+            List&lt;EventListener&gt; eventListeners = new LinkedList&lt;&gt;();
+
+            for (EventListenerProvider provider : providers) {
+                EventListener listener = provider.getEventListener(call);
+                if (listener != null) {
+                    eventListeners.add(listener);
+                }
+            }
+
+            return new GlobalOkHttpEventListener(eventListeners);
+        }</code></pre></div><p>这个 Factory 为每个 Call 收集多个 EventListener，再交给 WrapperEventListener 转发。WrapperEventListener 有 dnsStart/dnsEnd、connectStart/connectEnd、TLS、连接获取和请求响应等事件。多个业务监控共享一个事件入口，不需要各自覆盖整个 factory。</p><div class="table-wrap"><table><thead><tr><th>用户现象 / 阶段</th><th>先找证据</th><th>下一步</th></tr></thead><tbody><tr><td>点按钮很久才开始建连</td><td>请求创建到真正执行的排队时间、Dispatcher 状态</td><td>查并发限制、预请求等待、工作线程占用</td></tr><tr><td>解析慢或失败</td><td>DNS 事件、网络类型、候选地址、异常</td><td>核对系统/自定义 DNS、初始化与回退</td></tr><tr><td>连接或 TLS 慢</td><td>建连、握手事件；是否用了代理/复用连接</td><td>查地址可达性、证书、协议协商与重连</td></tr><tr><td>服务端响应慢</td><td>请求发完到响应头的时间、服务端 trace</td><td>客户端只能看到等待，不能单凭耗时认定服务端具体瓶颈</td></tr><tr><td>响应头到了，界面还没更新</td><td>body 下载、解压、JSON 转换、回调排队与主线程耗时</td><td>别把所有时间都归为网络慢</td></tr><tr><td>HTTP 200，但业务没变化</td><td>业务字段、旧请求结果覆盖、账号/页面状态</td><td>区分业务拒绝与生命周期问题</td></tr><tr><td>取消后又请求了</td><td>重试任务、SSE 重连、订阅是否重复</td><td>检查取消是否覆盖了所有后续任务</td></tr></tbody></table></div><p>同一个 Call 可能重试、重定向，连接可能复用，单次监控不能假设所有事件只出现一次且严格成对。trace ID 帮助客户端与服务端对齐同一请求，日志仍要避免完整记录凭据和敏感参数。</p><p>ExceptionWrapInterceptor 会原样抛出 IOException，把其他 Exception 记录后包装为 OkHttpWrapperException。因此看到 IOException 时，要继续看 cause 和记录；同时它包不住所有发生在拦截器链之外的异常，例如更上层的转换或业务回调。</p><h2 id="interview">29 · 常见面试题与参考答案</h2><details><summary><strong>P1</strong> · 1. 一次 HTTPS 请求从点击到显示，怎么讲？</summary><p>先组织方法、地址、头和 body，经过请求调度；没有可用缓存/连接时，做 DNS、建连和 TLS；发送请求后接收响应，解压和解析，检查 HTTP 与业务结果，再切到合适线程更新 UI。复用和缓存会跳过部分步骤。</p></details><details><summary><strong>P1</strong> · 2. TCP 可靠为什么还要业务幂等？</summary><p>TCP 只保证连接中的字节传输语义，不能告诉客户端服务端业务是否已提交。服务端成功后响应丢了，客户端重试可能重复执行业务，需要幂等键或状态查询。</p></details><details><summary><strong>P1</strong> · 3. TCP 粘包怎么解决？</summary><p>TCP 是字节流，没有一次 write 对应一次 read 的保证。协议需要长度、分隔符或帧等规则；HTTP 已有自己的消息边界，业务不要把一次读取当作完整 JSON。</p></details><details><summary><strong>P1</strong> · 4. HTTPS 用对称还是非对称加密？</summary><p>握手认证和密钥协商涉及非对称密码机制，大量应用数据用对称加密保护。要按 TLS 版本讲细节，不能把 TLS 1.3 背成老式 RSA 密钥传输。</p></details><details><summary><strong>P2</strong> · 5. HTTP/2 已经多路复用，为什么还会队头阻塞？</summary><p>多个 stream 共享一条 TCP 字节流，丢失的字节未补齐时可能影响其他 stream 的交付。HTTP/3 的 QUIC 减少这类跨 stream 等待，但仍共享拥塞和带宽资源。</p></details><details><summary><strong>P1</strong> · 6. no-cache 和 no-store 有什么区别？</summary><p>no-cache 允许存，但使用前要验证；no-store 表示不应存。ETag 验证后收到 304 时，继续使用缓存中的内容。</p></details><details><summary><strong>P1</strong> · 7. HTTP 200 就代表请求成功了吗？</summary><p>代表 HTTP 层成功，还要检查业务结果。项目 simplifyRequest 拆出 SuccessResult 后，SubscriptDialogViewModel 继续判断 isSuccess。</p></details><details><summary><strong>P1</strong> · 8. 网络超时该不该直接重试？</summary><p>先分错误类型、幂等性和请求体能否重发，再限制次数与总时间，必要时退避。超时可能发生在服务端已完成操作之后，不能盲目重发写请求。</p></details><details><summary><strong>P1</strong> · 9. Retrofit 和 OkHttp 的关系？</summary><p>Retrofit 把接口声明适配成 HTTP 调用，通过 Converter 转换数据、CallAdapter 提供不同返回形式；OkHttp 执行 HTTP 与连接等工作。项目 Net 在它们上面统一策略。</p></details><details><summary><strong>P1</strong> · 10. Net 为什么分 net-api 和 net？</summary><p>业务依赖稳定入口和接口；实现、Client 组装与拦截器放在 net。Net 通过 InstanceProvider 找到 NetProviderImpl，而不是每个页面自己创建 Retrofit。</p></details><details><summary><strong>P2</strong> · 11. Net.createService 返回的就直接是 Retrofit 代理吗？</summary><p>这里先返回项目自己的 Proxy。Observable 方法通过 defer 延迟取得和调用 Retrofit Service，所以存在两层代理。返回类型检查只覆盖恰好是 Observable 的分支。</p></details><details><summary><strong>P2</strong> · 12. ConcurrentHashMap 缓存 Service，就一定只创建一次吗？</summary><p>不一定。这里先 get、再创建、再 put，多个线程可能同时 miss。Map 的单次操作安全，不等于这组连续操作是原子的。</p></details><details><summary><strong>P1</strong> · 13. simplifyRequest 是不是自动取消请求？</summary><p>无参调用没有传 LifecycleTransformer。它默认切线程、检查 HTTP、拆 body；取消要靠正确的生命周期参数或 Disposable 等管理。项目示例不能仅凭方法名认定已清理。</p></details><details><summary><strong>P1</strong> · 14. simplifyRequest 对 204 会怎样？</summary><p>其 Observable 分支要求成功 body 非空，null 会变成 IllegalArgumentException。因此无 body 接口要选择合适返回类型和处理方式，不能无条件套模板。</p></details><details><summary><strong>P1</strong> · 15. subscribeOn 和 observeOn 在这里分别做什么？</summary><p>前者安排订阅相关工作的线程，后者改变其后结果处理的线程。Net 的外层代理有 subscribeOn(IO)，simplifyRequest 默认再 observeOn(main)；定制 Client 还配置了网络响应 callbackExecutor。</p></details><details><summary><strong>P1</strong> · 16. 多个 OkHttpFamily Client 的队列互相独立吗？</summary><p>这里明确使用同一个 getDispatcher()。API 设置 maxRequestsPerHost 时改的也是共享调度器，不能简单说只有 API 受影响。是否共享连接池则还要结合 Client 的派生路径和底层实现。</p></details><details><summary><strong>P1</strong> · 17. 应用拦截器和网络拦截器怎么选？</summary><p>逻辑请求的公共处理、业务响应和自定义缓存通常放应用层；实际网络交换相关工作放网络层。缓存直接命中时，网络拦截器不一定执行；重定向可能带来多次执行。</p></details><details><summary><strong>P1</strong> · 18. 为什么 Brotli 要在业务拦截器之后添加？</summary><p>请求正向进入，响应反向返回。Brotli 加在后面，响应就先解压再到读取 body 的业务拦截器，避免业务先消费压缩流。</p></details><details><summary><strong>P1</strong> · 19. 拦截器读了 body.string，后面还读得到吗？</summary><p>ResponseBody 是一次性流，不能直接再读。项目账号处理和 VIP 预请求会重建 body；同时要防止为日志或缓存把大响应全部读进内存。</p></details><details><summary><strong>P1</strong> · 20. BuilderDecorator 解决什么问题？</summary><p>让账号、监控、VIP 业务按 Client 类型补配置，减少网络库对具体业务的依赖。但这里还要经过模块发现与白名单，写类并不等于生效。</p></details><details><summary><strong>P2</strong> · 21. 自定义 DNS 失败就一定会自动回退吗？</summary><p>DnsWrapper 只明确保证未设置 impl 时用 Dns.SYSTEM。impl 已设置后抛异常是否继续回退，要看 impl 的实现；不能把这个包装器讲成所有失败都自动回退。</p></details><details><summary><strong>P2</strong> · 22. 仓库有 QUIC，能说请求都用了 HTTP/3 吗？</summary><p>不能。还要满足 SO、DNS、开关、健康状态和采样策略，底层协议版本也要确认。运行时协商和监控才说明这次请求实际走了什么。</p></details><details><summary><strong>P2</strong> · 23. Net 与 VipNet 的主要区别怎么回答？</summary><p>当前快照普通请求 Provider 一致，依赖版本和部分实现不同；Net 额外有动态域名与 SSE 等代码。宿主构建条件还能选择另一版 net，最终包要查依赖解析。</p></details><details><summary><strong>P2</strong> · 24. CookieJar 保存 Cookie 就一定写磁盘了吗？</summary><p>不一定。这里 add 只改内存，持久化有单独方法和调用点。removeAll 也不能直接当作已清文件；还要核对对外 Store 和实际 Client 使用的实例。</p></details><details><summary><strong>P2</strong> · 25. SSE 断开后怎么恢复？</summary><p>重新建立流，按条件带 Last-Event-ID，服务端决定能否补发。客户端要处理去重、重试限制与取消。Net 还会取消已安排的重连，避免退出后继续连接。</p></details><details><summary><strong>P1</strong> · 26. 首页预请求和 HTTP 缓存一样吗？</summary><p>不一样。VipAppDecorator 保存一次提前请求的响应字节，再匹配业务请求复用；它还可能等待 CountDownLatch。标准 HTTP Cache 按缓存头、新鲜度和验证规则运行。</p></details><details><summary><strong>P1</strong> · 27. 请求慢，先改超时和线程池吗？</summary><p>先分解排队、DNS、连接、TLS、服务端等待、body 读取、解析和 UI 耗时。EventListener 和业务 trace 提供证据，确定瓶颈后再调参数。</p></details><details><summary><strong>P1</strong> · 28. 怎么用项目讲一段完整网络封装经验？</summary><p>从 VipFollowService 的注解和返回类型讲起，沿 Net 门面、Provider 代理、Retrofit、OkHttpFamily、Decorator、响应转换一路到 isSuccess 和 LiveData。说明自己实际参与的部分，再讲线程、取消与业务错误的限制。</p></details><h2 id="references">30 · 源码索引与继续阅读</h2><p>以下路径相对 <code>C:\Users\msf\Desktop\code</code>。正文原码摘录带有文件路径和行号，可回到当前工作区核对。代码行号对应本次快照；未验证完整 App 构建、线上开关、真实协议协商和设备网络行为。</p><div class="table-wrap"><table><thead><tr><th>文件</th><th>本文摘录行号</th></tr></thead><tbody><tr><td><code>yyyyy-cdoe/VipAndroid/app/build.gradle</code></td><td>642 至 649</td></tr><tr><td><code>yyyyy-cdoe/VipCommon/vip_common/src/main/java/com/zhihu/android/vip_common/service/VipFollowService.kt</code></td><td>46 至 51</td></tr><tr><td><code>yyyyy-cdoe/VipCommon/vip_common/src/main/java/com/zhihu/android/vip_common/SubscriptDialogViewModel.kt</code></td><td>19 至 31</td></tr><tr><td><code>yyyyy-cdoe/VipNet/net-api/src/main/java/com/zhihu/android/api/net/Net.java</code></td><td>34 至 43</td></tr><tr><td><code>yyyyy-cdoe/VipNet/net/src/main/java/com/zhihu/android/net/common/NetProviderImpl.java</code></td><td>74 至 100、203 至 232</td></tr><tr><td><code>yyyyy-cdoe/VipNet/net/src/main/java/com/zhihu/android/net/converter/JacksonResponseBodyConverter.java</code></td><td>33 至 46</td></tr><tr><td><code>yyyyy-cdoe/VipNet/net/src/main/java/com/zhihu/android/net/common/OkHttpFamilyProviderImpl.java</code></td><td>158 至 176、184 至 197、412 至 445、538 至 555、366 至 375</td></tr><tr><td><code>yyyyy-cdoe/VipAndroid/app/src/main/java/com/zhihu/android/app/util/VipAppDecorator.java</code></td><td>63 至 70、94 至 119</td></tr><tr><td><code>yyyyy-cdoe/VipNet/net/src/main/java/com/zhihu/android/net/common/NetThreadPool.kt</code></td><td>16 至 22</td></tr><tr><td><code>yyyyy-cdoe/VipNet/net-api/src/main/java/com/zhihu/android/app/util/SimplifyRequestTransformer.java</code></td><td>122 至 143</td></tr><tr><td><code>yyyyy-cdoe/VipNet/net/src/main/java/com/zhihu/android/net/common/CookieJarImpl.kt</code></td><td>14 至 27</td></tr><tr><td><code>yyyyy-cdoe/VipNet/net/src/main/java/com/zhihu/android/net/common/CookieStoreImpl.kt</code></td><td>83 至 94</td></tr><tr><td><code>yyyyy-cdoe/VipNet/net/src/main/java/com/zhihu/android/net/interceptors/NetworkExtension.java</code></td><td>49 至 57</td></tr><tr><td><code>yyyyy-cdoe/VipNet/net/src/main/java/com/zhihu/android/net/interceptors/BrotliInterceptor.java</code></td><td>33 至 51</td></tr><tr><td><code>yyyyy-cdoe/VipNet/net/src/main/java/com/zhihu/android/net/dns/DnsWrapper.java</code></td><td>37 至 43</td></tr><tr><td><code>yyyyy-cdoe/VipNet/net/src/main/java/com/zhihu/android/net/quic/QuicStackSampler.java</code></td><td>42 至 72、79 至 99</td></tr><tr><td><code>yyyyy-cdoe/Net/net/src/main/java/com/zhihu/android/net/common/NetSseProviderImpl.java</code></td><td>61 至 75</td></tr><tr><td><code>yyyyy-cdoe/Net/net/src/main/java/com/zhihu/android/net/sse/SseCallImpl.kt</code></td><td>318 至 330</td></tr><tr><td><code>yyyyy-cdoe/VipNet/net/src/main/java/com/zhihu/android/net/metrics/GlobalOkHttpEventListener.java</code></td><td>40 至 51</td></tr></tbody></table></div><p>前面的网络基础可按下面的协议标准与官方文档继续学习。官方 OkHttp 文档用于理解通用机制，不能替代项目自维护 zhihuokhttp 的实际实现。</p><ul><li><a href="https://www.rfc-editor.org/rfc/rfc9110">HTTP 语义：RFC 9110</a></li><li><a href="https://www.rfc-editor.org/rfc/rfc9111">HTTP 缓存：RFC 9111</a></li><li><a href="https://www.rfc-editor.org/rfc/rfc9113">HTTP/2：RFC 9113</a></li><li><a href="https://www.rfc-editor.org/rfc/rfc8446">TLS 1.3：RFC 8446</a></li><li><a href="https://www.rfc-editor.org/rfc/rfc9000">QUIC：RFC 9000</a></li><li><a href="https://www.rfc-editor.org/rfc/rfc9114">HTTP/3：RFC 9114</a></li><li><a href="https://square.github.io/retrofit/">Retrofit 官方文档</a></li><li><a href="https://square.github.io/okhttp/features/interceptors/">OkHttp 拦截器说明</a></li><li><a href="https://square.github.io/okhttp/features/events/">OkHttp 事件监控</a></li><li><a href="https://square.github.io/okhttp/features/caching/">OkHttp 缓存说明</a></li><li><a href="https://html.spec.whatwg.org/multipage/server-sent-events.html">SSE 标准说明</a></li></ul><p>原有仓库介绍：<a href="repositories/net.html">Net 仓库盘点</a>、<a href="repositories/vipnet.html">VipNet 仓库盘点</a>、<a href="repositories/netdns.html">Netdns 仓库盘点</a>。MQTT 可继续读<a href="mqtt-principles-guide.html">单独的协议文章</a>。</p><footer class="article-footer">源码与构建声明按 2026-09-22 工作区核对；运行时配置、协议协商和性能数据需要在目标构建与设备上验证。</footer></article><aside class="page-toc" aria-label="本页目录"><div class="toc-heading">本页目录</div><a class="toc-link level-2" href="#reading">01 · 阅读顺序：先懂请求，再读封装</a><a class="toc-link level-2" href="#journey">02 · P1：点一下按钮，一次 HTTPS 请求经历什么？</a><a class="toc-link level-2" href="#dns">03 · P1：DNS、HTTPDNS 和“有网却请求失败”</a><a class="toc-link level-2" href="#tcp">04 · P1：TCP 为什么要握手、确认和重传？</a><a class="toc-link level-2" href="#tls">05 · P1：HTTPS 到底保护了什么？</a><a class="toc-link level-2" href="#http">06 · P1：HTTP 方法、状态码、请求头与业务结果</a><a class="toc-link level-2" href="#versions">07 · P2：HTTP/1.1、HTTP/2、HTTP/3 和连接复用</a><a class="toc-link level-2" href="#cache">08 · P1：HTTP 缓存、业务缓存和预请求有什么区别？</a><a class="toc-link level-2" href="#auth">09 · P1：Cookie、Token、签名和加密分别做什么？</a><a class="toc-link level-2" href="#timeouts">10 · P1：超时、重试、取消与幂等</a><a class="toc-link level-2" href="#libraries">11 · P1：Retrofit、OkHttp、RxJava 各负责哪一段？</a><a class="toc-link level-2" href="#interceptor-basics">12 · P1：拦截器为什么按相反顺序处理响应？</a><a class="toc-link level-2" href="#long-connections">13 · P2：轮询、SSE、WebSocket 怎么选？</a><a class="toc-link level-2" href="#inventory">14 · 仓库盘点：Net 与 VipNet 有哪些共同点和差异？</a><a class="toc-link level-2" href="#business">15 · P1：从真实业务入口开始追，不先钻底层</a><a class="toc-link level-2" href="#net-entry">16 · P1：Net 是门面，真正实现由 Provider 提供</a><a class="toc-link level-2" href="#proxy">17 · P2：为什么项目还要在 Retrofit 外包一层代理？</a><a class="toc-link level-2" href="#init">18 · P2：Retrofit 初始化、Converter 与重复初始化</a><a class="toc-link level-2" href="#clients">19 · P1：为什么分 API、IMAGE、WEB 等 Client？</a><a class="toc-link level-2" href="#assembly">20 · P1：Client 是按什么顺序装起来的？</a><a class="toc-link level-2" href="#decorators">21 · P1：业务怎么扩展网络库？看 VipAppDecorator</a><a class="toc-link level-2" href="#threads">22 · P1：请求线程、回调线程与 Dispatcher 排队</a><a class="toc-link level-2" href="#response">23 · P1：simplifyRequest 具体替业务做了什么？</a><a class="toc-link level-2" href="#cookies">24 · P2：Cookie、超时、签名和压缩的实际封装</a><a class="toc-link level-2" href="#dns-quic">25 · P2：自定义 DNS 与 QUIC 选择，哪些是有条件的？</a><a class="toc-link level-2" href="#net-extra">26 · P3：Net 多出的动态域名与 SSE 包装</a><a class="toc-link level-2" href="#preload">27 · P2：VIP 首页预请求怎么复用结果？</a><a class="toc-link level-2" href="#observability">28 · P1：请求慢或失败，按什么顺序查？</a><a class="toc-link level-2" href="#interview">29 · 常见面试题与参考答案</a><a class="toc-link level-2" href="#references">30 · 源码索引与继续阅读</a><a class="back-to-top" href="#">↑ 返回顶部</a></aside></div></main></div><script src="assets/search-data.js"></script><script src="assets/docs.js"></script></body></html>
