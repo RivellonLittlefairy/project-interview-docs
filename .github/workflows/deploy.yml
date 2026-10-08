@@ -73,7 +73,9 @@ jobs:
           CI: 'true'
         run: |
           tcb login --apiKeyId "$TCB_SECRET_ID" --apiKey "$TCB_SECRET_KEY"
-          tcb hosting deploy ./_site / -e "$TCB_ENV_ID" --verify
+          # Omit cloudPath: CLI 3.8.5 keeps an explicit / in manifest keys.
+          # The default empty cloudPath deploys to the hosting root.
+          tcb hosting deploy ./_site -e "$TCB_ENV_ID" --verify
       - name: Remove runner credentials
         if: always()
         run: |
