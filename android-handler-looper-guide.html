@@ -46,7 +46,7 @@
   <div class="drawer-backdrop" data-drawer-backdrop hidden></div>
 
   <div class="docs-layout">
-<nav class="sidebar" data-sidebar aria-label="Handler 专题导航"><div class="sidebar-heading">Handler / Looper</div><a class="nav-link" href="index.html#android">返回 Android 专题</a><a class="nav-link" href="android-3-5-years-interview-guide.html">Android 面试知识地图</a><a class="nav-link" href="kotlin-data-structures-guide.html">Kotlin 数据结构</a><section class="nav-group"><h2 class="nav-group-title">阅读目录</h2><a class="nav-link" href="#overview">01 · P1：Handler 到底解决什么问题？</a><a class="nav-link" href="#binding">02 · P1：回调在哪个线程执行，由谁决定？</a><a class="nav-link" href="#pipeline">03 · P1：从 post 到执行，完整走一遍</a><a class="nav-link" href="#dispatch">04 · P1：post 和 sendMessage 最后走哪里？</a><a class="nav-link" href="#timing">05 · P1：postDelayed 为什么不一定准时？</a><a class="nav-link" href="#toast">06 · 项目实例一：Toast 切主线程与按 token 取消</a><a class="nav-link" href="#batch">07 · 项目实例二：阅读进度延迟合并上传</a><a class="nav-link" href="#deadline">08 · 项目实例三：开屏广告超时与只结束一次</a><a class="nav-link" href="#cleanup">09 · P1：取消、内存泄漏与生命周期</a><a class="nav-link" href="#worker">10 · P1：HandlerThread：在固定后台线程里按顺序处理消息</a><a class="nav-link" href="#barrier">11 · P2：同步屏障和“异步消息”是什么意思？</a><a class="nav-link" href="#idle">12 · P2：IdleHandler 能不能放耗时任务？</a><a class="nav-link" href="#monitor">13 · 项目实例：用 Handler 心跳发现主线程不响应</a><a class="nav-link" href="#api">14 · 常用 API 与使用选择</a><a class="nav-link" href="#evidence">15 · 项目源码与框架源码索引</a><a class="nav-link" href="#interview">16 · 常见面试题与参考答案</a></section><p class="sidebar-note">项目快照：2026-09-21<br>AOSP 基线：Android 13</p></nav><main class="article-shell" id="main-content"><div class="breadcrumbs"><a href="index.html">首页</a><span>/</span><a href="index.html#android">Android 专题</a><span>/</span><span>Handler / Looper</span></div><div class="article-grid"><article class="markdown-body"><h1>Handler / Looper：从消息循环到项目中的延迟、切线程与清理</h1><blockquote class="callout"><p>Handler 最常见的用途是回主线程更新界面、延迟执行任务，以及取消还没执行的任务。这篇文章沿着项目代码讲清它们怎么工作，最后附 26 道面试题。</p></blockquote><h2 id="overview">01 · P1：Handler 到底解决什么问题？</h2>
+<nav class="sidebar" data-sidebar aria-label="Handler 专题导航"><div class="sidebar-heading">Handler / Looper</div><a class="nav-link" href="index.html#android">返回 Android 专题</a><a class="nav-link" href="android-3-5-years-interview-guide.html">Android 面试知识地图</a><a class="nav-link" href="kotlin-data-structures-guide.html">Kotlin 数据结构</a><section class="nav-group"><h2 class="nav-group-title">阅读目录</h2><a class="nav-link" href="#overview">01 · P1：Handler 到底解决什么问题？</a><a class="nav-link" href="#binding">02 · P1：回调在哪个线程执行，由谁决定？</a><a class="nav-link" href="#prepare-loop">02.1 · P1：prepare 与 loop 从初始化到退出</a><a class="nav-link" href="#pipeline">03 · P1：从 post 到执行，完整走一遍</a><a class="nav-link" href="#dispatch">04 · P1：post 和 sendMessage 最后走哪里？</a><a class="nav-link" href="#message-fields">04.1 · P1：Message 字段与传参示例</a><a class="nav-link" href="#timing">05 · P1：postDelayed 为什么不一定准时？</a><a class="nav-link" href="#toast">06 · 项目实例一：Toast 切主线程与按 token 取消</a><a class="nav-link" href="#batch">07 · 项目实例二：阅读进度延迟合并上传</a><a class="nav-link" href="#deadline">08 · 项目实例三：开屏广告超时与只结束一次</a><a class="nav-link" href="#cleanup">09 · P1：取消、内存泄漏与生命周期</a><a class="nav-link" href="#worker">10 · P1：HandlerThread：在固定后台线程里按顺序处理消息</a><a class="nav-link" href="#barrier">11 · P2：同步屏障和“异步消息”是什么意思？</a><a class="nav-link" href="#idle">12 · P2：IdleHandler 能不能放耗时任务？</a><a class="nav-link" href="#monitor">13 · 项目实例：用 Handler 心跳发现主线程不响应</a><a class="nav-link" href="#api">14 · 常用 API 与使用选择</a><a class="nav-link" href="#evidence">15 · 项目源码与框架源码索引</a><a class="nav-link" href="#interview">16 · 常见面试题与参考答案</a></section><p class="sidebar-note">项目快照：2026-09-21<br>AOSP 基线：Android 13</p></nav><main class="article-shell" id="main-content"><div class="breadcrumbs"><a href="index.html">首页</a><span>/</span><a href="index.html#android">Android 专题</a><span>/</span><span>Handler / Looper</span></div><div class="article-grid"><article class="markdown-body"><h1>Handler / Looper：从消息循环到项目中的延迟、切线程与清理</h1><blockquote class="callout"><p>Handler 最常见的用途是回主线程更新界面、延迟执行任务，以及取消还没执行的任务。这篇文章沿着项目代码讲清它们怎么工作，最后附 26 道面试题。</p></blockquote><h2 id="overview">01 · P1：Handler 到底解决什么问题？</h2>
 <p>Handler 把消息或任务放进指定 Looper 的队列，再由那个 Looper 所在的线程取出来执行。你可以用它指定任务在哪个线程执行，也可以让任务延后执行。Handler 自己不是线程，post 也不会创建线程。</p>
 <p>比如后台拿到了结果，需要回主线程修改界面；或者广告加载超过某段时间，需要触发兜底。这两种场景都能用 Handler，但排到主线程的工作依然必须轻量。</p>
 <table><thead><tr><th>角色</th><th>负责什么</th><th>和其他对象的关系</th></tr></thead><tbody><tr><td>Thread</td><td>真正执行代码的线程</td><td>线程可以没有 Looper；准备后通常有一个 Looper</td></tr><tr><td>Looper</td><td>在所属线程中循环取出、分发消息</td><td>一个 Looper 对应一条 MessageQueue，多个 Handler 可以绑定它</td></tr><tr><td>MessageQueue</td><td>保存待处理消息，选择下一条可处理消息，必要时等待</td><td>普通消息按执行时间安排；不是简单先进先出队列</td></tr><tr><td>Handler</td><td>提供发送、取消、分发接口</td><td>绑定一个 Looper；消息的 target 指向接收它的 Handler</td></tr><tr><td>Message</td><td>消息载体</td><td>含 what、arg1、arg2、obj、when、target 和 callback 等</td></tr><tr><td>Runnable</td><td>一段待执行的动作</td><td>post 会把它放到 Message.callback，最终调用 run()</td></tr></tbody></table>
@@ -80,6 +80,65 @@ task.run() 或 Handler 的消息处理逻辑</code></pre></div>
         sThreadLocal.set(new Looper(quitAllowed));
     }</code></pre></div>
 <p><code>ThreadLocal</code> 让每个线程分别保存自己的 Looper，同一线程重复 prepare 会报错。它不创建线程，也不会复制一个共享的 Looper。<code>Looper.myLooper()</code> 取当前线程的 Looper，没有就返回 null；<code>getMainLooper()</code> 取当前进程的主 Looper。主线程已经准备好了 Looper，Activity 里不用再调用 prepare 或 loop。</p>
+<h3 id="prepare-loop">02.1 · P1：Looper.prepare() 和 Looper.loop() 到底做了什么？</h3>
+<p>假设你已经用 Thread.start() 启动了一个普通子线程，希望它一直留着，接收别的线程投递的任务。你需要先为这个线程准备消息队列，再让它开始取消息。prepare 和 loop 分别负责这两步；它们都不会创建新的线程。</p>
+<table><thead><tr><th>方法</th><th>在当前线程做什么</th><th>调用结束后怎样</th></tr></thead><tbody><tr><td>Looper.prepare()</td><td>创建 Looper 和它的 MessageQueue，把 Looper 存进当前线程的 ThreadLocal</td><td>正常返回，继续执行下一行；此时还没有开始取消息</td></tr><tr><td>Looper.myLooper()</td><td>读取当前线程已准备的 Looper</td><td>没有准备就返回 null；它不会自动创建 Looper</td></tr><tr><td>Looper.loop()</td><td>取得当前线程的 Looper，持续取消息并分发给 Handler</td><td>正常情况下会一直留在循环中，直到队列退出；未捕获异常也可能使循环异常终止</td></tr></tbody></table>
+<h4>先理解 prepare：给当前线程配好接收任务的条件</h4>
+<p>上面的 AOSP 源码用 sThreadLocal.get() 检查当前线程是否已经有 Looper，有就抛异常；否则创建 Looper 并保存。Looper 的构造函数还会创建 MessageQueue，并记录 Thread.currentThread()。因此，一个线程最多准备一个 Looper；普通 Thread 可以一个都没有。</p>
+<p>ThreadLocal 可以理解为“同一个入口，按当前线程分别存取”。线程 A 调用 myLooper() 得到 A 的 Looper，线程 B 调用得到 B 的那份。它不是线程池，也不会把任务转移到另一个线程。</p>
+<p>prepare 返回后，可以创建绑定这个 Looper 的 Handler，也可以向队列投递消息。但只有这个线程继续调用 loop，队列里的任务才会被取出执行。只 prepare 然后结束 run，任务就不会自动有人处理。</p>
+<h4>再理解 loop：当前线程开始持续取消息、执行回调</h4>
+<p>AOSP Android 13 的 Looper.loop() 先调用 myLooper()，没有准备就抛异常；然后循环调用 loopOnce()。每次通过 MessageQueue.next() 获取消息，再调用 msg.target.dispatchMessage(msg)，交给该消息对应的 Handler。处理结束后回收消息，再取下一条。下面只保留执行关系，属于讲解用伪代码：</p>
+<div class="code-block"><div class="code-toolbar"><span>教学示例 · prepare 与 loop</span><button type="button" data-copy-code>复制</button></div><pre><code class="language-text">取得当前线程的 Looper
+不断重复：
+    message = queue.next()  // 无可执行消息时，可能在内部等待
+    如果队列退出、返回 null：结束循环
+    message.target.dispatchMessage(message)
+    回收 message
+// 正常退出循环以后，loop() 才返回</code></pre></div>
+<p>循环的意思是当前任务结束后继续找下一条。它不会在回调执行到一半时抢走线程。如果某个回调计算或 sleep 了 5 秒，后面的消息也要等；如果只是队列暂时没有到期消息，则会通过 nativePollOnce 等机制等待，必要时被唤醒。这两种情况的区别见后面的延迟任务小节。</p>
+<h4>完整示例：按日志观察执行顺序</h4>
+<p>把下面的函数放进 Android 项目调用。这个示例自己创建一个子线程，在回调结束时退出 Looper，避免演示结束后还留着线程。这里提前向自己的队列投递任务，是为了看清 post 与 loop 的先后关系；不涉及跨线程共享 Handler 的初始化问题。</p>
+<div class="code-block"><div class="code-toolbar"><span>教学示例 · prepare 与 loop</span><button type="button" data-copy-code>复制</button></div><pre><code class="language-kotlin">fun demonstratePrepareAndLoop() {
+    Thread({
+        android.util.Log.d(&quot;LooperDemo&quot;, &quot;1：子线程开始&quot;)
+        android.os.Looper.prepare()
+        val looper = checkNotNull(android.os.Looper.myLooper())
+        val handler = android.os.Handler(looper)
+
+        handler.post {
+            android.util.Log.d(&quot;LooperDemo&quot;, &quot;3：执行回调，线程=${Thread.currentThread().name}&quot;)
+            looper.quitSafely()
+            android.util.Log.d(&quot;LooperDemo&quot;, &quot;4：请求退出后，当前回调仍会执行完&quot;)
+        }
+
+        android.util.Log.d(&quot;LooperDemo&quot;, &quot;2：消息已入队，准备进入 loop&quot;)
+        android.os.Looper.loop()
+        android.util.Log.d(&quot;LooperDemo&quot;, &quot;5：loop 返回，线程即将结束&quot;)
+    }, &quot;manual-looper&quot;).start()
+}</code></pre></div>
+<table><thead><tr><th>顺序</th><th>发生了什么</th><th>为什么</th></tr></thead><tbody><tr><td>1</td><td>子线程开始，随后 prepare</td><td>Thread.start() 创建执行线程，prepare 给它准备 Looper</td></tr><tr><td>2</td><td>post 返回，打印“准备进入 loop”</td><td>post 把回调入队；即使发送和接收在同一个线程，也不会在这里直接调用回调</td></tr><tr><td>3</td><td>进入 loop 后，取出消息并执行回调</td><td>回调运行在线程 manual-looper 上</td></tr><tr><td>4</td><td>请求退出后，继续执行回调剩余代码</td><td>quitSafely 不会强行中断当前回调</td></tr><tr><td>5</td><td>当前回调结束，队列退出，loop 返回</td><td>这个示例没有其他任务，随后 Thread 的 run 结束，线程退出</td></tr></tbody></table>
+<p>如果删掉 quitSafely，这个示例在处理完回调后会继续等待消息，日志 5 通常不会出现。如果删掉 loop，则只会看到日志 1、2、5，排队的回调没有被处理。不要把“消息入队成功”理解为“消息已经执行”。quitSafely 需要 API 18 或以上；它处理退出时已经到期的待处理消息，丢弃未来的延迟消息，具体退出区别见常见面试题。</p>
+<h4>为什么 HandlerThread 更常用？</h4>
+<p>手写 Thread 时，还有一个容易漏掉的问题：外部线程怎样知道 Handler 已经创建好了？直接在 start 后读取一个共享的可空变量，可能读到 null；跨线程传递还需要保证可见性。HandlerThread 已经处理了 Looper 的初始化与通知：start 启动线程，run 中调用 prepare，getLooper 会在必要时等待 Looper 初始化，然后 run 进入 loop。</p>
+<div class="code-block"><div class="code-toolbar"><span>教学示例 · prepare 与 loop</span><button type="button" data-copy-code>复制</button></div><pre><code class="language-kotlin">fun demonstrateHandlerThread() {
+    val worker = android.os.HandlerThread(&quot;demo-worker&quot;)
+    worker.start()
+    val workerHandler = android.os.Handler(worker.looper)
+    val mainHandler = android.os.Handler(android.os.Looper.getMainLooper())
+
+    workerHandler.post {
+        val result = &quot;后台处理结果&quot;
+        mainHandler.post {
+            android.util.Log.d(&quot;LooperDemo&quot;, result) // 主线程执行
+        }
+        worker.quitSafely() // 本例是一次性演示，完成后主动关闭
+    }
+}</code></pre></div>
+<p>两个 Handler 都可以在主线程创建，但分别绑定后台 Looper 和主 Looper。也可以创建多个 Handler 绑定同一个后台 Looper，它们共用那个线程的消息队列。实际业务若持续使用 HandlerThread，应由拥有者在不再需要时统一停止接收任务并退出，不能每处理一条消息就关闭线程。</p>
+<h4>几个常见误区，连起来记</h4>
+<ul><li>在普通子线程用主线程 Handler 发消息，不需要在子线程调用 prepare；想让这个子线程接收并执行消息，才需要自己的消息循环。</li><li>prepare 和 loop 都操作当前线程。不能在主线程 prepare，指望给另一个 Thread 准备 Looper。</li><li>主线程的 Looper 已由系统准备并启动。Activity 中重复 prepare 会抛异常，也不要再次调用 loop 造成嵌套消息循环。</li><li>loop 后面的初始化代码可能一直等不到执行。需要在循环前完成的初始化，应放在 loop 前面。</li><li>一个未捕获的回调异常可以使消息循环异常终止；在 Android App 中还可能触发进程崩溃。Looper 不会自动吞掉所有业务异常并继续工作。</li></ul>
+<p><strong>面试可以这样回答：</strong>prepare 为当前线程创建 Looper 和 MessageQueue，并通过 ThreadLocal 保存，一个线程只能准备一次。loop 则在这个线程里持续取消息并交给对应 Handler 分发；没有到期消息时会等待，有任务时执行，正常退出后才返回。普通后台消息线程通常使用 HandlerThread，它封装了准备 Looper、初始化通知和进入循环的过程。</p>
 <h2 id="pipeline">03 · P1：从 post 到执行，完整走一遍</h2>
 <figure class="handler-flow" id="handler-message-flow" aria-labelledby="handler-flow-caption">
 <figcaption id="handler-flow-caption">一张图看懂：消息怎么从发送方到达回调？</figcaption>
@@ -163,6 +222,61 @@ task.run() 或 Handler 的消息处理逻辑</code></pre></div>
 }</code></pre></div>
 <p>正常情况下，这三条普通消息依次打印：<code>Runnable</code>；<code>Callback: 1</code>；<code>Callback: 2</code>，随后是 <code>handleMessage: 2</code>。what=1 在 Callback 中已经处理完；what=2 的 Callback 返回 false，所以还会调用 handleMessage。如果队列中途退出等，结果就可能不同。</p>
 <blockquote class="callout"><p>直接调用 <code>handler.handleMessage(msg)</code> 或 <code>runnable.run()</code>，就和调用其他普通方法一样：代码在当前线程执行，不经过队列，也不会切线程。需要交给 Handler 安排执行时，应调用 post / sendMessage。</p></blockquote>
+<h3 id="message-fields">04.1 · P1：Message 的字段分别装什么？</h3>
+<p>Message 可以同时携带“要做什么”和“做这件事需要的数据”。例如通知主线程更新下载进度：what 表示进度消息，arg1 表示已下载数量，arg2 表示总量，obj 保存文件信息。when、target、callback 则参与决定何时处理、交给哪个 Handler、执行哪段代码。</p>
+<table><thead><tr><th>字段与类型</th><th>含义与例子</th><th>通常由谁填写、怎样读取</th></tr></thead><tbody>
+<tr><td><code>what: Int</code></td><td>业务定义的消息编号。例如 1 表示下载进度、2 表示下载失败；不表示优先级</td><td>业务通过 obtainMessage(WHAT) 或 msg.what 赋值；接收时用 when(msg.what) 分支。同一个编号可以在不同 Handler 中表示不同事情</td></tr>
+<tr><td><code>arg1: Int</code></td><td>一个整数参数，例如已下载 30 MB</td><td>业务赋值，没有框架规定的固定含义</td></tr>
+<tr><td><code>arg2: Int</code></td><td>另一个整数参数，例如总计 100 MB</td><td>和 arg1 一样由业务约定。只有少量整数时，可以避免为此额外构造 Bundle；Long 值不能直接塞进 Int</td></tr>
+<tr><td><code>obj: Object</code></td><td>一个对象引用，例如 DownloadInfo；Kotlin 读取时通常按 Any? 处理</td><td>业务赋值，接收时转换为约定类型。同进程投递不会自动深拷贝对象；不要发送后又在另一个线程随意修改对象内容</td></tr>
+<tr><td><code>when: Long</code></td><td>目标执行时刻，基于 SystemClock.uptimeMillis()；普通消息通常要到这个时刻才有资格执行</td><td>发送入队时由框架设置。公开 API 用 msg.getWhen() 读取；使用 postDelayed / sendMessageAtTime 等安排时间，不直接修改隐藏字段</td></tr>
+<tr><td><code>target: Handler</code></td><td>接收并分发这条消息的 Handler；Looper 取出普通消息后调用它的 dispatchMessage</td><td>handler.obtainMessage 会预先设置；通过 Handler 发送时也会设置为发送所用的 Handler。公开 API 是 getTarget() / setTarget()</td></tr>
+<tr><td><code>callback: Runnable?</code></td><td>这条消息要执行的动作。handler.post { ... } 会把 Runnable 放在这里</td><td>一般通过 post 系列 API 或 Message.obtain(handler, runnable) 填入；用 getCallback() 读取。正常 dispatchMessage 中，它非空时直接执行 Runnable</td></tr>
+</tbody></table>
+<p>新获取的普通 Message 中，what、arg1、arg2 通常从 0 开始，obj、callback 默认是 null；带参数的 obtain 会设置对应字段。what 默认是 0，所以 removeMessages(0) 也可能移除普通 post 生成的消息。取消某个 Runnable 时优先使用 removeCallbacks，并保留同一个 Runnable 实例。</p>
+<h4>完整示例：填字段、发送，再在主线程读取</h4>
+<p>这是讲解消息传递的示例，没有实际下载网络数据。假设后台已经拿到了进度，调用下面的函数把它交给主线程处理。</p>
+<div class="code-block"><div class="code-toolbar"><span>教学示例 · Message 字段</span><button type="button" data-copy-code>复制</button></div><pre><code class="language-kotlin" data-example="message-fields">data class DownloadInfo(val fileName: String)
+
+fun demonstrateMessageFields() {
+    val whatProgress = 1
+    val mainHandler = object : android.os.Handler(android.os.Looper.getMainLooper()) {
+        override fun handleMessage(msg: android.os.Message) {
+            when (msg.what) {
+                whatProgress -&gt; {
+                    val info = msg.obj as? DownloadInfo ?: return
+                    val downloadedMb = msg.arg1
+                    val totalMb = msg.arg2
+                    android.util.Log.d(
+                        &quot;MessageDemo&quot;,
+                        &quot;${info.fileName}：$downloadedMb / $totalMb MB&quot;
+                    )
+                    android.util.Log.d(&quot;MessageDemo&quot;, &quot;目标 uptime=${msg.getWhen()}&quot;)
+                }
+            }
+        }
+    }
+
+    // 参数顺序：what、arg1、arg2、obj；target 自动设为 mainHandler
+    val msg = mainHandler.obtainMessage(
+        whatProgress, 30, 100, DownloadInfo(&quot;lesson.zip&quot;)
+    )
+    // obtainMessage 只获取并初始化 Message；这里才真正发送。
+    mainHandler.sendMessageDelayed(msg, 1000L)
+    // 发送后不再修改 msg，也不要把同一个 msg 再发送一次。
+}</code></pre></div>
+<p>正常处理时，会在主线程打印 <code>lesson.zip：30 / 100 MB</code>。接收逻辑读取 what 判断消息类型，再从 arg1、arg2 和 obj 取业务数据。这个例子没有 Runnable，callback 是 null，也没有传入 Handler.Callback，因此最终执行重写的 handleMessage。</p>
+<p>假设发送时 uptime 是 50,000 毫秒，延迟 1,000 毫秒后，when 大致设为 51,000。它既不是“延迟 1,000”这个时长，也不是当前日期对应的时间戳。uptime 不计算深度睡眠时间；到期只表示可以处理，目标线程忙时仍会迟到。handleMessage 中读取 getWhen 可以观察该目标时刻，不代表实际开始执行的时刻。</p>
+<h4>post 的消息，字段又是什么样？</h4>
+<p>调用 <code>mainHandler.post { /* 更新界面 */ }</code> 时，框架取一个 Message，把 Runnable 放进 callback，发送时把 target 指向 mainHandler。普通 post 不要求你填写 what、arg1、arg2 或 obj；业务逻辑直接写在 Runnable 中。Looper 仍然先把消息交给 target，随后 Handler 的 dispatchMessage 发现 callback 非空，调用 Runnable.run()。</p>
+<table><thead><tr><th>容易混淆的名字</th><th>归谁所有</th><th>作用</th></tr></thead><tbody><tr><td>Message.callback</td><td>每条 Message</td><td>Runnable，代表这一条消息要执行的代码</td></tr><tr><td>Handler.Callback</td><td>创建 Handler 时传入的处理器</td><td>接收没有 Runnable 的普通消息，返回 true 表示已经消费，false 表示继续调用 Handler.handleMessage</td></tr></tbody></table>
+<p>target 保存的是 Handler 对象，不是线程 ID。最终在哪个线程执行，要沿着 target 找到它绑定的 Looper。多个 Handler 可以共用一个 Looper，消息用 target 区分该交给哪个 Handler 分发。</p>
+<h4>另外几个字段：先知道用途即可</h4>
+<ul><li><code>data: Bundle</code>：保存多个键值参数，例如文件 ID、错误原因。使用 setData / getData；Kotlin 可以写 msg.data。getData 在没有 Bundle 时会创建一个，peekData 则只查看，没有就返回 null。</li><li><code>replyTo: Messenger</code>：供接收方回复消息的可选地址，常见于 Messenger 通信。普通 Handler 线程通信通常用不到；跨进程数据有可序列化和类型约束，不能把 obj 中任意对象引用原样传到另一个进程。</li><li><code>sendingUid</code>：Messenger 投递时用于标识发送方 UID，普通消息通常是 -1。它不是发送线程 ID。</li><li><code>flags</code>：框架内部状态，包括是否正在使用、是否为异步消息。业务不直接改 flags；异步属性通过 setAsynchronous / isAsynchronous 操作，异步消息仍在目标 Looper 线程执行。</li><li><code>next</code>：Android 13 实现中用于连接消息链表或复用池的内部引用，由框架管理，不是业务应该操作的“下一步回调”。</li></ul>
+<h4>结合 obtain，再记住消息的使用边界</h4>
+<p>obtain 优先从 Message 池取可复用对象，池中没有才新建；Handler.obtainMessage 还会设置 target。获取不等于发送，调用 sendMessage、sendToTarget 等才入队。消息入队后会被标记为正在使用，重复发送同一对象会抛异常。正常分发结束后，框架清理字段并按池容量决定是否回收复用；不要在业务里手动 recycle 一个已经发出的 Message。</p>
+<p>如果要在 handleMessage 返回后继续使用结果，应取出需要的业务数据，不要保存 Message 本身供异步任务晚些读取。另外，obj 引用 Activity / View，或 callback 的闭包捕获页面，都可能让排队中的消息持有页面，生命周期结束时要取消不再需要的任务。</p>
+<p>源码依据：<a href="https://github.com/aosp-mirror/platform_frameworks_base/blob/android-13.0.0_r1/core/java/android/os/Message.java">AOSP Android 13 Message.java</a> 的字段注释、obtain、getWhen、getTarget、getCallback、getData 和回收逻辑；分发优先级对应本节上方的 Handler 源码。</p>
 <h2 id="timing">05 · P1：postDelayed 为什么不一定准时？</h2>
 <p><code>postDelayed(task, 2000)</code> 会按 uptime 时钟算出一个执行时间。到了这个时间，队列才可能选中该任务，实际执行还要等目标线程有空。发送线程不会因此睡两秒，也不能保证任务恰好两秒后执行。</p>
 <table><thead><tr><th>场景</th><th>结果</th></tr></thead><tbody><tr><td>t=0 发送两秒后执行；主线程 t=1 开始一个持续四秒的任务</td><td>延迟任务最早要等主线程 t=5 左右空出来；还可能有其他等待</td></tr><tr><td>调用时设备随后进入深度睡眠</td><td>uptimeMillis 不计深睡，实际墙钟等待会更长</td></tr><tr><td>到期了，但前面有同步屏障且这是一条普通同步消息</td><td>可能继续等待屏障移除</td></tr><tr><td>已经成功入队，但之后被 remove、Looper 退出或进程死亡</td><td>任务可能完全不执行</td></tr><tr><td>每次执行结束后再 postDelayed(this, 1000)</td><td>下次执行包含上次任务耗时与排队影响，会产生周期漂移</td></tr></tbody></table>
@@ -490,4 +604,4 @@ task.run() 或 Handler 的消息处理逻辑</code></pre></div>
 <details class="handler-question"><summary><strong>P2</strong> · 23. postAtFrontOfQueue 能保证任务立即执行吗？</summary><p>不能抢占当前回调，只影响后续取消息的位置。频繁向队头插入可能饿死其他消息、破坏业务顺序；它是特殊工具，不适合作为普遍的性能优化。</p></details>
 <details class="handler-question"><summary><strong>P1</strong> · 24. 如何用 Handler 做防抖？这和节流有什么不同？</summary><p>保留同一个任务对象，每次事件到来，先取消旧安排，再延迟发送。事件一直来，执行时间就一直往后推，这叫防抖。节流则限制一段时间内的执行频率，不能每来一个事件就无限往后推。多线程调用时，还要保证 remove 和 post 这两步不会被其他操作插入。</p><p><strong>结合项目：</strong>SkuProgressManager 普通进度重新计时两秒，完成进度则立即安排。</p></details>
 <details class="handler-question"><summary><strong>P1</strong> · 25. 主线程卡住，超时 Handler 能及时救场吗？</summary><p>不能。绑定主 Looper 的超时任务也要等主线程腾出执行机会。需要监测主线程是否不响应，观察者应有独立的执行机会；但监测任务被调度延迟也会影响判断，不能直接把检测结果等同系统 ANR。</p><p><strong>结合项目：</strong>BlockTracer 采用 UI 心跳与观察 Handler；接入点选择 500ms，受配置开关控制。</p></details>
-<details class="handler-question"><summary><strong>P1</strong> · 26. 结合项目讲一个 Handler 的完整使用案例。</summary><p>可以讲开屏广告：Activity 创建控制器，控制器保存超时 Runnable 并调用 postDelayed。广告失败或关闭时，回主线程检查 ended，避免重复执行结束逻辑，同时 removeCallbacks；Activity 销毁时再清理。再说明这套做法的限制：超时任务可能迟到，不能打断主线程，ended 的安全读写依赖主线程约定。讲个人工作时，只说自己实际参与的部分。</p></details><footer class="article-footer">本文按源码讲解机制与使用边界。教学代码的编译检查不等于真机生命周期、线程调度和完整项目构建验证。</footer></article><aside class="page-toc" aria-label="本页目录"><div class="toc-heading">本页目录</div><a class="toc-link level-2" href="#overview">01 · P1：Handler 到底解决什么问题？</a><a class="toc-link level-2" href="#binding">02 · P1：回调在哪个线程执行，由谁决定？</a><a class="toc-link level-2" href="#pipeline">03 · P1：从 post 到执行，完整走一遍</a><a class="toc-link level-2" href="#dispatch">04 · P1：post 和 sendMessage 最后走哪里？</a><a class="toc-link level-2" href="#timing">05 · P1：postDelayed 为什么不一定准时？</a><a class="toc-link level-2" href="#toast">06 · 项目实例一：Toast 切主线程与按 token 取消</a><a class="toc-link level-2" href="#batch">07 · 项目实例二：阅读进度延迟合并上传</a><a class="toc-link level-2" href="#deadline">08 · 项目实例三：开屏广告超时与只结束一次</a><a class="toc-link level-2" href="#cleanup">09 · P1：取消、内存泄漏与生命周期</a><a class="toc-link level-2" href="#worker">10 · P1：HandlerThread：在固定后台线程里按顺序处理消息</a><a class="toc-link level-2" href="#barrier">11 · P2：同步屏障和“异步消息”是什么意思？</a><a class="toc-link level-2" href="#idle">12 · P2：IdleHandler 能不能放耗时任务？</a><a class="toc-link level-2" href="#monitor">13 · 项目实例：用 Handler 心跳发现主线程不响应</a><a class="toc-link level-2" href="#api">14 · 常用 API 与使用选择</a><a class="toc-link level-2" href="#evidence">15 · 项目源码与框架源码索引</a><a class="toc-link level-2" href="#interview">16 · 常见面试题与参考答案</a><a class="back-to-top" href="#">↑ 返回顶部</a></aside></div></main></div><script src="assets/search-data.js"></script><script src="assets/docs.js"></script></body></html>
+<details class="handler-question"><summary><strong>P1</strong> · 26. 结合项目讲一个 Handler 的完整使用案例。</summary><p>可以讲开屏广告：Activity 创建控制器，控制器保存超时 Runnable 并调用 postDelayed。广告失败或关闭时，回主线程检查 ended，避免重复执行结束逻辑，同时 removeCallbacks；Activity 销毁时再清理。再说明这套做法的限制：超时任务可能迟到，不能打断主线程，ended 的安全读写依赖主线程约定。讲个人工作时，只说自己实际参与的部分。</p></details><footer class="article-footer">本文按源码讲解机制与使用边界。教学代码的编译检查不等于真机生命周期、线程调度和完整项目构建验证。</footer></article><aside class="page-toc" aria-label="本页目录"><div class="toc-heading">本页目录</div><a class="toc-link level-2" href="#overview">01 · P1：Handler 到底解决什么问题？</a><a class="toc-link level-2" href="#binding">02 · P1：回调在哪个线程执行，由谁决定？</a><a class="toc-link level-2" href="#prepare-loop">02.1 · P1：prepare 与 loop 从初始化到退出</a><a class="toc-link level-2" href="#pipeline">03 · P1：从 post 到执行，完整走一遍</a><a class="toc-link level-2" href="#dispatch">04 · P1：post 和 sendMessage 最后走哪里？</a><a class="toc-link level-2" href="#message-fields">04.1 · P1：Message 字段与传参示例</a><a class="toc-link level-2" href="#timing">05 · P1：postDelayed 为什么不一定准时？</a><a class="toc-link level-2" href="#toast">06 · 项目实例一：Toast 切主线程与按 token 取消</a><a class="toc-link level-2" href="#batch">07 · 项目实例二：阅读进度延迟合并上传</a><a class="toc-link level-2" href="#deadline">08 · 项目实例三：开屏广告超时与只结束一次</a><a class="toc-link level-2" href="#cleanup">09 · P1：取消、内存泄漏与生命周期</a><a class="toc-link level-2" href="#worker">10 · P1：HandlerThread：在固定后台线程里按顺序处理消息</a><a class="toc-link level-2" href="#barrier">11 · P2：同步屏障和“异步消息”是什么意思？</a><a class="toc-link level-2" href="#idle">12 · P2：IdleHandler 能不能放耗时任务？</a><a class="toc-link level-2" href="#monitor">13 · 项目实例：用 Handler 心跳发现主线程不响应</a><a class="toc-link level-2" href="#api">14 · 常用 API 与使用选择</a><a class="toc-link level-2" href="#evidence">15 · 项目源码与框架源码索引</a><a class="toc-link level-2" href="#interview">16 · 常见面试题与参考答案</a><a class="back-to-top" href="#">↑ 返回顶部</a></aside></div></main></div><script src="assets/search-data.js"></script><script src="assets/docs.js"></script></body></html>

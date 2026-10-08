@@ -134,7 +134,7 @@ const sampleTerms = ['reified', 'TransactionTooLargeException', 'RemoteMediator'
     await indexPage.locator('[data-search-input]').fill('RemoteMediator');
     const guideResult = indexPage.locator('[data-search-results] a[href="android-3-5-years-interview-guide.html"]');
     assert.ok(await guideResult.count(), '首页全站搜索 RemoteMediator 应命中知识地图');
-    const ctaText = await indexPage.locator('a[href="android-3-5-years-interview-guide.html"] small').first().textContent();
+    const ctaText = await indexPage.locator('.repository-card[href="android-3-5-years-interview-guide.html"]').first().textContent();
     assert.ok(ctaText.includes('186'), '首页入口应显示最新题数');
     await indexPage.close();
 

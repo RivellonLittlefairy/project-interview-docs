@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Android 客户端面试口述速记：每题用 30～60 秒说明核心概念，附可选项目例子和原理详解入口。">
+  <title>面试口述速记｜项目面试资料</title>
+  <link rel="stylesheet" href="assets/docs.css">
+  <script>
+    try {
+      const savedTheme = localStorage.getItem("interview-docs-theme");
+      const preferredDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      document.documentElement.dataset.theme = savedTheme || (preferredDark ? "dark" : "light");
+    } catch {}
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <header class="topbar">
+    <button class="icon-button menu-button" type="button" data-menu-toggle aria-label="打开文档导航" aria-expanded="false">☰</button>
+    <a class="brand" href="index.html"><span class="brand-mark">⌁</span><span>项目面试资料库</span></a>
+    <div class="search-shell">
+      <label class="sr-only" for="global-search">搜索所有文档</label>
+      <input id="global-search" type="search" data-search-input placeholder="搜索仓库、技术或面试题…" autocomplete="off">
+      <span class="search-shortcut">Ctrl K</span>
+      <div class="search-results" data-search-results hidden></div>
+    </div>
+    <button class="icon-button" type="button" data-theme-toggle aria-label="切换深浅主题">◐</button>
+  </header>
+  <div class="drawer-backdrop" data-drawer-backdrop hidden></div>
+  <div class="docs-layout">
+<nav class="sidebar" data-sidebar aria-label="口述速记导航"><div class="sidebar-heading">面试口述速记</div><a class="nav-link" href="index.html#start">返回开始复习</a><a class="nav-link" href="#handler">01 · Handler 是什么？</a><a class="nav-link" href="#lifecycle">02 · Android 生命周期</a><a class="nav-link" href="#activity-switch">03 · Activity 跳转时序</a><a class="nav-link" href="android-handler-looper-guide.html">Handler 原理详解</a></nav>
+<main class="article-shell" id="main-content"><div class="breadcrumbs"><a href="index.html">首页</a><span>/</span><span>面试口述速记</span></div><div class="article-grid"><article class="markdown-body">
+<h1>面试口述速记</h1>
+<p>每题保留一段适合当面说的简短回答。先试着自己回答，再对照补漏；遇到不理解的细节，进入对应的原理文档。当前收录 Handler、Android 生命周期和 Activity 跳转时序，后续随模拟面试逐题积累。</p>
+<h2 id="handler">01 · Handler 是什么，用来干什么？</h2>
+<p><strong>面试官：</strong>介绍一下 Handler，它是用来解决什么问题的？</p>
+<h3>30～60 秒回答</h3>
+<blockquote>
+<p>Handler 是 Android 中向指定线程发送和处理消息、任务的机制，常用于线程间通信，也能安排同一线程的延迟任务。</p>
+<p>它和 Looper、MessageQueue 配合工作：Handler 把 Message 或 Runnable 放进消息队列，目标线程的 Looper 不断取出到期且可处理的消息，再交给对应的 Handler 分发执行。任务在哪个线程执行，取决于 Handler 绑定的 Looper，和哪个线程发送消息没有直接关系。</p>
+<p>常见用途是后台拿到数据后通知主线程更新 UI、延迟执行超时处理，以及通过 HandlerThread 在固定后台线程串行处理任务。Handler 本身不会创建新线程，放到主线程的耗时任务依然会造成卡顿。</p>
+</blockquote>
+<h3>被问到项目例子时，再接这一段</h3>
+<blockquote><p>比如开屏广告加载时，通过主线程 Handler 安排一个延迟超时任务；广告正常结束后取消它，页面销毁时也清理回调，避免重复执行和持有页面。</p></blockquote>
+<p>按自己的经历选择说法：实际做过可以说“我负责的模块里”；只是读过源码，就说“我看过项目里有这样的用法”。</p>
+<h3>记忆提示</h3>
+<p>向指定线程投递任务 → 队列保存，Looper 取出 → Handler 分发 → 切线程、延迟和取消 → 不创建线程，主线程任务要轻量。</p>
+<p>容易说错的地方：Handler 主要用于线程间通信；跨进程通信通常要讲 Binder。执行线程由绑定的 Looper 决定，post 也不会自动把任务放到后台。</p>
+<p><a href="android-handler-looper-guide.html#overview">查看 Handler 原理详解</a> · <a href="android-handler-looper-guide.html#deadline">查看开屏广告项目源码</a></p>
+<h2 id="lifecycle">02 · 说说你对 Android 生命周期的理解</h2>
+<p><strong>面试官：</strong>说说你对 Android 生命周期的理解。</p>
+<h3>约 1～2 分钟回答</h3>
+<blockquote>
+<p>我理解 Android 生命周期，是系统在组件创建、展示、交互和退出等阶段，通过回调通知我们状态变化，让我们在合适的时机初始化界面、启动或停止任务、释放资源，以及保存和恢复状态。</p>
+<p>以 Fragment 页面为例，onCreate 做不依赖 View 的初始化，onCreateView 创建界面，onViewCreated 设置控件、监听和数据观察；onStart、onResume 分别对应进入可见和可交互阶段。离开时会经历 onPause、onStop，View 销毁时调用 onDestroyView，Fragment 自身销毁时再调用 onDestroy。我会根据任务需要选择对应阶段，比如页面停止时暂停不必要的界面状态收集。</p>
+<p>这里最重要的是区分 Fragment 自身和 View 两套生命周期。比如页面进入返回栈后，Fragment 可能还保留着，但 View 已经销毁；回来时会重新创建 View。因此 Binding 要在 onDestroyView 清理，更新界面的观察和收集绑定 viewLifecycleOwner，避免访问旧 View。</p>
+<p>另外，生命周期不等于进程一定正常走完退出流程。后台进程被系统杀死时，不保证调用 onDestroy，所以重要数据需要及时持久化。ViewModel 能跨配置变化保留数据，但不能直接跨进程死亡恢复，需要结合 SavedStateHandle、保存的实例状态或本地存储。</p>
+</blockquote>
+<h3>被问到业务应用时，再接这一段</h3>
+<blockquote><p>比如一个列表 Fragment，我会在 onViewCreated 中设置 RecyclerView，并通过 viewLifecycleOwner 配合 repeatOnLifecycle(STARTED) 收集 ViewModel 的状态。View 生命周期低于 STARTED 时取消这段收集，再次进入 STARTED 时重新启动。onDestroyView 清理 Binding；返回页面后给新 View 重新绑定状态，进程重建时则根据保存的页面参数重新加载。</p></blockquote>
+<p>这段是应用思路，讲实际项目时要换成自己真实做过的实现。</p>
+<h3>记忆提示</h3>
+<p>组件状态变化 → Fragment 创建和展示 → Fragment 与 View 两套生命周期 → 数据收集和清理 → 进程死亡与恢复。</p>
+<p>先讲这个整体认识，再根据面试官追问展开。注意 onPause 后页面仍可能可见，onDestroy 不保证在进程被杀前调用；重要数据也不能只依赖临时状态保存。</p>
+<p><a href="android-lifecycle-process-death-guide.html">查看生命周期与进程死亡详解</a></p>
+<h2 id="activity-switch">03 · 从 Activity A 打开 B，生命周期怎么交替？</h2>
+<p><strong>面试官：</strong>从一个 Activity 打开另一个 Activity，以及返回时，两者的生命周期回调是什么顺序？</p>
+<h3>30～60 秒回答</h3>
+<blockquote><p>在同一进程、普通全屏跳转且新建 B 的情况下，A 先 onPause，B 再 onCreate、onStart、onResume，最后 A 不可见时 onStop。</p><p>返回时，如果 A 实例还在并且已经停止，B 先 onPause，A 再 onRestart、onStart、onResume，随后 B onStop、onDestroy。</p><p>这个顺序以 A 没有被结束或回收为前提。B 透明时，A 可能不走 onStop；复用已有 B 或发生进程重建时，也要按具体状态分析。</p></blockquote>
+<h3>记忆提示</h3><p>去：A 暂停 → B 创建、启动、恢复 → A 停止。回：B 暂停 → A 重启、启动、恢复 → B 停止、销毁。</p>
+<p>不要说成“A 完全停止，B 才开始创建”。A 的 onPause 应保持轻量，否则会拖慢普通页面切换。</p>
+<p><a href="android-lifecycle-process-death-guide.html#activity-switch">查看完整时序、例外与官方 / AOSP 源码依据</a></p>
+<footer class="article-footer">口述内容整理：2026-10-07。项目例子的具体调用链与源码快照见详细文章。</footer>
+</article><aside class="page-toc" aria-label="本页目录"><div class="toc-heading">本页目录</div><a class="toc-link level-2" href="#handler">01 · Handler 是什么？</a><a class="toc-link level-2" href="#lifecycle">02 · Android 生命周期</a><a class="toc-link level-2" href="#activity-switch">03 · Activity 跳转时序</a><a class="back-to-top" href="#">↑ 返回顶部</a></aside></div></main></div><script src="assets/search-data.js"></script><script src="assets/docs.js"></script></body></html>
