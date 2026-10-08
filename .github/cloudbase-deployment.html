@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>CloudBase 自动部署说明</title><style>body{max-width:850px;margin:40px auto;padding:0 20px;font:16px/1.8 system-ui;color:#222}code{background:#f2f3f5;padding:2px 5px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #ddd;padding:8px;text-align:left}</style></head><body>
+<h1>CloudBase 自动部署</h1>
+<p>这是纯静态 HTML 网站。首页在仓库根目录，发布到 CloudBase 静态托管的根路径 <code>/</code>。无需前端编译；npm 依赖仅用于网站测试。</p>
+<h2>触发与检查</h2>
+<ul><li>向 main 推送：网站检查通过后自动部署。</li><li>向 main 提交 PR：只检查，不读取部署凭据，也不部署。</li><li>手动重试：在 GitHub Actions 的 Check and deploy CloudBase site 中点击 Run workflow，选择 main。</li></ul>
+<p>检查覆盖三种屏幕尺寸、问答结构、全站搜索和折叠交互。GitHub runner 没有本地业务源码仓库，因此只跳过业务源码文件存在性检查；本地默认仍执行该检查。</p>
+<h2>Secrets</h2>
+<p>在仓库 Settings → Secrets and variables → Actions 中配置或更新：</p>
+<table><tr><th>名称</th><th>含义</th></tr><tr><td>TCB_SECRET_ID</td><td>腾讯云 API SecretId</td></tr><tr><td>TCB_SECRET_KEY</td><td>腾讯云 API SecretKey</td></tr><tr><td>TCB_ENV_ID</td><td>现有静态网站的 CloudBase 环境 ID</td></tr></table>
+<p>凭据账户需要目标环境的静态托管上传与校验权限。密钥轮换后在这里更新，不要写入仓库。</p>
+<h2>发布内容</h2>
+<p><code>npm run prepare:site</code> 从 Git 已跟踪文件生成 <code>_site/</code>：根目录 HTML、guides 和 repositories 下的 HTML、assets 中的静态资源。不会上传 .git、.github、测试、依赖或本地配置。新增页面和资源需要先加入 Git。</p>
+<p>流水线使用 Node.js 22、锁定的 Playwright 依赖和 CloudBase CLI 3.8.5。检查后的同一份 artifact 用于部署，CLI 使用 <code>--verify</code> 校验上传。部署任务串行执行，不主动中断上传。</p>
+<p>默认不使用 <code>--prune</code>，因此不会自动删除云端旧文件。如果移除或重命名了页面，旧地址仍可能可访问，需要另行确认并清理。</p>
+<h2>失败排查</h2>
+<ul><li>check 失败：查看对应测试日志，修复后再推送。</li><li>提示 Missing repository secret：补齐相应 Secret。</li><li>登录或上传权限失败：检查凭据有效性、环境 ID 和账号权限。</li><li>上传或校验失败：查看 deploy 日志后重新运行；本流程不承诺原子发布或自动回滚。</li></ul>
+<p>本地执行：<code>npm ci</code>，<code>npx playwright install chromium</code>，<code>npm test</code>。Windows 默认使用已安装的 Chrome，可通过 CHROME_PATH 指定浏览器路径；独立文档检出可设置 SKIP_LOCAL_SOURCE_CHECK=1。</p>
+</body></html>

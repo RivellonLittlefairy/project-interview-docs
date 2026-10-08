@@ -1,0 +1,82 @@
+name: Check and deploy CloudBase site
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Check website content and responsive UI
+        run: npm test
+        env:
+          SKIP_LOCAL_SOURCE_CHECK: '1'
+      - name: Prepare website files
+        run: npm run prepare:site
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cloudbase-site
+          path: _site/
+          if-no-files-found: error
+          retention-days: 7
+
+  deploy:
+    needs: check
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    concurrency:
+      group: cloudbase-production
+      cancel-in-progress: false
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: cloudbase-site
+          path: _site/
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check deployment secrets
+        env:
+          TCB_SECRET_ID: ${{ secrets.TCB_SECRET_ID }}
+          TCB_SECRET_KEY: ${{ secrets.TCB_SECRET_KEY }}
+          TCB_ENV_ID: ${{ secrets.TCB_ENV_ID }}
+        run: |
+          for name in TCB_SECRET_ID TCB_SECRET_KEY TCB_ENV_ID; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Missing repository secret: $name"
+              exit 1
+            fi
+          done
+      - name: Install CloudBase CLI
+        run: npm install --global @cloudbase/cli@3.8.5
+      - name: Login and deploy to site root
+        env:
+          TCB_SECRET_ID: ${{ secrets.TCB_SECRET_ID }}
+          TCB_SECRET_KEY: ${{ secrets.TCB_SECRET_KEY }}
+          TCB_ENV_ID: ${{ secrets.TCB_ENV_ID }}
+          CI: 'true'
+        run: |
+          tcb login --apiKeyId "$TCB_SECRET_ID" --apiKey "$TCB_SECRET_KEY"
+          tcb hosting deploy ./_site / -e "$TCB_ENV_ID" --verify
+      - name: Remove runner credentials
+        if: always()
+        run: |
+          if command -v tcb >/dev/null 2>&1; then
+            tcb logout || true
+          fi

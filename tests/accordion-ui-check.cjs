@@ -2,14 +2,14 @@ const assert = require('node:assert/strict');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 
-const dependencyRoot = process.env.CODEX_NODE_MODULES;
+const dependencyRoot = process.env.CODEX_NODE_MODULES || path.resolve(__dirname, '..', 'node_modules');
 if (!dependencyRoot) {
   throw new Error('请先设置 CODEX_NODE_MODULES，指向包含 playwright 的 node_modules 目录。');
 }
 
 const { chromium } = require(path.join(dependencyRoot, 'playwright'));
 const pageUrl = pathToFileURL(path.resolve(__dirname, '..', 'android-3-5-years-interview-guide.html')).href;
-const chromePath = process.env.CHROME_PATH || 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+const chromePath = process.env.CHROME_PATH || (process.platform === 'win32' ? 'C:/Program Files/Google/Chrome/Application/chrome.exe' : chromium.executablePath());
 
 const viewports = [
   { name: 'desktop', width: 1440, height: 1000 },

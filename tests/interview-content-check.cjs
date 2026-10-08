@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 
-const dependencyRoot = process.env.CODEX_NODE_MODULES;
+const dependencyRoot = process.env.CODEX_NODE_MODULES || path.resolve(__dirname, '..', 'node_modules');
 if (!dependencyRoot) throw new Error('请设置 CODEX_NODE_MODULES，指向包含 playwright 的 node_modules。');
 
 const { chromium } = require(path.join(dependencyRoot, 'playwright'));
@@ -11,7 +11,7 @@ const root = path.resolve(__dirname, '..');
 const workspaceRoot = path.resolve(root, '..', '..', '..');
 const guideUrl = pathToFileURL(path.join(root, 'android-3-5-years-interview-guide.html')).href;
 const indexUrl = pathToFileURL(path.join(root, 'index.html')).href;
-const chromePath = process.env.CHROME_PATH || 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+const chromePath = process.env.CHROME_PATH || (process.platform === 'win32' ? 'C:/Program Files/Google/Chrome/Application/chrome.exe' : chromium.executablePath());
 const viewports = [
   { name: 'desktop', width: 1440, height: 1000 },
   { name: 'ipad-portrait', width: 834, height: 1112 },
@@ -91,7 +91,8 @@ const sampleTerms = ['reified', 'TransactionTooLargeException', 'RemoteMediator'
       assert.equal(structure.invalidProjectUsage, 0, `${viewport.name}: 每个答案必须有且只有一段带源码路径的“当前项目怎么用”`);
       assert.equal(structure.invalidPlainLanguageStructure, 0, `${viewport.name}: 每个答案都要先用口语给结论，并移除评审稿式标签`);
       assert.equal(structure.stiffPhraseCount, 0, `${viewport.name}: 答案中不应残留中英夹杂或代码审计式短语`);
-      for (const evidencePath of structure.projectUsagePaths) {
+      // CI only has the documentation checkout; local runs still verify business source files.
+      for (const evidencePath of process.env.SKIP_LOCAL_SOURCE_CHECK === '1' ? [] : structure.projectUsagePaths) {
         const normalizedPath = evidencePath.replace(/:\d+$/, '').replace(/[\\/]/g, path.sep);
         const absolutePath = path.resolve(workspaceRoot, normalizedPath);
         assert.ok(absolutePath.startsWith(`${workspaceRoot}${path.sep}`), `${viewport.name}: 项目证据路径不能越出工作区：${evidencePath}`);

@@ -1,0 +1,11 @@
+{
+  "name": "project-interview-docs",
+  "private": true,
+  "scripts": {
+    "test": "node tests/interview-content-check.cjs && node tests/accordion-ui-check.cjs",
+    "prepare:site": "node scripts/prepare-site.cjs"
+  },
+  "devDependencies": {
+    "playwright": "1.64.0"
+  }
+}
