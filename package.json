@@ -2,7 +2,7 @@
   "name": "project-interview-docs",
   "private": true,
   "scripts": {
-    "test": "node tests/interview-content-check.cjs && node tests/accordion-ui-check.cjs",
+    "test": "node tests/interview-content-check.cjs && node tests/accordion-ui-check.cjs && node tests/site-theme-check.cjs",
     "prepare:site": "node scripts/prepare-site.cjs"
   },
   "devDependencies": {

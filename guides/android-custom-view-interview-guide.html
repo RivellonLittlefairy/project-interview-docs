@@ -22,8 +22,12 @@
     @media(max-width:720px){main{padding:34px 12px 80px}.mobile-bar{margin:-34px -12px 14px}.hero{padding:28px 20px;border-radius:19px}.stats,.grid-2,.grid-3,.detail-grid,.roadmap{grid-template-columns:1fr}.section-head{align-items:center}.section-toggle{display:none}.question-card,.panel{padding:17px}.question-card.mastered::after{position:static;display:inline-block;margin-bottom:7px}.section-title{font-size:28px}section{margin-top:45px}}
     @media print{.sidebar,.mobile-bar,.back-top,.section-toggle,.master-btn,.copy-btn{display:none!important}.app{display:block}main{padding:0}.hero,.panel,.question-card{box-shadow:none;break-inside:avoid}body{background:#fff;color:#111}}
   </style>
+<link rel="stylesheet" href="../assets/site-theme.css">
+<script src="../assets/site-theme.js"></script>
 </head>
-<body>
+<body class="site-unified site-standalone">
+<header class="site-bar"><a class="site-brand" href="../index.html"><span>⌁</span>项目面试资料库</a><a class="site-home" href="../index.html">资料首页</a><button class="site-theme-toggle" data-site-theme-toggle type="button" aria-label="切换深浅主题">◐</button></header>
+
 <div class="app">
   <aside class="sidebar" id="sidebar" aria-label="文档导航">
     <button class="icon-btn drawer-close" id="drawerClose" aria-label="关闭目录">×</button>
@@ -244,7 +248,7 @@ override fun onRestoreInstanceState(state: Parcelable?) {
   const progressText = document.getElementById('progressText');
   const progressBar = document.getElementById('progressBar');
   const masteredKey = 'android-custom-view-guide-mastered-v1';
-  const themeKey = 'android-custom-view-guide-theme-v1';
+  const themeKey = 'interview-docs-theme';
   let highOnly = false;
   let mastered = new Set();
 

@@ -20,7 +20,9 @@
   }
 
   document.querySelector("[data-theme-toggle]")?.addEventListener("click", () => {
-    setTheme(root.dataset.theme === "dark" ? "light" : "dark");
+    const dark = root.dataset.theme === "dark" ||
+      (root.dataset.theme === "auto" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    setTheme(dark ? "light" : "dark");
   });
 
   if (sidebar && menuButton) {
