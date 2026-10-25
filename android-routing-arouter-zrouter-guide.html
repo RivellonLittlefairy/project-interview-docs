@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="从 ARouter 1.5.2 的路由表生成、注册、查找和分发，到项目 ZRouter 的链接改写、Fragment 容器、转换器与兜底，附源码和完整参考回答。">
+  <title>Android 路由原理：ARouter 与 ZRouter 源码详解｜项目面试资料</title>
+  <link rel="stylesheet" href="assets/docs.css">
+  <script>
+    try {
+      const savedTheme = localStorage.getItem("interview-docs-theme");
+      const preferredDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      document.documentElement.dataset.theme = savedTheme || (preferredDark ? "dark" : "light");
+    } catch {}
+  </script>
+<link rel="stylesheet" href="assets/site-theme.css">
+<script src="assets/site-theme.js"></script>
+</head>
+<body class="site-unified">
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <header class="topbar">
+    <button class="icon-button menu-button" type="button" data-menu-toggle aria-label="打开文档导航" aria-expanded="false">☰</button>
+    <a class="brand" href="index.html"><span class="brand-mark">⌁</span><span>项目面试资料库</span></a>
+    <div class="search-shell">
+      <label class="sr-only" for="global-search">搜索所有文档</label>
+      <input id="global-search" type="search" data-search-input placeholder="搜索仓库、技术或面试题…" autocomplete="off">
+      <span class="search-shortcut">Ctrl K</span>
+      <div class="search-results" data-search-results hidden></div>
+    </div>
+    <button class="icon-button" type="button" data-theme-toggle aria-label="切换深浅主题">◐</button>
+  </header>
+  <div class="drawer-backdrop" data-drawer-backdrop hidden></div>
+
+<div class="docs-layout"><nav class="sidebar" data-sidebar aria-label="路由原理导航"><div class="sidebar-heading">ARouter 与 ZRouter</div><a class="nav-link" href="android-componentization-interview-guide.html#q8">返回组件化第 8 题</a><a class="nav-link" href="index.html#android">返回 Android 专题</a><a class="nav-link" href="#router-dependencies">调用方不引用页面类，目标页面为什么仍然能被找到</a><a class="nav-link" href="#router-compile">ARouter 在编译时生成了哪些东西</a><a class="nav-link" href="#router-init">启动时，生成的路由表怎样进入内存</a><a class="nav-link" href="#router-request">build 和 navigation 分别做了什么</a><a class="nav-link" href="#router-fragment">找到目标后，Activity 和 Fragment 的处理为什么不同</a><a class="nav-link" href="#router-parameters">路由参数进入 Bundle，和字段自动赋值是两件事</a><a class="nav-link" href="#router-zrouter">ZRouter 封装的是哪一层，调用方看到了什么</a><a class="nav-link" href="#router-matching">知乎 Router 怎样把 URL 变成目标和参数</a><a class="nav-link" href="#router-url">为什么先把 URL 包成 RouterUrl，还要改写链接</a><a class="nav-link" href="#router-resolve">解析前的拦截、匹配规则和参数合并</a><a class="nav-link" href="#router-nodes">为什么匹配结果还可能经过 Dispatcher 或 Consumer</a><a class="nav-link" href="#router-host">ZRouter 对 Fragment 多做了什么</a><a class="nav-link" href="#router-transform">解析之后，为什么还允许修改或替换 ZHIntent</a><a class="nav-link" href="#router-fallback">找不到页面时，为什么还有多层 fallback</a><a class="nav-link" href="#router-observability">页面标识、日志和只解析 API 分别有什么用</a><a class="nav-link" href="#router-comparison">两套实现放在一起，分别解决了什么</a><a class="nav-link" href="#router-home">首页的一次调用实际经过哪里</a><a class="nav-link" href="#router-answer">这道题的完整参考回答</a><a class="nav-link" href="#router-evidence">版本和源码依据</a></nav><main class="article-shell" id="main-content"><div class="breadcrumbs"><a href="index.html">首页</a><span>/</span><a href="android-componentization-interview-guide.html#q8">组件化第 8 题</a><span>/</span><span>路由原理</span></div><div class="article-grid"><article class="markdown-body"><h1>Android 路由原理：ARouter 与 ZRouter 的实现</h1>
+<p>调用方没有直接依赖目标页面，指的是它的源码里不需要 import 目标页面，也不需要写 StoryDetailFragment.class。目标页面本身仍然要进入最终安装包，路由表里也必须能找到它。业务代码只给出路径和参数，由路由框架找到目标，再完成创建或打开。</p>
+<p>这件事可以拆成两个过程：编译时把“路径对应哪个页面”记录下来；运行时根据这份记录找到页面。真正拿着目标 Class 的，是目标模块生成的代码和运行时路由信息，不是每一个调用它的业务模块。</p>
+<p>这里有个需要分清的关系：当前仓库的 ZRouter 依赖的是 <code>com.zhihu.android:router</code>，调用的是 <code>com.zhihu.router.Routers</code>。它不是这份代码中可见的 ARouter 包装层。下面先用 ARouter 说明通用路由怎么实现，再看 ZRouter 怎样在知乎 Router 上处理具体 App 的页面行为。</p>
+<p class="source-note">ARouter 核对版本：官方标签 <code>1.5.2</code>，提交 <code>452297cef567838238571c181189d17d92847aa4</code>。ZRouter 为当前工作区源码。核对日期：2026-10-25。本次读取源码与现有测试，没有执行 Android 构建或真机跳转。</p>
+<nav aria-label="文章内容"><a href="#router-dependencies">为什么不用直接依赖页面</a> · <a href="#router-compile">ARouter 生成路由表</a> · <a href="#router-init">启动注册</a> · <a href="#router-request">一次跳转</a> · <a href="#router-fragment">Fragment 与参数</a> · <a href="#router-zrouter">ZRouter 的实际调用链</a> · <a href="#router-host">Fragment 容器</a> · <a href="#router-fallback">链接兜底</a> · <a href="#router-answer">完整参考回答</a></nav>
+
+<h2 id="router-dependencies">调用方不引用页面类，目标页面为什么仍然能被找到</h2>
+<p>假设首页在 <code>feature-home</code>，详情页在 <code>feature-story</code>。直接跳转时，首页要写详情页的类名，就得让首页编译时能看到详情模块。换一种写法，首页只写“打开 /story/detail”，目标模块自己声明这个路径，首页便只需要知道路由 API 和参数约定。</p>
+<div class="code-block"><div class="code-toolbar"><span>模块关系 · 结构示意</span><button type="button" data-copy-code>复制</button></div><pre><code class="language-text">feature-home 依赖路由 API
+feature-story 依赖路由 API，并接入注解处理器
+app 引入 feature-home、feature-story 和路由运行库
+
+首页调用：路径 /story/detail，参数 storyId
+详情模块生成的路由表：/story/detail 对应 StoryDetailFragment.class</code></pre></div>
+<p>最终 app 仍然要把目标模块带上。否则即使调用代码编译通过，运行时也找不到对应路径。这里减少的是首页对详情实现的直接编译依赖，路径、参数和版本约定仍然需要维护。</p>
+<p>生成的表能够引用 StoryDetailFragment.class，是因为它就在详情模块的编译过程中生成，编译时能看到详情页。这个表和目标类一起进入最终包，框架运行时再读取它，不需要首页反过来认识详情页的实现类。</p>
+
+<h2 id="router-compile">ARouter 在编译时生成了哪些东西</h2>
+<p>页面上声明 <code>@Route</code> 之后，注解处理器 <code>RouteProcessor</code> 会收集这些声明，判断目标是 Activity、Fragment 还是 Provider，再把路径、分组、目标类型、目标 Class 和参数信息组织成路由元数据。</p>
+<div class="code-block"><div class="code-toolbar"><span>声明与调用 · 简化示例，省略 import 和页面内容</span><button type="button" data-copy-code>复制</button></div><pre><code class="language-java">@Route(path = &quot;/story/detail&quot;)
+public class StoryDetailFragment extends Fragment {
+    // 页面实现省略。
+}
+
+ARouter.getInstance()
+    .build(&quot;/story/detail&quot;)
+    .withLong(&quot;storyId&quot;, 123L)
+    .navigation();</code></pre></div>
+<p>这个例子中的类名和路径只是用来说明过程，不是项目里已经注册的详情路由。ARouter 1.5.2 源码使用的 Fragment 类型包含 <code>android.app.Fragment</code> 和旧的 <code>android.support.v4.app.Fragment</code>；具体 AndroidX 工程是否经过依赖迁移、最终引用哪个版本，需要按实际依赖确认。</p>
+<p>生成代码里比较重要的是两层表。Root 记录某个分组由哪个 Group 类负责；Group 再记录完整路径对应哪个目标。默认情况下，<code>/story/detail</code> 的分组是 <code>story</code>，也可以显式指定分组。</p>
+<div class="code-block"><div class="code-toolbar"><span>生成结果与运行时表的对应关系 · 示意，省略完整生成类</span><button type="button" data-copy-code>复制</button></div><pre><code class="language-java">// Root 的作用：登记一个分组的加载类。
+groupsIndex.put(&quot;story&quot;, ARouter$$Group$$story.class);
+
+// Group 的作用：登记这个组内的具体路由。
+routes.put(&quot;/story/detail&quot;, RouteMeta.build(
+    RouteType.FRAGMENT,
+    StoryDetailFragment.class,
+    &quot;/story/detail&quot;, &quot;story&quot;, null, -1, Integer.MIN_VALUE
+));</code></pre></div>
+<p>真实生成类会实现 <code>IRouteRoot</code>、<code>IRouteGroup</code> 等接口，在 <code>loadInto(...)</code> 方法里填入映射。Root 类名还带模块名，用来区分不同模块生成的入口。Provider 和拦截器也有各自的元信息表。</p>
+<p><code>@Route</code> 在这个版本使用 <code>RetentionPolicy.CLASS</code>。因此，运行时找的是编译期生成的表，不是每次跳转再遍历全部页面、读取每个页面的 Route 注解。生成表的代码与运行时注册，是两个不同步骤。</p>
+<p class="source-note">源码：<a href="https://github.com/alibaba/ARouter/blob/452297cef567838238571c181189d17d92847aa4/arouter-compiler/src/main/java/com/alibaba/android/arouter/compiler/processor/RouteProcessor.java#L124" target="_blank" rel="noopener noreferrer">RouteProcessor.parseRoutes:124</a>；<a href="https://github.com/alibaba/ARouter/blob/452297cef567838238571c181189d17d92847aa4/arouter-compiler/src/main/java/com/alibaba/android/arouter/compiler/processor/RouteProcessor.java#L315" target="_blank" rel="noopener noreferrer">Group 生成位置:315</a>；<a href="https://github.com/alibaba/ARouter/blob/452297cef567838238571c181189d17d92847aa4/arouter-compiler/src/main/java/com/alibaba/android/arouter/compiler/processor/RouteProcessor.java#L358" target="_blank" rel="noopener noreferrer">Root 生成位置:358</a>；<a href="https://github.com/alibaba/ARouter/blob/452297cef567838238571c181189d17d92847aa4/arouter-annotation/src/main/java/com/alibaba/android/arouter/facade/annotation/Route.java#L16" target="_blank" rel="noopener noreferrer">@Route 保留策略:16</a>。</p>
+
+<h2 id="router-init">启动时，生成的路由表怎样进入内存</h2>
+<p><code>ARouter.init(application)</code> 会进入 <code>_ARouter.init</code>，再调用 <code>LogisticsCenter.init</code>。编译生成的文件只是包里的类，到这一步才会被加载，并把信息写进 <code>Warehouse</code> 中的运行时表。</p>
+<table><thead><tr><th>运行时表</th><th>里面放什么</th><th>用于什么</th></tr></thead><tbody>
+<tr><td><code>groupsIndex</code></td><td>分组名对应 Group 的 Class</td><td>需要某一组时，找到它的加载入口。</td></tr>
+<tr><td><code>routes</code></td><td>完整路径对应 RouteMeta</td><td>取得目标 Class、类型和参数信息。</td></tr>
+<tr><td><code>providersIndex</code></td><td>服务接口名对应路由信息</td><td>根据接口查找 Provider。</td></tr>
+<tr><td><code>providers</code></td><td>Provider Class 对应已创建实例</td><td>避免反复创建同一个服务。</td></tr>
+<tr><td><code>interceptorsIndex</code>、<code>interceptors</code></td><td>拦截器的类型、优先级与实例</td><td>初始化并执行拦截流程。</td></tr>
+</tbody></table>
+<p>1.5.2 里优先尝试插件注册。注册插件会向 <code>LogisticsCenter.loadRouterMap()</code> 加入注册逻辑，框架便能直接找到生成入口。如果没有通过插件完成注册，就走扫描或缓存路径：Debug 模式或新版本需要重新查找生成类，之后可以复用保存的类名集合。</p>
+<p>这里扫描的是约定包名下的生成类，用来找到 Root、Provider 和拦截器入口，不是每次点击都扫描 Dex。插件注册减少了发现这些入口的扫描工作，也不能据此说整个 ARouter 完全没有反射；这个版本的注册与实例创建代码仍有反射调用。</p>
+<p>初始化主要准备分组索引等信息，并不要求一次性把每个业务组的全部路由都展开。这样可以把一部分工作留到第一次使用该组时再做。</p>
+<p class="source-note">源码：<a href="https://github.com/alibaba/ARouter/blob/452297cef567838238571c181189d17d92847aa4/arouter-api/src/main/java/com/alibaba/android/arouter/launcher/ARouter.java#L39" target="_blank" rel="noopener noreferrer">ARouter.init:39</a>；<a href="https://github.com/alibaba/ARouter/blob/452297cef567838238571c181189d17d92847aa4/arouter-api/src/main/java/com/alibaba/android/arouter/launcher/_ARouter.java#L61" target="_blank" rel="noopener noreferrer">_ARouter.init:61</a>；<a href="https://github.com/alibaba/ARouter/blob/452297cef567838238571c181189d17d92847aa4/arouter-api/src/main/java/com/alibaba/android/arouter/core/LogisticsCenter.java#L141" target="_blank" rel="noopener noreferrer">LogisticsCenter.init:141</a>；<a href="https://github.com/alibaba/ARouter/blob/452297cef567838238571c181189d17d92847aa4/arouter-api/src/main/java/com/alibaba/android/arouter/core/Warehouse.java#L23" target="_blank" rel="noopener noreferrer">Warehouse:23</a>。</p>
+
+<h2 id="router-request">build 和 navigation 分别做了什么</h2>
+<p><code>build("/story/detail")</code> 先创建一份路由请求 <code>Postcard</code>。它可以保存路径、分组、Bundle、Context、动画和 flags。此时仅有请求信息，目标 Class 还没有补齐，也还没有开始显示页面。</p>
+<p><code>withLong("storyId", 123L)</code> 这类调用把值写进 Postcard 的 Bundle。<code>navigation()</code> 才会把请求交给框架继续处理。路径替换服务如果存在，可以在构造请求时调整路径。</p>
+<div class="code-block"><div class="code-toolbar"><span>ARouter 的主要过程 · 调用链概括</span><button type="button" data-copy-code>复制</button></div><pre><code class="language-text">ARouter.getInstance().build(path)
+    _ARouter.build(path)
+    创建 Postcard，保存 path、group、extras
+
+Postcard.navigation(...)
+    ARouter.navigation(...)
+    _ARouter.navigation(...)
+    可选的 PretreatmentService
+    LogisticsCenter.completion(postcard)
+    可选的 IInterceptor 链
+    _ARouter._navigation(...)
+    按目标类型打开 Activity、返回 Fragment 或返回 Provider</code></pre></div>
+<p><code>LogisticsCenter.completion()</code> 先用完整路径查 <code>Warehouse.routes</code>。如果没有对应记录，再看 <code>groupsIndex</code> 里有没有这个分组。有的话，就创建 Group 加载器，调用 <code>loadInto(Warehouse.routes)</code>，把这一组的路由放进去，再查一次。加载完成的组会从待加载索引里移除，已经展开的路由继续缓存在 routes 里。</p>
+<p>因此，第一次查到某个组时可能多一次加载，之后可以直接从完整路由表取目标。这是路由元信息的按需加载，不是业务代码按需下载，目标类仍然来自已经打进包里的模块。</p>
+<p>查到 RouteMeta 后，框架把 destination、type、priority 等补到 Postcard。查不到会抛出 <code>NoRouteFoundException</code>，外层再根据是否提供回调，执行 <code>onLost</code> 或全局 <code>DegradeService</code>，而不是假定目标总会存在。</p>
+<p class="source-note">源码：<a href="https://github.com/alibaba/ARouter/blob/452297cef567838238571c181189d17d92847aa4/arouter-api/src/main/java/com/alibaba/android/arouter/launcher/_ARouter.java#L180" target="_blank" rel="noopener noreferrer">_ARouter.build:180</a>；<a href="https://github.com/alibaba/ARouter/blob/452297cef567838238571c181189d17d92847aa4/arouter-api/src/main/java/com/alibaba/android/arouter/facade/Postcard.java#L129" target="_blank" rel="noopener noreferrer">Postcard.navigation:129</a>；<a href="https://github.com/alibaba/ARouter/blob/452297cef567838238571c181189d17d92847aa4/arouter-api/src/main/java/com/alibaba/android/arouter/core/LogisticsCenter.java#L221" target="_blank" rel="noopener noreferrer">completion:221</a>；<a href="https://github.com/alibaba/ARouter/blob/452297cef567838238571c181189d17d92847aa4/arouter-api/src/main/java/com/alibaba/android/arouter/core/LogisticsCenter.java#L358" target="_blank" rel="noopener noreferrer">Group 加载:358</a>；<a href="https://github.com/alibaba/ARouter/blob/452297cef567838238571c181189d17d92847aa4/arouter-api/src/main/java/com/alibaba/android/arouter/launcher/_ARouter.java#L284" target="_blank" rel="noopener noreferrer">navigation 与丢失处理:284</a>。</p>
+
+<h2 id="router-fragment">找到目标后，Activity 和 Fragment 的处理为什么不同</h2>
+<p>如果目标是 Activity，ARouter 根据目标 Class 创建显式 Intent，把 Bundle、flags 等填进去，最后通过系统启动 Activity。非 Activity Context 需要补 <code>FLAG_ACTIVITY_NEW_TASK</code>；真正执行启动的部分会切到主线程。</p>
+<p>如果目标是 Fragment，ARouter 1.5.2 的分支是反射创建 Fragment，设置 arguments，然后把实例返回。它不会在这一分支替应用选择容器、执行 FragmentTransaction 或维护应用自己的返回栈。拿到 Fragment 之后怎样显示，仍属于宿主页面框架的工作。</p>
+<p>这也是 Fragment 和 Activity 的差别：Activity 可以交给系统启动，Fragment 必须放进一个 Activity 的界面中。通用路由知道目标类，不代表它知道当前业务应当在哪个容器显示、要不要隐藏上一个页面。</p>
+<p>拦截也要看实际分支。这个版本在 <code>completion()</code> 中会给 Provider、Fragment 设置 green channel，跳过普通 <code>IInterceptor</code> 链；外层的 <code>PretreatmentService</code> 则在补全路由信息前执行。不能把“每个 Fragment 都会先经过同一组登录拦截器”当成这个版本的固定行为。</p>
+<p>普通拦截链由 <code>InterceptorServiceImpl</code> 执行，通过 onContinue、onInterrupt 推进或终止，并处理超时。它在有拦截器时会使用执行器，但 Fragment 实例创建等其他分支不能因此统一理解为都会自动切到主线程。</p>
+<p class="source-note">源码：<a href="https://github.com/alibaba/ARouter/blob/452297cef567838238571c181189d17d92847aa4/arouter-api/src/main/java/com/alibaba/android/arouter/launcher/_ARouter.java#L361" target="_blank" rel="noopener noreferrer">按目标类型分发:361</a>；<a href="https://github.com/alibaba/ARouter/blob/452297cef567838238571c181189d17d92847aa4/arouter-api/src/main/java/com/alibaba/android/arouter/launcher/_ARouter.java#L428" target="_blank" rel="noopener noreferrer">Activity 启动线程:428</a>；<a href="https://github.com/alibaba/ARouter/blob/452297cef567838238571c181189d17d92847aa4/arouter-api/src/main/java/com/alibaba/android/arouter/core/LogisticsCenter.java#L297" target="_blank" rel="noopener noreferrer">Fragment 的 green channel:297</a>；<a href="https://github.com/alibaba/ARouter/blob/452297cef567838238571c181189d17d92847aa4/arouter-api/src/main/java/com/alibaba/android/arouter/core/InterceptorServiceImpl.java#L33" target="_blank" rel="noopener noreferrer">拦截链执行:33</a>。</p>
+
+<h2 id="router-parameters">路由参数进入 Bundle，和字段自动赋值是两件事</h2>
+<p>手动调用 <code>withLong</code>、<code>withString</code>，值会直接放入 Postcard 的 extras。目标是 Activity 时，它们进入 Intent；目标是 Fragment 时，它们进入 arguments。页面可以自己按类型读取这些值。</p>
+<p>如果是 <code>build(Uri)</code>，ARouter 会在补全过程读取 URI query，再根据路由表中已声明的参数类型做转换。这个版本保存的参数类型与 <code>@Autowired</code> 收集有关，不能认为任意一个 query 字符串都会自动变成对应业务字段。</p>
+<p>字段注入还有另一条链路。<code>AutowiredProcessor</code> 会生成实现 <code>ISyringe</code> 的辅助类；调用 <code>ARouter.getInstance().inject(this)</code> 后，<code>AutowiredServiceImpl</code> 再找到辅助类执行注入。辅助代码从 Activity 的 Intent 或 Fragment 的 arguments 取值，写进对应字段。它和找到目标页面不是同一个步骤。</p>
+<p>Provider 也有单独的处理：框架根据服务接口找到路由信息，创建对应实现、调用 init，并缓存实例，再把服务对象返回给调用方。Provider 的这个 init 与应用启动时注册路由表也要分开理解。</p>
+<p class="source-note">源码：<a href="https://github.com/alibaba/ARouter/blob/452297cef567838238571c181189d17d92847aa4/arouter-api/src/main/java/com/alibaba/android/arouter/facade/Postcard.java#L298" target="_blank" rel="noopener noreferrer">手动写入参数:298</a>；<a href="https://github.com/alibaba/ARouter/blob/452297cef567838238571c181189d17d92847aa4/arouter-compiler/src/main/java/com/alibaba/android/arouter/compiler/processor/AutowiredProcessor.java#L157" target="_blank" rel="noopener noreferrer">生成字段读取代码:157</a>；<a href="https://github.com/alibaba/ARouter/blob/452297cef567838238571c181189d17d92847aa4/arouter-api/src/main/java/com/alibaba/android/arouter/core/AutowiredServiceImpl.java#L44" target="_blank" rel="noopener noreferrer">执行注入:44</a>；<a href="https://github.com/alibaba/ARouter/blob/452297cef567838238571c181189d17d92847aa4/arouter-api/src/main/java/com/alibaba/android/arouter/core/LogisticsCenter.java#L278" target="_blank" rel="noopener noreferrer">Provider 初始化与缓存:278</a>。</p>
+
+<h2 id="router-zrouter">ZRouter 封装的是哪一层，调用方看到了什么</h2>
+<p>ZRouter 仓库的“路由入门”明确写到：Router 是通用库，ZRouter 是针对知乎 App 的封装。当前 build.gradle 依赖的是 <code>com.zhihu.android:router</code>；实际解析最后进入 <code>com.zhihu.router.Routers</code>，没有在这条入口链路中调用 ARouter。</p>
+<p>所以两套实现的关系是：ARouter 可以用来说明通用路由表和目标分发的原理；ZRouter 则需要沿它自己的接口和源码继续看。比较“ZRouter 多处理了什么”时，指的是它在知乎通用 Router 上面承接了哪些 App 行为，不表示这些扩展能力是 ARouter 完全没有的。</p>
+<div class="code-block"><div class="code-toolbar"><span>当前 ZRouter 的主要打开过程</span><button type="button" data-copy-code>复制</button></div><pre><code class="language-text">ZRouter.open(context, jumpUrl)
+    RouterUrl.Builder 保存 URL、Bundle 和打开选项
+    build() 调用 transformUrl() 处理特殊链接
+    ZRouter.open(context, routerUrl)
+        外部浏览器分支，或者 openRouter(...)
+        RoutesResolver 的解析拦截链
+        Routers.getDefault().resolve(uri)
+        MatchResult：目标、参数、模块等信息
+        合并额外 Bundle
+        可选的 RouterDispatcher / RouterConsumer
+        Activity：构造 Intent 并启动
+        Fragment：构造 ZHIntent，处理打开选项和转换器
+            已有 FragmentLauncher，或者选择 HostActivity
+        匹配或打开未处理时，按入口继续 fallback</code></pre></div>
+<p>基础 Router 根据模板找到目标，ZRouter 继续决定这个目标在 App 里怎么打开，以及找不到时怎么处理。通用查表和具体页面行为在这里分成了不同层。</p>
+<p class="source-note">源码：<code>yyyyy-cdoe/ZRouter/zrouter/build.gradle</code>；<code>yyyyy-cdoe/ZRouter/路由入门.md</code>；<code>yyyyy-cdoe/ZRouter/zrouter/src/main/java/com/zhihu/android/app/router/ZRouter.java:203</code>；<code>yyyyy-cdoe/ZRouter/zrouter/src/main/java/com/zhihu/android/app/router/RoutesResolver.java:28</code>。</p>
+
+<h2 id="router-matching">知乎 Router 怎样把 URL 变成目标和参数</h2>
+<p>当前仓库带有 <code>@Router</code> 的使用说明、动态 Mapper 创建代码和解析调用，但通用 <code>Routers</code>、编译期处理器的完整实现来自外部依赖，这次没有把它们的全部内部源码读到。生成入口的说明来自仓库文档，动态注册和解析入口则能直接对照当前 Java 代码。</p>
+<p>仓库文档描述的是：每个模块通过自己的处理器生成 <code>MapperInitializer_模块名</code>，记录 URL 模板和目标；模块名用于区分生成入口。文档还说明，应用工程需要汇总子模块信息。当前真实构建如何汇总、所用处理器版本有没有调整，仍以构建插件和依赖解析为准，不能仅凭这份旧文档把细节当成全部确认。</p>
+<p>从本仓库的 <code>destination.MapperCreator</code> 可以直接看到，映射不仅包含路径字符串，还包含 scheme、host、路径分段、query、参数类型、正则条件、优先级和模块。模板还能声明重定向，创建器会解析并检查重定向前后参数是否匹配。</p>
+<div class="code-block"><div class="code-toolbar"><span>知乎 Router 的声明格式 · 教学示例，不是现有业务路由</span><button type="button" data-copy-code>复制</button></div><pre><code class="language-java">@Router({
+    &quot;zhihu://story/{story_id:long}&quot;,
+    &quot;https://www.zhihu.com/story/{story_id:long}&quot;
+})
+public class StoryPage extends Fragment {
+    // 注册完成后，匹配结果中会带目标类与解析出的参数。
+}</code></pre></div>
+<p>这种模板可以表达“这一段是一个 long 类型的参数”，还可以在 query 中区分 URL 参数名、Bundle key、默认值和可选值。它和 ARouter 例子里的固定 path 加 query 元信息不是同一种模板语法，不能直接互换。</p>
+<p>当前 <code>ZRouter.addDestination(...)</code> 也允许创建 Mapper 后加入路由表；<code>RoutesAccessor</code> 在写锁保护下调用 addMappers，再重新排序。这说明当前并不只有编译生成这一条登记入口。排序的完整实现和底层匹配算法属于外部 Router，本节不把它们臆断成哈希查找、Trie 或某种确定的扫描复杂度。</p>
+<p class="source-note">源码：<code>yyyyy-cdoe/ZRouter/zrouter/src/main/java/com/zhihu/android/app/router/destination/MapperCreator.java:23</code>；<code>yyyyy-cdoe/ZRouter/zrouter/src/main/java/com/zhihu/android/app/router/ZRouter.java:92</code>；<code>yyyyy-cdoe/ZRouter/zrouter/src/main/java/com/zhihu/router/RoutesAccessor.java</code>；<code>yyyyy-cdoe/ZRouter/路由入门.md</code>。</p>
+
+<h2 id="router-url">为什么先把 URL 包成 RouterUrl，还要改写链接</h2>
+<p><code>RouterUrl</code> 把 Uri、额外 Bundle、requestCode、resultFragment、是否保持 Activity、是否新开 Activity 等放进一份请求。调用方不用把这些选项拼成一长串参数，也能用 buildUpon 在原请求上继续处理。</p>
+<p>它的 <code>build()</code> 会调用 <code>transformUrl()</code>，因此部分链接在真正匹配前已经被改写。对调用者来说仍然只调用一次 open，特殊格式的处理则集中在这一处。</p>
+<table><thead><tr><th>输入或选项</th><th>当前源码中的处理</th><th>处理后解决什么问题</th></tr></thead><tbody>
+<tr><td><code>zhihu://launch?url=...</code></td><td>取出内部 URL，继续构造请求。</td><td>兼容包了一层的启动链接。</td></tr>
+<tr><td>http(s) 链接带 <code>forceWebView=1</code></td><td>改成 <code>zhihu://open_url</code>，原地址放进 <code>url</code>。</td><td>这次请求指定按 WebView 路径处理。</td></tr>
+<tr><td>http(s) 链接带 <code>zh_forcehybrid=1</code></td><td>改成 <code>zhihu://hybrid</code>，原地址放进 <code>zh_url</code>。</td><td>交给 Hybrid 页面承载。</td></tr>
+<tr><td><code>openinapp_instruction</code> 与 <code>app-argument</code></td><td>取出 app-argument 里的地址继续处理。</td><td>兼容这一类外部唤起格式。</td></tr>
+<tr><td><code>https://oia.zhihu.com/...</code>、<code>https://soia.zhihu.com/...</code></td><td>前缀转换成 <code>zhihu://...</code>。</td><td>复用对应的 scheme 路由；soia 分支注释说明用于会员独立 App。</td></tr>
+</tbody></table>
+<p>这些具体改写可以直接从代码确认。把处理集中起来的作用，是避免每个页面调用方都复制链接兼容逻辑。不是所有改写都会完整保留旧请求：大多数分支使用 buildUpon，oia、soia 分支则重新 newBuilder，不能无条件假设所有 Bundle 和打开选项在所有转换中都保持不变。</p>
+<p>当前 <code>keepQueries()</code> 也只保留指定的 query，例如 <code>extra_account_transformer_ignore</code>，并非复制全部旧 query。这些差别在排查“改写后参数为什么丢了”时有实际影响。</p>
+<p class="source-note">源码：<code>yyyyy-cdoe/ZRouter/zrouter/src/main/java/com/zhihu/android/app/router/RouterUrl.java:607</code>；<code>yyyyy-cdoe/ZRouter/zrouter/src/main/java/com/zhihu/android/app/router/RouterUrl.java:658</code>；<code>yyyyy-cdoe/ZRouter/zrouter/src/main/java/com/zhihu/android/app/router/RouterUrl.java:597</code>；<code>yyyyy-cdoe/ZRouter/zrouter/src/test/java/com/zhihu/android/app/router/RouterUrlTest.java</code>。</p>
+
+<h2 id="router-resolve">解析前的拦截、匹配规则和参数合并</h2>
+<p><code>RoutesResolver</code> 先把当前解析拦截器复制成数组，作为这次请求的处理链。拦截器收到请求和继续执行的方法，可以处理后继续往下传，也可以直接返回自己的结果。链路走完后，才调用底层 <code>Routers.getDefault().resolve(uri)</code>。</p>
+<div class="code-block"><div class="code-toolbar"><span>RoutesResolver 的链式处理 · 原码节选</span><button type="button" data-copy-code>复制</button></div><pre><code class="language-java">    private static MatchResult resolve(RouterUrl routerUrl, ResolveInterceptor[] interceptors, int index) {
+        if (index &gt;= interceptors.length) {
+            return Routers.getDefault().resolve(routerUrl.uri());
+        }
+        ResolveInterceptor interceptor = interceptors[index];
+        return interceptor.intercept(routerUrl, url -&gt; resolve(url, interceptors, index + 1));
+    }</code></pre></div>
+<p>全局基础匹配配置则在 <code>Configs.init()</code> 中设置。当前配置允许 http 和 https 互相等价，也把 <code>www.zhihu.com</code>、<code>zhihu.com</code>、<code>m.zhihu.com</code> 视为一组等价 host。非公开构建还会处理开发环境域名。这样同一个业务页面不必为这些等价入口重复写完全相同的规则。</p>
+<p>Configs 还会通过 <code>InstanceProvider.getAll(Filter.class)</code> 获取 Filter，交给底层 Router。它与外层 ResolveInterceptor 是不同入口，不能在没有继续查看实现时，直接把所有过滤、登录检查都归为同一条链。</p>
+<p>拿到 MatchResult 后，ZRouter 会合并请求额外传入的 Bundle：</p>
+<div class="code-block"><div class="code-toolbar"><span>额外参数合并 · 原码节选</span><button type="button" data-copy-code>复制</button></div><pre><code class="language-java">        result.bundle.putAll(routerUrl.bundle());</code></pre></div>
+<p>这意味着相同 key 下，后面这份额外 Bundle 会覆盖已经解析出的值。URL query、路径参数和调用时 putLong/putString 的参数并不总是各管各的；判断最终值时要看合并顺序。</p>
+<p class="source-note">源码：<code>yyyyy-cdoe/ZRouter/zrouter/src/main/java/com/zhihu/android/app/router/RoutesResolver.java:26</code>；<code>yyyyy-cdoe/ZRouter/zrouter/src/main/java/com/zhihu/android/app/router/Configs.java:40</code>；<code>yyyyy-cdoe/ZRouter/zrouter/src/main/java/com/zhihu/android/app/router/ZRouter.java:260</code>。</p>
+
+<h2 id="router-nodes">为什么匹配结果还可能经过 Dispatcher 或 Consumer</h2>
+<p>有些 URL 可以确定属于哪个业务，却不能在注册时固定到唯一页面。当前 ZRouter 遇到 <code>RouterDispatcher</code> 目标时，会调用 dispatch，把原 MatchResult 换成另一份结果，再继续打开。例如仓库接口注释就举了把目标换成另一个 AnswerFragment 的例子。根据用户状态或实验结果换页面，是这种入口可以承载的用法，但具体线上条件还需要检查业务实现。</p>
+<p><code>RouterConsumer</code> 则表示请求由一段业务逻辑消费。匹配到它后调用 <code>consume(context, result)</code>，不会继续按普通页面分支打开。路由因此可以统一接收某类 URL，再把它交给行为处理，而不要求每条 URL 都对应一个能显示的页面。</p>
+<p><code>GHOST</code> 在这些分支中表示“后续默认打开不再处理”。它表达的是当前处理者接管了请求，不能据此认为某个页面已经完成显示。这里按源码分支解释语义，没有对所有 GHOST 路径做运行验证。</p>
+<p>Dispatcher 返回 null 时，当前打开流程返回未处理；经由最外层 open 调用时，还可能继续走外层 fallback。直接调用 openRouter 与调用 open 的后续行为不能完全混为一谈。</p>
+<p class="source-note">源码：<code>yyyyy-cdoe/ZRouter/zrouter/src/main/java/com/zhihu/android/app/router/ZRouter.java:262</code>；<code>yyyyy-cdoe/ZRouter/zrouter/src/main/java/com/zhihu/android/app/router/ZRouter.java:280</code>；<code>yyyyy-cdoe/ZRouter/zrouter/src/main/java/com/zhihu/android/app/router/RouterDispatcher.java</code>；<code>yyyyy-cdoe/ZRouter/zrouter/src/main/java/com/zhihu/android/app/router/RouterConsumer.java</code>。</p>
+
+<h2 id="router-host">ZRouter 对 Fragment 多做了什么</h2>
+<p>匹配到普通页面后，ZRouter 会把目标、Bundle 和 screenName 包装成 <code>ZHIntent</code>。这是 App 自己的页面请求对象，虽然实现了 Parcelable，但它不是系统的 Intent。除了目标和参数，它还可以带页面标识、隐藏前页、popSelf、keepActivity、新开 Activity 等选项。</p>
+<p>如果目标是 Fragment，ZRouter 先把这些打开选项写入 ZHIntent，再交给 <code>openFragment()</code>。这段处理弥补了“找到了 Fragment 类”和“把 Fragment 显示到 App 里”之间的那一步。</p>
+<div class="code-block"><div class="code-toolbar"><span>Fragment 打开分支 · 原码节选</span><button type="button" data-copy-code>复制</button></div><pre><code class="language-java">    private static void openFragment(Context context, Uri uri, ZHIntent zhIntent, Fragment resultFragment,
+                                     int requestCode, boolean record) {
+        Activity activity = ClassUtil.getActivityFromContext(context);
+        if (activity instanceof FragmentLauncher) {
+            ((FragmentLauncher) activity).startFragmentForResult(zhIntent, resultFragment, requestCode,
+                    null, record);
+        } else {
+            Intent intent = geIntentFromZHIntent(context, zhIntent, uri);
+            startActivityForResult(context, intent, requestCode, resultFragment);
+        }
+    }</code></pre></div>
+<p>如果当前 Context 能找到实现了 FragmentLauncher 的 Activity，就直接调用它的 <code>startFragmentForResult</code>。现有页面容器接手后，才能按自身规则处理 Fragment 的显示与栈行为；ZRouter 这一步并没有自己直接执行 FragmentTransaction。</p>
+<p>如果当前 Activity 不提供这项能力，ZRouter 就选择一个宿主 Activity，把 ZHIntent 放进系统 Intent 的 extras，再启动宿主。<code>getComponentActivity()</code> 会先看目标的 <code>@AttachedActivity</code>，再看 <code>@BelongsTo</code> 或底层 Router 返回的模块名，通过 <code>ModuleActivityMapper</code> 找该模块的 Activity，最后才使用默认 Host。</p>
+<p>默认 Host 可以在初始化时设置，也可以从 <code>zrouter.defaultActivity</code> 配置读取。这样公共页面不必自己写死某个 App 的外层 Activity，各模块或宿主可以提供承载选择。App-specific 的容器关系集中在这一层，更适合多模块、多入口工程。</p>
+<p><code>keepActivity</code>、<code>newActivity</code> 等选项在这一层被传给页面框架，具体怎样影响栈，还要继续看 FragmentLauncher 的实现。不能只看到一个 flag 就断言 ZRouter 本身已经在这里完成了所有栈操作。</p>
+<p>目标是 Activity 时，则走系统 Intent 启动流程，并处理 requestCode、resultFragment 和非 Activity Context 的 NEW_TASK。当前 ZRouter 打开入口没有 ARouter Activity 分支那种统一的主线程 Handler 派发，不能把两者的线程承诺直接套用。</p>
+<p class="source-note">源码：<code>yyyyy-cdoe/ZRouter/zrouter/src/main/java/com/zhihu/android/app/router/ZRouter.java:299</code>；<code>yyyyy-cdoe/ZRouter/zrouter/src/main/java/com/zhihu/android/app/router/ZRouter.java:330</code>；<code>yyyyy-cdoe/ZRouter/zrouter/src/main/java/com/zhihu/android/app/router/ZRouter.java:354</code>；<code>yyyyy-cdoe/ZRouter/zrouter/src/main/java/com/zhihu/android/app/router/ModuleActivityMapper.java:41</code>；<code>yyyyy-cdoe/ZRouter/zrouter/src/main/java/com/zhihu/android/app/util/ZHIntent.java</code>；<code>FragmentLauncher.java</code>。</p>
+
+<h2 id="router-transform">解析之后，为什么还允许修改或替换 ZHIntent</h2>
+<p>参数解析结束不一定就能直接打开目标。当前 ZRouter 先执行这次请求自己的 <code>intentProcessor</code>，再执行全局的 <code>ZHIntentTransformer</code>。前者适合只对这次请求补充选项；后者可以集中调整某类页面的目标、参数或页面标识。</p>
+<p>全局 Transformer 按注册顺序处理。返回同一个对象或 null，代码都会继续往后走；返回一个新 ZHIntent，才会停止后面的转换器并采用新结果。因此，“return null”在这个接口里不是取消跳转的意思。</p>
+<div class="code-block"><div class="code-toolbar"><span>Transformer 的实际继续条件 · 原码节选</span><button type="button" data-copy-code>复制</button></div><pre><code class="language-java">    private static ZHIntent transformIntent(ZHIntent intent, Context context, RouterUrl routerUrl) {
+        for (ZHIntentTransformer transformer : Configs.transformers) {
+            ZHIntent zhIntent = transformer.transform(context, intent, routerUrl);
+            if (zhIntent == intent || zhIntent == null) {
+                //返回原来的或者 null，认为这个 Transformer 没有处理，接着交给下面的 Transformer
+                continue;
+            }
+            // 否则就返回这个了，Router 会打开这个 Intent
+            return zhIntent;
+        }
+        return intent;
+    }</code></pre></div>
+<p>替换成新 ZHIntent 后，打开流程还会清空原 resultFragment，并加入 <code>EXTRA_TRANSFORMED</code> 标记。清空和标记可以直接从代码确认；从这个处理看，它在区分原请求和被换过的页面，避免直接沿用原来的返回接收关系。</p>
+<p>仓库文档提到了登录和 AB 等扩展场景，但这些能力是否在某个 App、某次启动中生效，还取决于实际注册了什么实现。当前这层入口、调用顺序和现有测试能确认；线上全部注册项并不是本次已核对的内容。</p>
+<p class="source-note">源码：<code>yyyyy-cdoe/ZRouter/zrouter/src/main/java/com/zhihu/android/app/router/ZRouter.java:421</code>；<code>yyyyy-cdoe/ZRouter/zrouter/src/test/java/com/zhihu/android/app/router/ZRouterTest.java</code> 的 testProcessor、testTransform；<code>yyyyy-cdoe/ZRouter/路由入门.md</code>。</p>
+
+<h2 id="router-fallback">找不到页面时，为什么还有多层 fallback</h2>
+<p>App 接到的链接可能来自旧版本、外部分享或不同业务，不一定都能匹配当前原生页面。ZRouter 把找不到目标后的选择也放在统一入口里，调用方不必每次重新实现浏览器、WebView 和业务回退。</p>
+<p>最外层 open 先检查强制外部浏览器的 http(s) 请求，即 <code>zh_external=true</code>。其他请求尝试 openRouter。解析没有结果时，会尝试请求中的 <code>fallback_url</code>，以及注册的 <code>RouterFallback</code>；处理成功就结束。</p>
+<p>如果 openRouter 仍没有处理，最外层 open 再进入一般 fallback。当前代码对 <code>zhihu://</code> 不继续按普通网页兜底；站内网页，或者明确允许 <code>fallbackWithBrowser</code> 的请求，可以继续转到内部页面。其他未允许的外部地址会记录错误并返回未处理。</p>
+<table><thead><tr><th>场景</th><th>当前源码的去向</th></tr></thead><tbody>
+<tr><td>显式 <code>forceWebView=1</code></td><td>预处理时改成 open_url，参数名是 url。</td></tr>
+<tr><td>显式 <code>zh_forcehybrid=1</code></td><td>预处理时改成 hybrid，参数名是 zh_url。</td></tr>
+<tr><td>一般网页 fallback</td><td>当前 getInternalWebViewUrl 改成 hybrid，并携带 zh_url。</td></tr>
+<tr><td>强制外部浏览器，但设备没有可用处理 Activity</td><td>捕获 ActivityNotFoundException 后，再尝试内部 open_url。</td></tr>
+</tbody></table>
+<p>因此，不能把所有失败都概括成“最后打开 open_url”。不同入口、不同 query 和当前版本有不同分支。<code>RouterUrl.Builder.openRouter()</code> 也没有最外层 open 的全部兜底步骤，但它调用的内部流程在匹配失败时仍可能处理 fallback_url，不是完全没有回退。</p>
+<p>链接改写、fallback_url、WebView 加载都仍需要和权限、地址校验一起考虑。找到一个能承载 URL 的页面，不等于输入已经安全，也不等于敏感业务已经获得授权。</p>
+<p class="source-note">源码：<code>yyyyy-cdoe/ZRouter/zrouter/src/main/java/com/zhihu/android/app/router/ZRouter.java:203</code>；<code>yyyyy-cdoe/ZRouter/zrouter/src/main/java/com/zhihu/android/app/router/ZRouter.java:490</code>；<code>yyyyy-cdoe/ZRouter/zrouter/src/main/java/com/zhihu/android/app/router/ZRouter.java:439</code>；<code>yyyyy-cdoe/ZRouter/zrouter/src/main/java/com/zhihu/android/app/router/RouterUrl.java:640</code>。</p>
+
+<h2 id="router-observability">页面标识、日志和只解析 API 分别有什么用</h2>
+<p>ZRouter 创建 ZHIntent 时会调用 <code>ScreenNameResolver</code>。它可以读取目标上的 <code>@ScreenName</code>，用 Bundle 参数填充页面标识；没有可用标识时，会生成带无效前缀的备用值，并通过 <code>isValidScreenName</code> 决定传给页面启动器的相关记录标记。页面因此不仅有目标 Class，也有用于后续统计的身份信息。</p>
+<p><code>recordResolveRouter()</code> 记录解析是否得到结果、目标类型、host 和解析耗时。这里计时包住的是路由解析，既不是页面首帧，也不是用户实际可交互时间；“有匹配结果”和“页面成功显示”也不是同一个指标。</p>
+<table><thead><tr><th>API</th><th>主要行为</th><th>需要分清的地方</th></tr></thead><tbody>
+<tr><td><code>ZRouter.open</code></td><td>发起处理、打开或交给消费者，并按入口处理回退。</td><td>返回 true 表示相应分支已经接手，不是页面绘制完成的回调。</td></tr>
+<tr><td><code>ZRouter.resolve</code></td><td>解析并组织 ZHIntent，不执行最终启动。</td><td>它仍会经过解析、Dispatcher 和适用的 Transformer，不是完全无处理的简单查询；也不等同于 open 的所有分支。</td></tr>
+<tr><td><code>ZRouter.resolveToIntent</code></td><td>把目标组织成系统 Intent。</td><td>Fragment 目标会对应 HostActivity 的 Intent，不会因此绕过容器。</td></tr>
+<tr><td><code>ZRouter.test</code></td><td>检查解析是否有结果。</td><td>不是网页兜底、后续授权或最终 UI 显示一定成功的保证。</td></tr>
+</tbody></table>
+<p class="source-note">源码：<code>yyyyy-cdoe/ZRouter/zrouter/src/main/java/com/zhihu/android/app/router/ScreenNameResolver.java:25</code>；<code>yyyyy-cdoe/ZRouter/zrouter/src/main/java/com/zhihu/android/app/router/ZRouter.java:702</code>；<code>yyyyy-cdoe/ZRouter/zrouter/src/main/java/com/zhihu/android/app/router/ZRouter.java:535</code>；<code>yyyyy-cdoe/ZRouter/zrouter/src/main/java/com/zhihu/android/app/router/ZRouter.java:595</code>。</p>
+
+<h2 id="router-comparison">两套实现放在一起，分别解决了什么</h2>
+<table><thead><tr><th>问题</th><th>ARouter 1.5.2 的对应机制</th><th>当前 ZRouter 链路的对应机制</th></tr></thead><tbody>
+<tr><td>目标怎么登记</td><td>RouteProcessor 生成 Root、Group 等映射。</td><td>知乎 Router 生成入口由仓库文档说明；ZRouter 还能动态加入 Mapper。</td></tr>
+<tr><td>目标怎么找到</td><td>Warehouse、LogisticsCenter，按路径补全 Postcard。</td><td>RoutesResolver 处理外层拦截，最终交给 com.zhihu.router.Routers。</td></tr>
+<tr><td>Fragment 怎么显示</td><td>该分支创建实例、设置 arguments 并返回。</td><td>组织 ZHIntent，交给 FragmentLauncher 或选择 HostActivity；容器继续负责显示与栈行为。</td></tr>
+<tr><td>请求怎么调整</td><td>路径替换、预处理服务、拦截链等扩展。</td><td>URL 预处理、ResolveInterceptor、Dispatcher、Consumer、单次 Delegate 与全局 Transformer。</td></tr>
+<tr><td>没匹配到怎么办</td><td>onLost 或 DegradeService。</td><td>fallback_url、自定义 RouterFallback、按链接类型继续内部页面或浏览器处理。</td></tr>
+<tr><td>App 自己的上下文</td><td>通用请求中的 Context、Bundle、flags 等。</td><td>模块宿主、页面打开选项、screenName 和解析日志等。</td></tr>
+</tbody></table>
+<p>源码可以直接确认上述处理的位置。对于“为什么集中在路由层”，从调用方式看，作用是让业务调用方仍然只提交 URL、参数和打开选项，把宿主选择、历史链接兼容和失败处理集中维护。这是根据现有实现推出来的设计作用，不代表已经知道当年每项设计的讨论过程。</p>
+
+<h2 id="router-home">首页的一次调用实际经过哪里</h2>
+<p>当前 <code>HomePinTabFragment</code> 的奖励入口点击会读取 jumpUrl，再调用 <code>ZRouter.open(requireContext(), jumpUrl)</code>。这个调用方没有写目标页面的具体类，也没有自己判断要不要新开 HostActivity、转 WebView 或处理某种历史链接。</p>
+<div class="code-block"><div class="code-toolbar"><span>当前首页代码 · 原码节选</span><button type="button" data-copy-code>复制</button></div><pre><code class="language-kotlin">        binding.timeRewardEntryImage.setOnClickListener {
+            val jumpUrl = mealAllowanceFloatIcon?.jumpUrl.orEmpty()
+            if (jumpUrl.isNotBlank()) {
+                ZRouter.open(requireContext(), jumpUrl)
+            }
+        }</code></pre></div>
+<p>这份 jumpUrl 先进入 RouterUrl 预处理，再走解析拦截和底层匹配。得到目标后，ZRouter 合并参数，按实际类型决定消费请求、打开 Activity 或交给 Fragment 容器。找不到时，再按当前入口和允许的规则尝试回退。</p>
+<p>jumpUrl 的具体内容和该包实际注册的目标，决定最终打开哪里。仅从这一句 open 不能推出它一定走 Fragment、一定经过登录处理、一定 fallback，也不能推出底层是 ARouter。调用方省掉的是这些目标实现和公共处理细节，最终接入依然要保证目标模块、注册信息和宿主能力存在。</p>
+
+<h2 id="router-answer">完整参考回答</h2>
+<p>调用方不直接依赖目标页面，通常是说它不需要 import 页面类，只需要知道一个路径和参数约定。目标模块会把路径到页面的映射提供出来，最终宿主把目标模块和路由表一起打进包。运行时由框架查到目标 Class，再按页面类型处理，所以目标类并没有凭空消失，只是引用它的位置从各个调用方转到了路由表和框架里。</p>
+<p>以 ARouter 为例，它在编译期处理 Route 注解，生成 Root 和 Group 等映射。启动时把分组索引等信息注册到 Warehouse。调用 build 会创建 Postcard，navigation 时再由 LogisticsCenter 补全目标，必要时先加载对应分组。之后按当前目标类型和是否跳过拦截，进入真正的分发：Activity 最终用 Intent 启动，Fragment 分支则创建实例、填 arguments 并返回。</p>
+<p>项目里的 ZRouter 是另一条具体实现链，它封装的是知乎的 com.zhihu.router，并不能直接说成在 ARouter 上包装了一层。底层 Router 负责匹配目标，ZRouter 再处理 App 的具体规则，例如特殊 URL 改写、解析拦截、Dispatcher 和 Consumer、参数合并、ZHIntent 转换，以及 Fragment 的 HostActivity 选择。</p>
+<p>对首页来说，这样只要提交 jumpUrl 和参数，不必知道目标 Fragment 应当由哪个 Activity 承载，也不必各自实现旧链接兼容和 WebView 兜底。它减少了调用方对目标页面的直接引用，但目标模块仍要打包、映射仍要注册，路径和参数仍要保持兼容。至于页面是否真正显示完成，还需要页面或性能指标来判断，不能仅看 open 返回 true。</p>
+
+<h2 id="router-evidence">版本和源码依据</h2>
+<p>ARouter 使用官方 <code>1.5.2</code> 标签对应的固定提交，避免把 develop 分支后来的行为混进来。公开源码已经下载并逐段读取；本地 ZRouter 则按当前文件核对。Android 编译、真机行为、线上过滤器注册以及知乎 Router 外部依赖的全部内部实现，都没有在本次验证中完成。</p>
+<table><thead><tr><th>代码</th><th>本节使用的位置</th></tr></thead><tbody>
+<tr><td><a href="https://github.com/alibaba/ARouter/blob/452297cef567838238571c181189d17d92847aa4/arouter-compiler/src/main/java/com/alibaba/android/arouter/compiler/processor/RouteProcessor.java#L124" target="_blank" rel="noopener noreferrer">RouteProcessor:124</a></td><td>注解收集、路由分类、Group 与 Root 生成。</td></tr>
+<tr><td><a href="https://github.com/alibaba/ARouter/blob/452297cef567838238571c181189d17d92847aa4/arouter-api/src/main/java/com/alibaba/android/arouter/core/Warehouse.java#L21" target="_blank" rel="noopener noreferrer">Warehouse:21</a></td><td>分组、完整路由、Provider 和拦截器的运行时表。</td></tr>
+<tr><td><a href="https://github.com/alibaba/ARouter/blob/452297cef567838238571c181189d17d92847aa4/arouter-api/src/main/java/com/alibaba/android/arouter/core/LogisticsCenter.java#L141" target="_blank" rel="noopener noreferrer">LogisticsCenter.init:141</a></td><td>注册、扫描或缓存发现生成入口。</td></tr>
+<tr><td><a href="https://github.com/alibaba/ARouter/blob/452297cef567838238571c181189d17d92847aa4/arouter-api/src/main/java/com/alibaba/android/arouter/core/LogisticsCenter.java#L221" target="_blank" rel="noopener noreferrer">LogisticsCenter.completion:221</a></td><td>按需展开分组、补全目标、URI 参数转换和 Provider 创建。</td></tr>
+<tr><td><a href="https://github.com/alibaba/ARouter/blob/452297cef567838238571c181189d17d92847aa4/arouter-api/src/main/java/com/alibaba/android/arouter/launcher/_ARouter.java#L284" target="_blank" rel="noopener noreferrer">_ARouter.navigation:284</a></td><td>预处理、丢失处理、拦截和按目标类型分发。</td></tr>
+<tr><td><a href="https://github.com/alibaba/ARouter/blob/452297cef567838238571c181189d17d92847aa4/arouter-compiler/src/main/java/com/alibaba/android/arouter/compiler/processor/AutowiredProcessor.java#L157" target="_blank" rel="noopener noreferrer">AutowiredProcessor:157</a>；<a href="https://github.com/alibaba/ARouter/blob/452297cef567838238571c181189d17d92847aa4/arouter-api/src/main/java/com/alibaba/android/arouter/core/AutowiredServiceImpl.java#L44" target="_blank" rel="noopener noreferrer">AutowiredServiceImpl:44</a></td><td>生成字段读取代码，再通过辅助类完成赋值。</td></tr>
+<tr><td><code>yyyyy-cdoe/ZRouter/zrouter/src/main/java/com/zhihu/android/app/router/ZRouter.java:203</code></td><td>实际打开入口与后续各分支。</td></tr>
+<tr><td><code>yyyyy-cdoe/ZRouter/zrouter/src/main/java/com/zhihu/android/app/router/RouterUrl.java:658</code></td><td>launch、WebView、Hybrid、oia 和 soia 链接改写。</td></tr>
+<tr><td><code>yyyyy-cdoe/ZRouter/zrouter/src/main/java/com/zhihu/android/app/router/RoutesResolver.java:26</code></td><td>解析拦截链与底层 Router 调用。</td></tr>
+<tr><td><code>yyyyy-cdoe/ZRouter/zrouter/src/main/java/com/zhihu/android/app/router/Configs.java:40</code>；<code>yyyyy-cdoe/ZRouter/zrouter/src/main/java/com/zhihu/android/app/router/ModuleActivityMapper.java:41</code></td><td>等价链接规则、Filter 接入和默认宿主。</td></tr>
+<tr><td><code>yyyyy-cdoe/ZRouter/zrouter/src/test/java/com/zhihu/android/app/router/ZRouterTest.java</code>、<code>RouterUrlTest.java</code></td><td>已阅读转换、回退、Consumer、开发域名等现有测试；没有声称执行通过。</td></tr>
+</tbody></table>
+<p><a href="android-componentization-interview-guide.html#q8">返回组件化第 8 题</a> · <a href="index.html#android">返回 Android 专题</a></p></article><aside class="toc"><h2>本页目录</h2><a href="#router-dependencies">调用方不引用页面类，目标页面为什么仍然能被找到</a><a href="#router-compile">ARouter 在编译时生成了哪些东西</a><a href="#router-init">启动时，生成的路由表怎样进入内存</a><a href="#router-request">build 和 navigation 分别做了什么</a><a href="#router-fragment">找到目标后，Activity 和 Fragment 的处理为什么不同</a><a href="#router-parameters">路由参数进入 Bundle，和字段自动赋值是两件事</a><a href="#router-zrouter">ZRouter 封装的是哪一层，调用方看到了什么</a><a href="#router-matching">知乎 Router 怎样把 URL 变成目标和参数</a><a href="#router-url">为什么先把 URL 包成 RouterUrl，还要改写链接</a><a href="#router-resolve">解析前的拦截、匹配规则和参数合并</a><a href="#router-nodes">为什么匹配结果还可能经过 Dispatcher 或 Consumer</a><a href="#router-host">ZRouter 对 Fragment 多做了什么</a><a href="#router-transform">解析之后，为什么还允许修改或替换 ZHIntent</a><a href="#router-fallback">找不到页面时，为什么还有多层 fallback</a><a href="#router-observability">页面标识、日志和只解析 API 分别有什么用</a><a href="#router-comparison">两套实现放在一起，分别解决了什么</a><a href="#router-home">首页的一次调用实际经过哪里</a><a href="#router-answer">这道题的完整参考回答</a><a href="#router-evidence">版本和源码依据</a><a href="android-componentization-interview-guide.html#q8">返回第 8 题</a><a href="#">↑ 返回顶部</a></aside></div></main></div><script src="assets/search-data.js"></script><script src="assets/docs.js"></script></body></html>
