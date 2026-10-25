@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="首页启动、卡片预热、重复绑定、滚动与指标治理：基于当前源码及历史提交，附面试口述和追问。">
+  <title>首页性能优化尝试｜源码与面试口述</title>
+  <link rel="stylesheet" href="assets/docs.css">
+  <script>
+    try {
+      const savedTheme = localStorage.getItem("interview-docs-theme");
+      const preferredDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      document.documentElement.dataset.theme = savedTheme || (preferredDark ? "dark" : "light");
+    } catch {}
+  </script>
+<link rel="stylesheet" href="assets/site-theme.css">
+<script src="assets/site-theme.js"></script>
+</head>
+<body class="site-unified">
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <header class="topbar">
+    <button class="icon-button menu-button" type="button" data-menu-toggle aria-label="打开文档导航" aria-expanded="false">☰</button>
+    <a class="brand" href="index.html"><span class="brand-mark">⌁</span><span>项目面试资料库</span></a>
+    <div class="search-shell">
+      <label class="sr-only" for="global-search">搜索所有文档</label>
+      <input id="global-search" type="search" data-search-input placeholder="搜索仓库、技术或面试题…" autocomplete="off">
+      <span class="search-shortcut">Ctrl K</span>
+      <div class="search-results" data-search-results hidden></div>
+    </div>
+    <button class="icon-button" type="button" data-theme-toggle aria-label="切换深浅主题">◐</button>
+  </header>
+  <div class="drawer-backdrop" data-drawer-backdrop hidden></div>
+
+  <div class="docs-layout">
+<nav class="sidebar" data-sidebar aria-label="首页性能优化导航"><div class="sidebar-heading">首页性能优化尝试</div><a class="nav-link" href="index.html#interview">返回项目面试目录</a><a class="nav-link" href="#spoken">01 · 面试先记这六点</a><a class="nav-link" href="#scope">02 · 查了哪些代码，哪些结论还没确认</a><a class="nav-link" href="#startup">03 · 启动：少做无用的事，不着急的晚点做</a><a class="nav-link" href="#precreate">04 · 复杂卡片提前准备，用的时候直接拿</a><a class="nav-link" href="#binding">05 · 绑定数据时，相同的东西别反复设置</a><a class="nav-link" href="#scroll">06 · 用户滑列表时，少做分页和图片加载</a><a class="nav-link" href="#data">07 · 数据提前拿，重复请求少发，缓存看清楚</a><a class="nav-link" href="#metrics">08 · 页面快没快，要先把加载时间算清楚</a><a class="nav-link" href="#webview">09 · WebView 预加载：写了代码，效果还没确认</a><a class="nav-link" href="#questions">10 · 常见追问与结果怎么讲</a><a class="nav-link" href="#evidence">11 · 源码和提交记录</a></nav>
+<main class="article-shell" id="main-content"><div class="breadcrumbs"><a href="index.html">首页</a><span>/</span><span>项目面试</span><span>/</span><span>首页性能优化</span></div><div class="article-grid"><article class="markdown-body">
+<h1>首页性能优化：做过哪些尝试，面试怎么说</h1><blockquote class="callout"><p>这篇整理了首页优化里能讲清楚的六件事，后面附源码和提交记录。主要看盐言 Android 首页，也补充了知识市场首页的做法。哪些现在还在用、哪些只在历史分支里，都有说明。源码核对日期：2026-10-13。</p></blockquote><h2 id="spoken">01 · 面试先记这六点</h2>
+<p>面试时可以先说遇到了什么问题，再讲改了哪里、为什么这样改、有没有副作用，最后说怎么验证。下面按项目里的做法来讲；你实际做过的部分，再换成“我做了”。</p>
+<table><thead><tr><th>重点</th><th>怎么讲</th><th>代码里做了什么</th></tr></thead><tbody>
+<tr><td>不需要的就别做</td><td>启动时先删掉用不上的工作，少做一点，用户就少等一点。</td><td>以前给 Launcher 加过 isFinishing 判断：启动页已经结束，就跳过它的布局。当前代码里已经没有这层判断。</td></tr>
+<tr><td>不着急的晚点做</td><td>先让首页内容出来，再处理红点、阅读浮层和弹窗。</td><td>历史分支把这些 Observer 分别延迟 300 / 500 / 800ms 注册。开关关闭时还是立即注册。</td></tr>
+<tr><td>复杂卡片提前准备</td><td>有些卡片创建起来比较慢，就提前准备几个，用的时候直接拿。</td><td>用 IdleHandler 提前创建 HybridCard；用异步 inflate 准备心理测评和精品课布局；也会提前往池里放 ViewHolder。</td></tr>
+<tr><td>相同的东西别反复设置</td><td>ViewHolder 虽然能复用，每次 bind 还是可能做很多重复工作。</td><td>图片 URL 没变就不重建 controller；子 View 找到后存起来；圆角没变就不再设置。</td></tr>
+<tr><td>滑动时少做重活</td><td>用户正在滑列表时，尽量少做分页和图片加载，让主线程有时间画下一帧。</td><td>停止滚动、离末尾不超过 3 项时才加载下一页。Android 10 以下滑动时暂停 Fresco pipeline，停下来再恢复。</td></tr>
+<tr><td>加载时间要算对</td><td>先分清页面真的变快了，还是计时方法变了。</td><td>用户切走首页就取消这次统计；冷启动广告期间取消计时，广告结束再重新开始。</td></tr>
+</tbody></table>
+<h3>60～90 秒口述稿</h3>
+<blockquote><p>项目里主要做过两类优化：一类是让首页早点出来，另一类是让列表滑起来更顺。启动时，曾经尝试跳过已经结束的启动页布局，也尝试把红点、阅读浮层、弹窗这些不着急的东西晚一点初始化。列表里，有些卡片创建比较慢，就提前准备几个，使用时直接拿；每次绑定数据时，图片没变就不重建 controller，圆角没变就不重新设置，子 View 也不用反复找。用户正在滑列表时，还会少做分页和部分图片加载。加载时间也单独修过：用户已经离开首页，就取消这次统计；广告时间另做处理。具体快了多少，需要拿同样场景、同样计时方法的真机测试和线上数据来比较。</p></blockquote>
+<p>可以按这个顺序记：不需要的别做，不着急的晚做，复杂的提前准备，相同的别重复设置，滑动时少做重活，最后把时间算对。</p>
+<h2 id="scope">02 · 查了哪些代码，哪些结论还没确认</h2>
+<p>主要查了盐言 Android 的 <code>VipHome</code> 和 <code>km_home_base</code>，也查了 <code>KnowledgeMarket/kmarket-home</code>。它们对应的页面和版本不完全一样，所以每种做法都会写清楚来自哪里，不能直接说某个线上版本同时用了全部方案。</p>
+<table><thead><tr><th>仓库 / 当前提交</th><th>找到了什么</th><th>需要说明的地方</th></tr></thead><tbody>
+<tr><td>VipHome · ccbb5206</td><td>以前尝试跳过无用的启动布局；现在还能看到提前创建布局和修改加载计时的代码。</td><td>当前已经没有那层 isFinishing 判断。提前创建布局是否执行，还要看开关和执行时机。</td></tr>
+<tr><td>km_home_base · 17a8fc74</td><td>过滤重复刷新、网络优先的缓存、榜单滑动调整，以及 WebView 预加载尝试。</td><td>当前分支是 feat_time_reward。以前的 vip_km_home 模块已经不在当前源码里。</td></tr>
+<tr><td>KnowledgeMarket · 77f150529c</td><td>异步创建布局、提前准备 Hybrid / ViewHolder、减少重复设置，以及调整滚动时的工作。</td><td>这些来自知识市场首页，不能据此认定盐言当前线上也用了同一套卡片。</td></tr>
+</tbody></table>
+<p>这些结论是在 2026-10-13 根据本地源码和 Git 历史整理的。本次没有真机性能 trace、线上看板、AB 实验结果或完整发版记录。代码能说明项目做过什么；是谁负责、有没有上线、上线后快了多少，还需要你自己的经历和记录来补充。</p>
+<h2 id="startup">03 · 启动：少做无用的事，不着急的晚点做</h2>
+<h3>3.1 启动页都结束了，就别再创建它的布局</h3>
+<p><code>VipHome / 3fe20c10</code>（2024-03-20，“提交首页启动优化”）给 <code>setContentView</code> 加了 <code>!isFinishing()</code> 判断，也给动画 View 加了空判断。意思很直接：前面的代码如果已经 finish 了这个 Activity，后面就不用再创建它的布局和动画 View，省掉这部分时间。</p><p>这个做法现在只适合作为历史尝试来讲。当前 LauncherActivity 还留着原来的注释，但第 208 行 setContentView 外已经没有 isFinishing 判断了。看代码时要把注释和实际执行的逻辑分开。</p>
+<p>同一个提交还换了提前创建的布局，并注释掉 <code>ZPatch.preInit()</code> 和 <code>ZPatch.onColdLaunch()</code>。这确实减少了调用，但也可能影响补丁功能。讲这部分时，需要同时说明少做了什么、功能有没有受到影响。</p>
+<h3>3.2 布局先准备好，首页创建时再拿来用</h3>
+<p><code>T_LayoutPreInflate</code> 会提前准备系统栏、主容器和 VIP 首页的布局，结果放在 <code>preInflater</code> 里。之后 <code>MainDelegation.attachBaseContext()</code> 取出它，用它包装 Context。准备布局和使用结果的两端都能找到；这次没有继续查缓存内部，也没有测实际拿到缓存的次数。</p>
+<p class="source-note">源码：<code>yyyyy-cdoe/VipHome/home/src/main/java/com/zhihu/android/module/task/T_LayoutPreInflate.java</code> · 68 至 81 行。</p><div class="code-block"><div class="code-toolbar"><span>T_LayoutPreInflate.java</span><button type="button" data-copy-code>复制</button></div><pre><code data-source="yyyyy-cdoe/VipHome/home/src/main/java/com/zhihu/android/module/task/T_LayoutPreInflate.java" data-lines="68-81">        final LayoutPreInflater preInflater = new LayoutPreInflater(app, BuildConfigHelper.isInternal());
+        // 新建带主题的 Context
+        Context themedContext = new ContextThemeWrapper(app, R.style.Zhihu_Theme_AppTheme_Light);
+        ThemeManager.updateConfigurationIfNeeded(themedContext);
+
+        long start = System.currentTimeMillis();
+        // 第一个 Tab 下的 Fragment，如果首页 layout 发生变动，这里也要跟着改
+        final SystemBar systemBar = new SystemBar(themedContext);
+        preInflater.preInflate(R.layout.system_bar_container, systemBar);
+//        preInflater.preInflate(R.layout.activity_main, new ContentFrameLayout(themedContext));
+        preInflater.preInflate(R.layout.activity_main_explorea, new ContentFrameLayout(themedContext));
+        preInflater.preInflate(R.layout.vip_prefix_km_home_fragment_layout, new ContentFrameLayout(themedContext));
+        Log.d(&quot;T_LayoutPreInflate&quot;, &quot;onRun: &quot; + (System.currentTimeMillis() - start));
+        setOutput(&quot;preInflater&quot;, preInflater);</code></pre></div><p class="source-note">源码：<code>yyyyy-cdoe/VipHome/home/src/main/java/com/zhihu/android/app/ui/activity/MainDelegation.java</code> · 236 至 247 行。</p><div class="code-block"><div class="code-toolbar"><span>MainDelegation.java</span><button type="button" data-copy-code>复制</button></div><pre><code data-source="yyyyy-cdoe/VipHome/home/src/main/java/com/zhihu/android/app/ui/activity/MainDelegation.java" data-lines="236-247">    public Context attachBaseContext(Context newBase) {
+        newBase = ChromeInspector.wrapContext(newBase);
+
+        try {
+            final LayoutPreInflater preInflater = (LayoutPreInflater)
+                    TaskManager.getTask(T_LayoutPreInflate.class.getSimpleName()).getOutput(&quot;preInflater&quot;);
+            if (preInflater != null) {
+                newBase = preInflater.wrapContext(newBase);
+            }
+        } catch (Exception e) {
+            // 针对预装版本，从推送进入 app 后，此处会崩溃
+        }</code></pre></div>
+<p><code>postinfl</code> 默认是 true。当前 <code>T_LayoutPreInflate.onRun()</code> 在开关为 false 时直接创建布局；为 true 时，交给 <code>T_LaunchComplete</code> 通过 <code>RulerScheduler.runUrgent</code> 调用。如果执行时顶部已经是 MainActivity，就直接跳过。所以这段代码是否帮上忙，要看它有没有赶在首页创建之前执行。这里用到的调度方式也要单独看，不能统称为 IdleHandler 异步 inflate。</p>
+<h3>3.3 历史分支试过：红点、浮层和弹窗晚点初始化</h3>
+<p><code>km_home_base / ae4358ac</code>（作者日期 2025-10-13，“优化首页启动加载”；提交时间 2025-10-15）改的是历史文件 <code>vip_km_home/.../VipKmHomeFragment.kt</code>。<code>vip_home_tab_improve</code> 开启时，用 <code>root.postDelayed</code> 延迟注册 Observer；关闭时就立即执行。</p>
+<table><thead><tr><th>延迟</th><th>晚点做什么</th><th>为什么晚点做</th></tr></thead><tbody>
+<tr><td>300ms</td><td>消息红点、TTS 阅读信息、上次阅读进度的 Observer</td><td>这些回调和浮层处理不用全挤在首页刚初始化的时候。</td></tr>
+<tr><td>500ms</td><td>通用弹窗、发布入口、订阅入口等 Observer</td><td>先把首页准备好，再处理这些附加功能。</td></tr>
+<tr><td>800ms</td><td>分享恢复跳转、关注红点、协议更新等 Observer</td><td>把工作再往后分散一些。分享跳转和协议更新能不能等，要按实际业务确认。</td></tr>
+</tbody></table>
+<p>本地只有 <code>refs/remotes/realOrigin/bugfix/foldable-kingkong-width</code> 包含这个提交，当前 HEAD 不包含，当前源码里也没有这个模块。它说明有人在历史分支里试过，不能当作当前版本正在用的方案。</p>
+<p>面试可能会问：延迟 300ms 就保证首页画完了吗？没有。它只是晚一点排到主线程执行，任务本身还是占主线程。<code>viewLifecycleOwner</code> 能在 View 销毁时移除已经注册的 Observer，但不会替你取消还没执行的 Runnable。因此要检查页面销毁、View 重建、重复注册，以及用户提前点击时会发生什么。要继续改进，可以根据首页真正显示完成的信号来安排任务，同时检查生命周期，并限制每个任务的耗时；这部分是建议，本次没有确认项目已经这样做。</p>
+<h2 id="precreate">04 · 复杂卡片提前准备，用的时候直接拿</h2>
+<h3>4.1 提前准备 HybridCard 和两种复杂布局</h3>
+<p><code>KnowledgeMarket / 47629ee019</code>（2022-10-13，“HybridCard预加载 &amp; 异步加载复杂布局”）做了这件事：<code>ContentMarketHomeFragment.setupViews</code> 调用 <code>HomePreloadUtils.preload</code>，提前准备 1 个 HybridCard，以及心理测评、精品课各 2 个 View。HybridCard 等调用线程的消息队列空闲时再创建，两种 View 用 AsyncLayoutInflater 异步创建，最后都放进软引用缓存。</p>
+<p class="source-note">源码：<code>yyyyy-cdoe/KnowledgeMarket/kmarket-home/src/main/java/com/zhihu/android/app/market/utils/HomePreloadUtils.kt</code> · 73 至 85 行。</p><div class="code-block"><div class="code-toolbar"><span>HomePreloadUtils.kt</span><button type="button" data-copy-code>复制</button></div><pre><code data-source="yyyyy-cdoe/KnowledgeMarket/kmarket-home/src/main/java/com/zhihu/android/app/market/utils/HomePreloadUtils.kt" data-lines="73-85">        repeat(PSYCH_PRELOAD_SIZE) {
+            AsyncLayoutInflater(context)
+                .inflate(R.layout.recycler_item_layout_fct18a_card_item, null) { view, _, _ -&gt;
+                    psychCachePool.add(SoftReference(view))
+                }
+        }
+
+        repeat(TOP_COURSE_PRELOAD_SIZE) {
+            AsyncLayoutInflater(context)
+                .inflate(R.layout.recycler_item_top_course, null) { view, _, _ -&gt;
+                    courseCachePool.add(SoftReference(view))
+                }
+        }</code></pre></div><p class="source-note">源码：<code>yyyyy-cdoe/KnowledgeMarket/kmarket-home/src/main/java/com/zhihu/android/app/market/newhome/ui/sugarholder/FCT07ADataVH.kt</code> · 34 至 40 行。</p><div class="code-block"><div class="code-toolbar"><span>FCT07ADataVH.kt</span><button type="button" data-copy-code>复制</button></div><pre><code data-source="yyyyy-cdoe/KnowledgeMarket/kmarket-home/src/main/java/com/zhihu/android/app/market/newhome/ui/sugarholder/FCT07ADataVH.kt" data-lines="34-40">    private val webRoot = itemView as CardView
+
+    private var hybridCard: HybridCard = HomePreloadUtils.obtainCachedHybrid() ?: createHybridCard()
+
+    init {
+        webRoot.addView(hybridCard.view)
+    }</code></pre></div>
+<p><code>PsychAssessmentAdapter</code> 和 <code>TopCourseAdapter</code> 创建条目时先取缓存，没有就正常 inflate。HybridCard 也是一样，取不到就现场创建。<code>obtainCached*</code> 取的时候会把这一项从缓存里 remove 掉，所以这里是提前备几个，用完就没了，并不会无限保留或反复借还。</p>
+<p>提前加载 URL 还有额外条件：<code>kmarket_home_preload_url</code> 默认 false，开关打开且设备被判定为慢设备时，才通过一次性 IdleHandler 调用 <code>hybridCard.load(url)</code>。绑定卡片时会对比 View tag 里的 URL，相同就不再 load 一遍。</p>
+<p>这些缓存 View 还没加入页面，切换日夜主题时不会跟着页面自动更新，所以代码会主动给它们切主题。页面销毁时会调用 release 清空池。软引用可能被 GC 清掉，实际有多少次能拿到缓存还要测。也要检查异步创建完成得太晚、Context 一直被持有、主题切换和额外内存占用的问题。AsyncLayoutInflater 对布局有要求：控件要能在后台构造，不能随意在后台操作 View；遇到不支持的情况，创建工作可能回到主线程。</p>
+<h3>4.2 提前创建 ViewHolder，放进 RecyclerView 的池里</h3>
+<p><code>ContentMarketHomeFragment.tryPreloadViewHolder()</code> 会先看列表数据里有没有对应类型。FCT01C / FCT14A 有数据时，在一次性空闲任务里提前创建；FCT03C / FCT03D 则把池容量设为 10。</p>
+<p class="source-note">源码：<code>yyyyy-cdoe/KnowledgeMarket/kmarket-home/src/main/java/com/zhihu/android/app/market/newhome/ui/fragment/ContentMarketHomeFragment.kt</code> · 1115 至 1131 行。</p><div class="code-block"><div class="code-toolbar"><span>ContentMarketHomeFragment.kt</span><button type="button" data-copy-code>复制</button></div><pre><code data-source="yyyyy-cdoe/KnowledgeMarket/kmarket-home/src/main/java/com/zhihu/android/app/market/newhome/ui/fragment/ContentMarketHomeFragment.kt" data-lines="1115-1131">    private fun prefetchViewHolder(pair: Pair&lt;Int, Int&gt;) {
+        //往 recycledViewPool 里预先创建一个 ViewHolder。
+        val createViewHolder = listAdapter.createViewHolder(
+            myRecyclerView,
+            pair.second
+        )
+        //绑定一次 ViewHolder
+        listAdapter.bindViewHolder(createViewHolder, pair.first)
+        //设置进 recycledViewPool 里
+        myRecyclerView.recycledViewPool.putRecycledView(
+            createViewHolder
+        )
+    }
+
+    private fun setViewHolderMaxSize(pair: Pair&lt;Int, Int&gt;, maxSize: Int) {
+        myRecyclerView.recycledViewPool.setMaxRecycledViews(pair.second, maxSize)
+    }</code></pre></div>
+<p>可以这样讲：第一次滑到复杂卡片时，要创建 View、初始化控件，可能一下子做了很多事。提前准备几个，就能把一部分工作挪到前面空闲的时候。之后 RecyclerView 从池里拿 ViewHolder，仍可能重新 bind 数据；省掉创建不代表连绑定都省了。</p>
+<p>这里还提前 bind 了一次，所以可能触发图片请求、监听或埋点。要确认卡片还没显示时不会上报曝光。池子变大也会多占内存。另外，这里的 IdleHandler 仍在主线程执行，任务太长一样会卡住界面。</p>
+<h2 id="binding">05 · 绑定数据时，相同的东西别反复设置</h2>
+<p><code>KnowledgeMarket / 258977d9e4</code>（2023-05-16，“优化首页滑动卡顿”）主要改了每次绑定数据时重复做的事。下面这些改动在当前源码里还能找到：</p>
+<table><thead><tr><th>位置</th><th>之前</th><th>后来怎么改</th></tr></thead><tbody>
+<tr><td>TopListVH.onBindData</td><td>每次绑定都新建 Fresco controller。</td><td>记住 lastImageUrl，URL 变化才重建。</td></tr>
+<tr><td>TopListVH.adjustItemView</td><td>反复 findViewById 找标题、副标题、底部文案等。</td><td>找到子 View 后按位置存起来；alpha 颜色值用 lazy，取过一次就保留。</td></tr>
+<tr><td>FCT01CVHTitleView.setData</td><td>每次 removeAllViews，再逐个 addView。</td><td>先 getChildAt(index) 拿已有的子 View，缺少才创建；部分 dp 转换结果也存起来。</td></tr>
+<tr><td>KmListCommonIconView.setData</td><td>每次都设置 elevation、背景和图片圆角 hierarchy。</td><td>固定样式放在 init 设置；圆角、边框宽度和颜色没变，就不再更新。</td></tr>
+</tbody></table>
+<p>复用 ViewHolder 后，每次出现或数据更新时还是可能执行 bind。如果这里总在新建对象、查找子 View、改样式、增删 View，主线程仍然很忙，还可能触发重新布局和绘制。所以这次优化又把 bind 里面重复的工作减少了一些。60Hz 下，一帧大约只有 16.7ms；120Hz 下约 8.3ms。平均耗时低也不代表不卡，还要看有没有某一帧特别慢。</p>
+<p>少做重复设置时，也要检查显示有没有出错。比如先显示图片 A，再绑定空图片，最后又绑定 A，图片能不能重新显示？复用子 View 后，数据数量变少，多出来的旧 View 会不会还在？主题颜色用 lazy 保存以后，切换日夜模式会不会拿到旧颜色？这些都要验证，不能看到少调用了几个方法就认定没有问题。</p>
+<h2 id="scroll">06 · 用户滑列表时，少做分页和图片加载</h2>
+<p><code>ContentMarketHomeFragment</code> 的 scrollListener 控制了分页请求和图片加载的时机：</p>
+<p class="source-note">源码：<code>yyyyy-cdoe/KnowledgeMarket/kmarket-home/src/main/java/com/zhihu/android/app/market/newhome/ui/fragment/ContentMarketHomeFragment.kt</code> · 147 至 163 行。</p><div class="code-block"><div class="code-toolbar"><span>ContentMarketHomeFragment.kt</span><button type="button" data-copy-code>复制</button></div><pre><code data-source="yyyyy-cdoe/KnowledgeMarket/kmarket-home/src/main/java/com/zhihu/android/app/market/newhome/ui/fragment/ContentMarketHomeFragment.kt" data-lines="147-163">    private val scrollListener = object : RecyclerView.OnScrollListener() {
+        override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
+            val position = (myRecyclerView.layoutManager as LinearLayoutManager)
+                    .findLastCompletelyVisibleItemPosition()
+            //在不滑动列表的情况下在加载网络，避免数据回来了后重新渲染列表和滚动过程中创建和绑定 viewHolder 竞争资源。
+            if (newState == SCROLL_STATE_IDLE &amp;&amp; listAdapter.itemCount - position &lt;= 3) {
+                nativeTabViewModel.loadAfterInfo()
+            }
+            if (Build.VERSION.SDK_INT &lt; Build.VERSION_CODES.Q) {
+                // Android 10 以下系统，列表滑动过程中不加载图片，以减少主线程压力。
+                if (newState == SCROLL_STATE_IDLE) {
+                    Fresco.getImagePipeline().resume()
+                } else {
+                    Fresco.getImagePipeline().pause()
+                }
+            }
+        }</code></pre></div>
+<p>列表停下来、离末尾不超过 3 项时，才请求下一页。这样可以少一些“用户还在滑，接口又回来了，主线程还要更新列表”的情况。Android 10 以下还会在滚动时暂停 Fresco pipeline，停止后再恢复。这个暂停有作用范围：它不会让下载、解码、绘制全部自动变成后台任务，也不保证已经开始的工作立刻停下。</p>
+<p>这样做也可能让用户更晚拿到下一页，尤其是快速滑到底部的时候。Fresco pipeline 可能被其他页面共用，离开当前页面时要检查有没有恢复。验证时既要看滑动有没有掉帧，也要看用户滑到底后是不是等得更久。</p>
+<h3>榜单还调过：甩动、吸附和内外层滑动</h3>
+<p><code>km_home_base / c48734a4</code>（2025-12-17）先让内层 RecyclerView.fling 返回 false，关掉默认的惯性滑动。<code>56f4b9ce</code>（2025-12-25）又改成把速度限制在 ±3000，再调用 super.fling。同时用 PagerSnapHelper 向左侧吸附，开启内层嵌套滚动，并允许用户滑动榜单 ViewPager2。当前代码还把榜单页的 itemAnimator 设为空。</p>
+<p>这组改动主要是在调手感：先试着关掉惯性，后来又恢复惯性并限速，再配合吸附和内外层滑动。列表滑到边界后能不能正确切换，需要真机操作确认。提交叫“滑动优化”，并不直接说明掉帧少了；关掉 fling 也不是所有列表都适合的做法。</p>
+<h2 id="data">07 · 数据提前拿，重复请求少发，缓存看清楚</h2>
+<h3>7.1 数据可以提前请求，页面晚点再显示</h3>
+<p><code>KnowledgeMarket / bc620cc61e</code>（2022-11-20）的提交说明是“会员首页 tab 初始化改为页面展现时，接口请求改为预加载”。当前 <code>MarketHomeMultiTabFragment</code> 会先返回一个简单容器，再用 AsyncLayoutInflater 创建真正的布局。需要操作控件的代码通过 <code>onLazyAsyncReady</code> 等布局准备好再执行；事件订阅绑定 viewLifecycleOwner。</p>
+<p><code>prefetchHomeModulesInfoListData()</code> 在空闲任务里调用 ViewModel 发请求，结果放在 <code>prefetchHomeModules</code>。这样数据可以先准备，UI 另选时机显示。要检查提前请求的数据有没有被用到、什么时候作废、登录态和请求参数有没有变化，以及异步回调回来时还是不是原来的 View。</p>
+<p>VipHome 里还有 <code>MainDelegateAction → FeedRequestAdvanceInterface</code> 这个提前请求推荐数据的入口。它调用的是 Feed 接口；本次没有确认盐言 HomePinTab 是否用了这个入口，所以这里只作为另一个发现记录下来。</p>
+<h3>7.2 短时间重复刷新时，跳过一部分请求</h3>
+<p class="source-note">源码：<code>yyyyy-cdoe/km_home_base/km_home_base/src/main/java/com/zhihu/android/feature/km_home_base/discovery/HomePinTabFragment.kt</code> · 645 至 655 行。</p><div class="code-block"><div class="code-toolbar"><span>HomePinTabFragment.kt</span><button type="button" data-copy-code>复制</button></div><pre><code data-source="yyyyy-cdoe/km_home_base/km_home_base/src/main/java/com/zhihu/android/feature/km_home_base/discovery/HomePinTabFragment.kt" data-lines="645-655">    private fun requestData(scrollToTop: Boolean = false, fromUser: Boolean = false, needFilter: Boolean = false) {
+        val lastFlowType = HomeBaseUtils.getLastFlowType(requireContext())
+        val diff = System.currentTimeMillis() - lastRequestTime
+        // 如果需要过滤请求，距离上次请求之间间隔小于 2s，两次请求的 FlowType 是一致的，可以过滤这个请求
+        // 判断 diff &gt; 0，是避免用户修改系统时间，导致请求不了
+        if (needFilter &amp;&amp; diff &lt; 2000 &amp;&amp; diff &gt; 0 &amp;&amp; lastFlowType == viewModel.getFlowType()) {
+            // 避免短时间内刷新多次
+            HomeBaseLogger.logger.info(&quot;过滤请求 lastRequestTime:$lastRequestTime  diff:$diff&quot;)
+            return
+        }
+        lastRequestTime = System.currentTimeMillis()</code></pre></div>
+<p>过滤请求有三个条件：needFilter 是 true，距离上次请求大于 0 且小于 2000ms，FlowType 也相同。<code>onResume</code> 根据 refreshOnResume / refreshOnResumeFilter 决定要不要过滤。满足条件就跳过这次刷新，少发一次请求、少刷新一次列表。普通用户刷新和强制刷新不一定走这条规则。</p>
+<h3>7.3 有网络缓存，但这里配置的是网络优先</h3>
+<p class="source-note">源码：<code>yyyyy-cdoe/km_home_base/km_home_base/src/main/java/com/zhihu/android/feature/km_home_base/discovery/HomePinTabViewModel.kt</code> · 228 至 233 行。</p><div class="code-block"><div class="code-toolbar"><span>HomePinTabViewModel.kt</span><button type="button" data-copy-code>复制</button></div><pre><code data-source="yyyyy-cdoe/km_home_base/km_home_base/src/main/java/com/zhihu/android/feature/km_home_base/discovery/HomePinTabViewModel.kt" data-lines="228-233">                    .compose(
+                        NetCache.asyncJsonCache(
+                            &quot;getInitDiscoveryTabInfo$channelType&quot;,
+                            KmHomeModulesListBean::class.java
+                        ).netFirst(HomeBaseConstant.newHomeNetworkCacheTime).result()
+                    )</code></pre></div>
+<p>首页刷新用了 <code>NetCache.asyncJsonCache(...).netFirst(...).result()</code>，缓存有效期设为 7 天，上游请求有 10 秒 timeout。从这段调用看，配置的是网络优先。网络失败后会不会用缓存、等多久用、哪些错误能用，还要查 NetCache 实现和日志。所以这段代码只能说明有缓存策略，不能直接讲成“先显示缓存，再请求网络”。</p>
+<h2 id="metrics">08 · 页面快没快，要先把加载时间算清楚</h2>
+<p><code>VipHome / 0c76996a</code>（2026-04-15，“改下启动指标”）改的是怎么统计加载时间：</p>
+<table><thead><tr><th>场景</th><th>怎么改</th><th>为什么这样算</th></tr></thead><tbody>
+<tr><td>MainActivity onPause，或从底部首页切到其他 Tab</td><td>cancel YanHomeLoadProcessFirst / YanHomeLoadProcess，并记录中断点。</td><td>用户已经离开首页，之后等回包的时间就不再算进正常首页加载。取消了多少次也要单独统计，才能看出有没有大量失败或中断。</td></tr>
+<tr><td>冷启动进入广告页</td><td>cancel YanColdLaunchToFeedDone；广告结束进入首页前重新 start。</td><td>广告结束后是重新开始计时，广告前已经花掉的时间也不再累加。它测的是新起点之后的时间，不是从启动总耗时里只减掉广告时长。</td></tr>
+<tr><td>热启动广告</td><td>isHotLaunch 分支不执行上述重启逻辑。</td><td>冷启动与热启动分开看。</td></tr>
+</tbody></table>
+<p class="source-note">源码：<code>yyyyy-cdoe/VipHome/home/src/main/java/com/zhihu/android/app/ui/activity/LauncherAdActivity.java</code> · 114 至 132 行。</p><div class="code-block"><div class="code-toolbar"><span>LauncherAdActivity.java</span><button type="button" data-copy-code>复制</button></div><pre><code data-source="yyyyy-cdoe/VipHome/home/src/main/java/com/zhihu/android/app/ui/activity/LauncherAdActivity.java" data-lines="114-132">
+    private void pauseLaunchApmForColdLaunchAd() {
+        if (isHotLaunch || launchApmRestartPending) {
+            return;
+        }
+        DroidAPM.getInstance().processTrackBreak(LauncherActivity.APP_START_APM_KEY, &quot;LauncherAdOnCreate&quot;);
+        DroidAPM.getInstance().processTrackCancel(LauncherActivity.APP_START_APM_KEY);
+        launchApmRestartPending = true;
+    }
+
+    private void resumeLaunchApmAfterColdLaunchAd() {
+        if (isHotLaunch || !launchApmRestartPending) {
+            return;
+        }
+        DroidAPM.getInstance().processTrackStart(LauncherActivity.APP_START_APM_KEY);
+        DroidAPM.getInstance().processTrackBreak(LauncherActivity.APP_START_APM_KEY, &quot;LauncherAdFinished&quot;);
+        launchApmRestartPending = false;
+    }
+</code></pre></div>
+<p>计时在哪里结束也要说清楚。当前 <code>HomePinTabViewModel.onRefresh()</code> 拿到 Response、判断成功后，就调用 <code>tryNotFirstApmEnd</code> / <code>tryFirstApmEnd</code>。<code>HomeBaseUtils</code> 随后结束冷启动到 FeedDone 的计时。到这里说明数据源拿到了结果，页面像素是否已经画出来、图片是否加载完，还没有被这个结束点确认。</p>
+<p>举个只用于解释的例子：原来统计是 2 秒，换了计时范围后变成 0.8 秒，用户实际上可能一样等了那么久。此时数字变小是因为少算了某些阶段，不能说成“提速 60%”。</p>
+<p>如果要验证真实体验，建议保留“点击图标到首屏可见”的总时间，再分别看 Application、Launcher / 广告、首页请求、绑定数据和首屏绘制花了多久。比较时把冷 / 热启动、有 / 无广告、缓存命中、设备档位和网络条件分开。除了 P50 / P90 / P95，也记录取消和失败的比例，前后都用同样的计时方法。</p>
+<h2 id="webview">09 · WebView 预加载：写了代码，效果还没确认</h2>
+<p>这部分从 <code>HomePinTabViewModel.preloadWebView</code> 开始：根据 hybrid_preload_config 查金刚位里配置的 title，给对应 URL 加 enableCache=true，再更新 preLoadWebView 状态。<code>HomePinTabFragment</code> 收到后调用 WebViewPreloadHelper.startPreload。</p>
+<p class="source-note">源码：<code>yyyyy-cdoe/km_home_base/km_home_base/src/main/java/com/zhihu/android/feature/km_home_base/hybrid/WebViewPreloadHelper.kt</code> · 43 至 51 行。</p><div class="code-block"><div class="code-toolbar"><span>WebViewPreloadHelper.kt</span><button type="button" data-copy-code>复制</button></div><pre><code data-source="yyyyy-cdoe/km_home_base/km_home_base/src/main/java/com/zhihu/android/feature/km_home_base/hybrid/WebViewPreloadHelper.kt" data-lines="43-51">        val fragment = WebViewContainerFragment.newInstance(url)
+        fragmentCache[url] = fragment
+        fragmentManager.beginTransaction()
+            .add(container.id, fragment)
+            .commit()
+        fragmentManager.beginTransaction()
+            .remove(fragment)
+            .commit()
+        fragment.cleanupContainerReference()</code></pre></div>
+<p>Helper 按 URL 保存 WebViewContainerFragment，然后连续提交 add / remove 事务。这里有个需要注意的地方：<code>WebViewContainerFragment.isWebViewLoaded()</code> 只检查 <code>webViewFragment2 != null</code>，而这个对象在成员初始化时就创建了。对象存在，并不能说明网页已经加载完；它也没有等 onPageFinished。add / remove 事务是异步执行的，只看提交顺序还无法确认网页真正开始加载了。</p>
+<p>这次也没有找到足够证据，确认目标页面怎样取出这个缓存 Fragment、实际用了多少次、网页何时加载完成。面试时可以按尝试来讲：“在首页入口做过 WebView 预加载，但加载完成的判断和生命周期还需要验证。”它想改善的是从首页点进去后的等待时间；提前做这件事，也可能让首页自己更忙。当前不能据此说“榜单页秒开”或“首页首屏一定更快”。</p>
+<h2 id="questions">10 · 常见追问与结果怎么讲</h2>
+<h3>为什么不用全部异步化？</h3><p>不少 View 操作要在主线程做，异步创建布局也要看控件是否支持。首屏马上要用的东西，不能一直往后拖。可以先判断这件事有没有必要、是不是重复做、首屏要不要马上用，再决定删掉、缓存、放后台计算，还是晚一点执行。</p>
+<h3>IdleHandler 和 postDelayed 区别是什么？</h3><p>IdleHandler 是等消息队列空闲时执行；postDelayed 是等延迟到期后再排队。它们都不保证到点立刻执行，也不会自动切到后台线程。放进去的任务要小，页面不用了能取消，准备好的缓存拿不到时也要能正常创建。</p>
+<h3>缓存多一点是不是更快？</h3><p>缓存会多占内存，也可能增加 GC，所以要看准备的东西有多少次真的被用到。项目里 Hybrid 只准备 1 个，两种复杂布局各 2 个，部分 Holder 池容量是 10。合适的数量要结合设备和卡片类型来测，也要检查创建耗时和页面销毁后能不能释放。</p>
+<h3>你怎么确认性能变好了？</h3><p>本文没有实测结果。实际做的时候，可以用 Perfetto / 主线程 trace 看 inflate、bind、布局和长任务分别花了多久，再重复同样的场景比较。除了首页出现的时间和掉帧，也看滑到底要等多久、最高内存占用和提前准备的缓存有多少次被用到。最后用线上分组数据核对。讲结果时要分清：只是晚点做了，确实少做了，还是仅仅换了统计范围。</p>
+<h3>用 STAR 讲自己做过的部分</h3>
+<p>S 可以说首页里卡片类型多，启动和滚动时容易集中创建、重复绑定，加载时间也曾有统计不一致的问题。T 说你实际负责哪一段，比如榜单卡片或启动统计。A 从本文选 2～3 个你做过的改动，讲清楚改前和改后，以及有什么副作用。R 填真实验证结果：哪台设备、哪个包、什么场景、测了多少次、怎么计时、改前和改后分别是多少。没有数值时，就讲实际验证过的行为，不编百分比。</p>
+<p>如果只剩两分钟准备，先看第 1 节的口述稿，再选重复绑定、提前准备 ViewHolder、加载计时这三个例子。延迟注册 Observer 那部分来自历史分支；你确实参与过，或者明确是在讨论历史方案时，再拿来讲。</p>
+<h2 id="evidence">11 · 源码和提交记录</h2>
+<p>文中的源码摘录来自这次检查的工作树。历史改动可以用 <code>git -C 仓库路径 show 提交号</code> 回看；历史文件的位置可能和现在不同。</p>
+<table><thead><tr><th>仓库</th><th>提交</th><th>具体尝试</th></tr></thead><tbody>
+<tr><td>VipHome</td><td>3fe20c10 · 2024-03-20</td><td>跳过无用启动布局、调整提前创建的布局、注释补丁调用。</td></tr>
+<tr><td>VipHome</td><td>0c76996a · 2026-04-15</td><td>广告阶段重启计时、切走首页取消加载统计。</td></tr>
+<tr><td>KnowledgeMarket</td><td>47629ee019 · 2022-10-13</td><td>HybridCard 预加载、复杂布局异步创建。</td></tr>
+<tr><td>KnowledgeMarket</td><td>bc620cc61e · 2022-11-20</td><td>首页显示时再初始化 UI，接口可以提前请求。</td></tr>
+<tr><td>KnowledgeMarket</td><td>258977d9e4 · 2023-05-16</td><td>相同图片不重建 controller、复用子 View、相同样式不重复设置。</td></tr>
+<tr><td>km_home_base 历史分支</td><td>ae4358ac · 作者日期 2025-10-13</td><td>用 vip_home_tab_improve 控制 Observer 延迟注册；当前 HEAD 不包含。</td></tr>
+<tr><td>km_home_base</td><td>c48734a4 / 56f4b9ce · 2025-12</td><td>榜单先试过关掉 fling，后来改为限速，并调整吸附和嵌套滚动。</td></tr>
+</tbody></table>
+<p>更多源码入口：</p><ul>
+<li><code>yyyyy-cdoe/VipHome/home/src/main/java/com/zhihu/android/app/ui/activity/LauncherActivity.java</code>：启动页布局与结束状态判断。</li>
+<li><code>yyyyy-cdoe/KnowledgeMarket/kmarket-home/src/main/java/com/zhihu/android/app/market/newhome/ui/sugarholder/TopListVH.kt</code>：图片 URL 去重与子 View 缓存。</li>
+<li><code>yyyyy-cdoe/KnowledgeMarket/kmarket-home/src/main/java/com/zhihu/android/app/market/newhome/ui/view/FCT01CVHTitleView.kt</code>：已有子 View 复用。</li>
+<li><code>yyyyy-cdoe/KnowledgeMarket/kmarket-home/src/main/java/com/zhihu/android/app/market/newhome/ui/view/KmListCommonIconView.kt</code>：圆角和边框参数去重。</li>
+<li><code>yyyyy-cdoe/km_home_base/km_home_base/src/main/java/com/zhihu/android/feature/km_home_base/utils/HomeBaseUtils.kt</code>：当前 APM end 路径。</li>
+</ul><p><a href="index.html#interview">返回项目面试目录</a> · <a href="android-handler-looper-guide.html">补充 Handler / IdleHandler 原理</a> · <a href="android-lifecycle-process-death-guide.html">补充 Fragment / View 生命周期</a></p>
+</article>
+<aside class="toc" aria-label="本页目录"><div class="toc-title">本页目录</div><a class="toc-link level-2" href="#spoken">01 · 面试先记这六点</a><a class="toc-link level-2" href="#scope">02 · 查了哪些代码，哪些结论还没确认</a><a class="toc-link level-2" href="#startup">03 · 启动：少做无用的事，不着急的晚点做</a><a class="toc-link level-2" href="#precreate">04 · 复杂卡片提前准备，用的时候直接拿</a><a class="toc-link level-2" href="#binding">05 · 绑定数据时，相同的东西别反复设置</a><a class="toc-link level-2" href="#scroll">06 · 用户滑列表时，少做分页和图片加载</a><a class="toc-link level-2" href="#data">07 · 数据提前拿，重复请求少发，缓存看清楚</a><a class="toc-link level-2" href="#metrics">08 · 页面快没快，要先把加载时间算清楚</a><a class="toc-link level-2" href="#webview">09 · WebView 预加载：写了代码，效果还没确认</a><a class="toc-link level-2" href="#questions">10 · 常见追问与结果怎么讲</a><a class="toc-link level-2" href="#evidence">11 · 源码和提交记录</a><a class="back-to-top" href="#">↑ 返回顶部</a></aside></div></main></div><script src="assets/search-data.js"></script><script src="assets/docs.js"></script></body></html>

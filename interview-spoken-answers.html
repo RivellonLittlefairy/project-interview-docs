@@ -31,10 +31,10 @@
   </header>
   <div class="drawer-backdrop" data-drawer-backdrop hidden></div>
   <div class="docs-layout">
-<nav class="sidebar" data-sidebar aria-label="口述速记导航"><div class="sidebar-heading">面试口述速记</div><a class="nav-link" href="index.html#start">返回开始复习</a><a class="nav-link" href="#handler">01 · Handler 是什么？</a><a class="nav-link" href="#lifecycle">02 · Android 生命周期</a><a class="nav-link" href="#activity-switch">03 · Activity 跳转时序</a><a class="nav-link" href="android-handler-looper-guide.html">Handler 原理详解</a></nav>
+<nav class="sidebar" data-sidebar aria-label="口述速记导航"><div class="sidebar-heading">面试口述速记</div><a class="nav-link" href="index.html#start">返回开始复习</a><a class="nav-link" href="#handler">01 · Handler 是什么？</a><a class="nav-link" href="#lifecycle">02 · Android 生命周期</a><a class="nav-link" href="#activity-switch">03 · Activity 跳转时序</a><a class="nav-link" href="#coroutines-basics">04 · 基础与任务管理</a><a class="nav-link" href="#coroutines-cancel-errors">05 · 取消与失败处理</a><a class="nav-link" href="#coroutines-flow">06 · Flow 与界面</a><a class="nav-link" href="#coroutines-projects">07 · 项目怎么讲</a><a class="nav-link" href="#mvi">08 · MVI 面试问答</a><a class="nav-link" href="#threads-vs-coroutines">09 · 线程与协程对比</a><a class="nav-link" href="#binder">10 · Binder 七题</a><a class="nav-link" href="android-handler-looper-guide.html">Handler 原理详解</a></nav>
 <main class="article-shell" id="main-content"><div class="breadcrumbs"><a href="index.html">首页</a><span>/</span><span>面试口述速记</span></div><div class="article-grid"><article class="markdown-body">
 <h1>面试口述速记</h1>
-<p>每题保留一段适合当面说的简短回答。先试着自己回答，再对照补漏；遇到不理解的细节，进入对应的原理文档。当前收录 Handler、Android 生命周期和 Activity 跳转时序，后续随模拟面试逐题积累。</p>
+<p>每题保留一段适合当面说的简短回答。先试着自己回答，再对照补漏；遇到不理解的细节，进入对应的原理文档。当前收录 Handler、Android 生命周期、Activity 跳转时序、协程与 Flow 的 8 组问答，以及 MVI 的 6 组问答，并单列线程与协程对比、Binder 的 7 道核心问答。先练口述回答，被追问时再展开。</p>
 <h2 id="handler">01 · Handler 是什么，用来干什么？</h2>
 <p><strong>面试官：</strong>介绍一下 Handler，它是用来解决什么问题的？</p>
 <h3>30～60 秒回答</h3>
@@ -73,5 +73,416 @@
 <h3>记忆提示</h3><p>去：A 暂停 → B 创建、启动、恢复 → A 停止。回：B 暂停 → A 重启、启动、恢复 → B 停止、销毁。</p>
 <p>不要说成“A 完全停止，B 才开始创建”。A 的 onPause 应保持轻量，否则会拖慢普通页面切换。</p>
 <p><a href="android-lifecycle-process-death-guide.html#activity-switch">查看完整时序、例外与官方 / AOSP 源码依据</a></p>
-<footer class="article-footer">口述内容整理：2026-10-07。项目例子的具体调用链与源码快照见详细文章。</footer>
-</article><aside class="page-toc" aria-label="本页目录"><div class="toc-heading">本页目录</div><a class="toc-link level-2" href="#handler">01 · Handler 是什么？</a><a class="toc-link level-2" href="#lifecycle">02 · Android 生命周期</a><a class="toc-link level-2" href="#activity-switch">03 · Activity 跳转时序</a><a class="back-to-top" href="#">↑ 返回顶部</a></aside></div></main></div><script src="assets/search-data.js"></script><script src="assets/docs.js"></script></body></html>
+<h2 id="coroutines-basics">04 · 协程：基础与任务管理</h2>
+<p>把原先的 20 道拆分题合成下面 8 组。先练习每组引用框里的回答，追问部分按需要看，不必把每个 API 单独背成一道题。问法参考公开面试题单，代表常见准备方向，不是面试频率统计。</p>
+
+<h3 id="coroutine-definition">1 · 说说你对协程的理解，挂起和阻塞有什么区别？</h3>
+<blockquote><p>协程让异步任务可以按顺序写，减少回调嵌套。比如请求数据、处理结果、更新界面，代码看起来是顺序的；请求没返回时，这个协程不会执行后面的代码，但可以挂起，让线程去处理其他任务。阻塞则会占住线程，让它无法继续处理其他工作。</p><p>协程仍然在线程上执行，启动协程不等于新建线程。suspend 表示函数允许挂起，不会自动切到后台；在里面写耗时计算或 Thread.sleep，照样可能卡主线程。</p></blockquote>
+<details><summary>追问：没有回调，怎么恢复到原来的位置？</summary><p>我们没直接写回调，编译器会把挂起代码转换为状态机，通过 Continuation 保存恢复所需的状态。异步结果到达后，再继续执行后面的代码。挂起函数也可能直接返回，比如命中缓存，并非每次都会暂停。</p></details>
+
+<h3 id="coroutine-launch-async">2 · launch、async、withContext 怎么选？两个请求怎么并发？</h3>
+<blockquote><p>launch 启动任务，返回 Job，用来管理和取消；async 返回 Deferred，可以通过 await 拿到结果；withContext 用于在指定上下文执行一段代码，等它结束后拿到结果，再回到外层上下文继续。</p><p>两个互相独立的请求，可以先分别 async 启动，再 await 结果；如果启动一个就立刻 await，等它结束才启动第二个，还是串行。调度器方面，Main 做 UI 操作，IO 做阻塞式读写，Default 做耗时计算。</p></blockquote>
+<details><summary>追问：网络请求一定要包 withContext(IO) 吗？</summary><p>先看请求实现。如果网络库已经异步执行，协程只是在等待结果，调用方不用为了“网络请求”再套 IO。如果里面执行的是阻塞式请求，就需要安排到合适的后台调度器。async 默认继承外层上下文，也不会自动切到 IO。</p></details>
+
+<h3 id="coroutine-structured">3 · 什么是结构化并发？Android 中怎么管理协程的生命周期？</h3>
+<blockquote><p>结构化并发是把相关任务放进明确的作用域，形成父子关系。父任务要等子任务都结束才算完成；取消父任务时，也会向子任务发出取消请求，这样任务就有统一的归属和清理时机。</p><p>Android 中，页面数据任务通常放在 viewModelScope，ViewModel 清理时取消；界面任务可以放在 lifecycleScope，对应生命周期销毁时取消。Fragment 更新 View 时用 viewLifecycleOwner.lifecycleScope，因为 View 可能比 Fragment 更早销毁。</p></blockquote>
+<details><summary>追问：页面退到后台，lifecycleScope 就会取消吗？</summary><p>不会，它默认在 DESTROYED 时取消。只希望可见时收集数据，要再配合 repeatOnLifecycle。viewModelScope 的结束时机也取决于 ViewModel 的归属；Activity 级 ViewModel 不会因为某个 Fragment 退出就清理。</p></details>
+
+<h2 id="coroutines-cancel-errors">05 · 协程：取消与失败处理</h2>
+
+<h3 id="coroutine-cancel">4 · 调用 cancel 后会立即停止吗？取消时需要注意什么？</h3>
+<blockquote><p>不保证立即停止。取消是协作式的，cancel 发出取消请求，任务要执行到支持取消的地方才会响应。delay 等挂起函数支持取消，长时间计算的循环则需要用 ensureActive 或 isActive 主动检查。</p><p>另外，catch Exception 时要注意把 CancellationException 重新抛出，避免把取消当作业务错误，继续执行后面的普通代码。资源释放一般放在 finally 中。</p></blockquote>
+<p>容易混淆：绑定生命周期解决“什么时候取消”，不能让不配合取消的计算自动停下；也不是等线程让出 CPU 就会取消。</p>
+
+<h3 id="coroutine-supervision">5 · 一个子协程失败，会影响其他任务吗？两个请求如何互不影响？</h3>
+<blockquote><p>普通父子关系下，一个子协程发生未处理的非取消异常，会使父任务取消，进而影响其他子任务。如果两个区域可以独立展示，可以用 supervisorScope 组织它们，让一个直接子任务失败时不自动取消兄弟任务，并在各自任务里处理业务异常，转换成对应的错误状态。</p><p>supervisorScope 不会自动处理异常；父任务取消时，子任务仍会取消。取消异常也应该继续抛出。</p></blockquote>
+<details><summary>追问：try-catch 和 CoroutineExceptionHandler 怎么用？</summary><p>通常在协程内部用 try-catch 处理可恢复的业务错误；在 launch 调用外面包一层，抓不到它之后异步执行的异常。async 的异常会从 await 抛出，但普通父子关系下，失败也会向父级传播，不能说“不 await 就不影响别人”。CoroutineExceptionHandler 用于未捕获异常的记录和报告，不能让失败的协程继续运行。</p></details>
+
+<h2 id="coroutines-flow">06 · Flow：状态与界面</h2>
+
+<h3 id="flow-types">6 · Flow、StateFlow、SharedFlow 有什么区别？项目里怎么选？</h3>
+<blockquote><p>flow 构建的普通冷流，在收集时执行生产逻辑，每次收集可以独立执行。StateFlow 和 SharedFlow 是热流，多个收集者共享数据，但热流不代表它会自动不停地产生数据。</p><p>页面当前状态通常用 StateFlow：它需要初始值、保存最新值，新收集者能拿到当前状态，相等的值不会重复通知。SharedFlow 可以配置重放和缓冲，适合按需求广播数据或事件；如果 replay 为零，没有收集者时发出的事件不会留给后来者。</p></blockquote>
+<details><summary>追问：StateFlow 怎么暴露和更新？stateIn 是什么？</summary><p>用 Backing Property：内部持有 private MutableStateFlow，对外通过 asStateFlow 暴露只读 StateFlow。根据旧值计算新值时用 update，避免并发读改写丢失更新；update 中只计算新状态。stateIn 可以把流共享为 StateFlow，shareIn 则共享为 SharedFlow。</p><p>Flow 本身是接口，不能只看到声明类型是 Flow 就断定它是冷流；这里只是在对比常用的 flow 构建器和两种热流。</p></details>
+
+<h3 id="flow-repeat-lifecycle">7 · Fragment 怎么收集 Flow？切到后台再回来会怎样？</h3>
+<blockquote><p>更新 Fragment 界面时，我会在 viewLifecycleOwner.lifecycleScope 中配合 repeatOnLifecycle(STARTED) 收集。页面低于 STARTED 时取消这段收集，再次达到 STARTED 时重新启动，View 销毁时外层任务也结束。多个持续更新的 Flow 要分别放进 launch 收集，避免第一个 collect 不结束，后面的执行不到。</p><p>回来后如果收集 StateFlow，会拿到当前状态；如果是 flow 构建的冷流，会重新执行生产逻辑，并不是自动重放之前所有数据。页面停止收集，也不能直接推断后台播放器会停止，生产任务的生命周期需要单独看。</p></blockquote>
+<details><summary>追问：和 LiveData 有什么区别？</summary><p>LiveData 使用 LifecycleOwner 观察时，只有在 STARTED 或 RESUMED 状态才通知观察者，销毁时移除观察。Flow 的普通 collect 不会自动感知 Android 页面是否可见，所以界面收集需要自己配合生命周期。</p></details>
+
+<h2 id="coroutines-projects">07 · 项目：选一个例子讲清楚</h2>
+
+<h3 id="coroutine-project-example">8 · 你在项目里怎么用协程和 Flow？解决了什么问题？</h3>
+<blockquote><p>我看过项目音频推荐列表的实现：ViewModel 用 viewModelScope.launch 发起任务，仓库层沿用 RxJava 请求，通过 awaitFirst 把第一个结果接成挂起函数的返回值。业务层就能按“请求推荐数据，再更新列表”的顺序写，减少回调嵌套；等待结果时协程挂起，不需要让主线程阻塞等待。</p></blockquote>
+<p>这段按“读过源码”来写。如果确实参与过，再换成自己的职责和实际改动。awaitFirst 只取首个值，不适合用来持续观察播放进度。</p>
+<details><summary>如果面试官问 Flow 的项目应用：文稿目录的 combine</summary><p>文稿目录把分页数据与点赞、加入书架状态 combine 起来。任一来源更新后，用各方最新值生成展示数据，所以点赞成功后更新状态，就能改变对应展示，不必仅为了点赞显示再请求一次目录。被追问 zip 时，再说明它按顺序一一配对，和 combine 用最新值组合不同。</p></details>
+<details><summary>源码核对位置</summary><ul>
+<li>音频：<code>yyyyy-cdoe/VipKmAudio/kmaudio/src/main/java/com/zhihu/android/kmaudio/player/audio/viewmodel/AudioPlayViewModel.kt</code> 的 fetchCatalog、getRecommendMenu；同模块 <code>data/datasource/GlobalAudioRepository.kt</code> 的 requestRecommendMenu。实际代码含宽泛异常捕获，不能直接照搬成取消处理的推荐模板。</li>
+<li>文稿：<code>yyyyy-cdoe/VipManuscript/vip_manuscript/src/main/java/com/zhihu/android/vip/manuscript/manuscript/catalog/ManuscriptBillboardViewModel.kt</code> 的 init、voteUp、addToShelf。</li>
+</ul></details>
+<p>准备顺序：先能说清前 3 题，再补取消和异常，最后讲 Flow 与自己的项目。flowOn、collectLatest、conflate、retry 等操作符不再各占一题，用到或被追问时再展开。</p>
+<details><summary>参考题单与官方依据（2026-10-16 核对）</summary>
+<p>公开题单用于归并面试问法，技术结论以官方文档为依据。这些资料不能证明某家公司一定会问，也不能当作频率排名。</p>
+<ul>
+<li><a href="https://devanddroid.com/2024/11/08/android-interview-questions-part-5-kotlin-coroutines/">公开题单：Android Interview Questions — Kotlin Coroutines</a></li>
+<li><a href="https://github.com/amangarg95/kotlin-coroutines-interview-questions">公开题单：Kotlin Coroutines Interview Questions</a></li>
+<li><a href="https://kotlinlang.org/docs/coroutines-basics.html">Kotlin 官方：协程基础</a> · <a href="https://kotlinlang.org/docs/cancellation-and-timeouts.html">取消</a> · <a href="https://kotlinlang.org/docs/exception-handling.html">异常处理</a></li>
+<li><a href="https://developer.android.com/topic/libraries/architecture/coroutines">Android 官方：生命周期与协程</a> · <a href="https://developer.android.com/kotlin/flow/stateflow-and-sharedflow">StateFlow 与 SharedFlow</a></li>
+</ul></details>
+<h2 id="mvi">08 · MVI：6 组面试问答</h2>
+<p>把架构定义、取舍和实际使用合在这 6 组里。先练引用框中的回答，再看折叠追问。优先讲清修改路径和状态一致性，不必背框架术语。</p>
+
+<h3 id="mvi-data-flow">1 · 什么是 MVI？单向数据流是什么意思？</h3>
+<blockquote><p>MVI 是 Model、View、Intent，强调单向数据流和明确的页面状态。View 提交用户操作，状态持有者处理业务并生成新状态，View 根据状态渲染。Android 中通常由 ViewModel 承担状态管理；Intent 表达操作意图，Reducer 根据旧状态和事件计算新状态，网络请求在 Reducer 外执行。</p><p>Fragment 仍然负责操作 View。对于 State 管理的界面，应先更新状态再渲染，避免一边订阅状态、一边在回调里独立修改同一份显示结果。按压效果、动画过程等局部 UI 细节可以留在界面层。</p></blockquote>
+<details><summary>追问：项目没有 Intent 类、Reducer 类，也算采用了 MVI 思路吗？</summary><p>普通方法可以承接操作，<code>setState { copy(...) }</code> 中的 Lambda 可以承担状态转换。首页基于 Mavericks：Fragment 调用 <code>refresh()</code> 等方法，ViewModel 通过 <code>setState</code>、<code>setOnEach</code> 更新状态，Fragment 通过字段订阅渲染。项目没有统一 Intent 分发和完整 Effect 通道，部分事件仍直接修改 View，描述时应说清这些实际边界。</p><p>源码：<code>yyyyy-cdoe/km_home_base/km_home_base/src/main/java/com/zhihu/android/feature/km_home_base/discovery/HomePinTabViewModel.kt</code> 的 refresh、初始化分页流和 hideTimeRewardEntry；同目录 <code>HomePinTabFragment.kt</code> 的字段订阅、发布事件处理。源码说明实现方式，个人负责范围按真实经历表述。</p></details>
+
+<h3 id="mvi-vs-mvvm">2 · MVVM 已经能用，为什么考虑 MVI？改善了什么，代价是什么？</h3>
+<blockquote><p>复杂页面长期迭代后，状态更新可能散落在多个回调中，相关字段也可能由多个 LiveData 分别管理。MVI 通过只读状态、明确的操作输入和状态转换规则，让修改路径更容易追踪；统一 UiState 可以一次提交列表、加载和错误等相关变化，减少页面收到部分更新的中间状态。</p><p>代价是增加状态建模和流程代码，一次性事件、并发请求及生命周期仍要额外设计。简单页面用清晰的 MVVM 就可以；MVVM 也能采用统一状态和单向数据流，LiveData 同样可以承载 UiState。</p></blockquote>
+<details><summary>追问：MVI 怎样减少“修改入口过多”的问题？</summary><p>业务触发点不会减少。发布成功、用户关闭、刷新完成仍然存在，但它们只提交发生的操作，由明确的状态拥有者处理；外部通过 Backing Property 读取状态，不能任意写入。同一份状态的转换规则集中后，排查时可以追踪“哪个操作产生了这个状态”。如果只是套一个 onIntent，再把赋值散到各处，维护问题仍然存在；操作和状态日志也需要主动实现。</p></details>
+<details><summary>追问：多个 LiveData 收成 UiState，还有哪些具体优势？</summary><p>列表、加载和错误分别 setValue 时，观察者可能在后续字段还没更新前就执行；不一定出现屏幕闪烁，但逻辑已可能读到混合状态。一次生成完整 UiState 可以减少这种问题。它也便于记录前后状态、测试转换结果，以及 View 重建后重新渲染。前提是状态内容和转换规则设计正确，不能只把几个字段装进 data class 就认为问题解决了。</p></details>
+
+<h3 id="mvi-state-design">3 · 页面 State 怎么设计？一个 State 会不会太大？</h3>
+<blockquote><p>我会先区分互斥情况和可以共存的情况。首次加载、空页面、首次错误页可以用密封类型表达，避免多个布尔值产生矛盾。已有列表时刷新，则保留列表，再组合刷新状态；刷新失败也可以保留旧数据。复杂页面按功能拆成子状态，不必把所有字段平铺在一个类里。</p><p>State 保存渲染需要的数据，Binding、View、Job 等执行对象放在各自的管理位置。更新时尽量生成新状态，避免原地修改共享的可变对象；copy 是浅拷贝，val 和只读 List 接口也不保证深度不可变。</p></blockquote>
+<details><summary>追问：有 UiState 就能自动恢复页面吗？</summary><p>ViewModel 还在时，新 View 可以根据当前 UiState 恢复显示。配置变化通常可以保留对应 ViewModel，但进程死亡后内存中的 StateFlow 和 ViewModel 都不在了。页面参数可按需要交给 SavedStateHandle，重要业务数据持久化，再重新加载；UiState 本身不提供自动持久化。</p></details>
+
+<h3 id="mvi-field-subscription">4 · State 只改播放进度，会让整个列表也刷新吗？</h3>
+<blockquote><p>State 变化不等于整个 View 树必然重绘，实际执行多少更新取决于订阅和渲染代码。我会按区域提取需要的字段，再去重，例如 map 取出 items，distinctUntilChanged 比较列表是否变化。这样播放进度变化时，列表分支不必再次提交相同数据。</p><p>map 只转换数据，每次输入仍会产生输出；StateFlow 自带的去重比较完整 State，不能替代取字段之后的去重。列表和元素也要避免原地修改，否则相等性判断可能检测不到变化。</p></blockquote>
+<details><summary>追问：具体怎么写？首页是否已经这样做？</summary>
+<p>下面是教学写法，在 Fragment 的 onViewCreated 中收集。多个持续收集分支分别启动协程：</p>
+<pre><code class="language-kotlin">viewLifecycleOwner.lifecycleScope.launch {
+    viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+        launch {
+            viewModel.state
+                .map { it.items }
+                .distinctUntilChanged()
+                .collect { adapter.submitList(it) }
+        }
+        launch {
+            viewModel.state
+                .map { it.playProgress }
+                .distinctUntilChanged()
+                .collect { binding.progressBar.progress = it }
+        }
+    }
+}</code></pre>
+<p>首页实际使用 <code>viewModel.onEach(PinTabState::mealAllowanceFloatIcon)</code> 和 <code>collectFrom(viewModel, PinTabState::data)</code>。前者是 Mavericks 的字段订阅 API，后者在项目 <code>yyyyy-cdoe/DevKit/devkit/src/main/java/com/zhihu/android/devkit/mvx/MvxView.kt</code> 中包装同一机制。DevKit 声明的 Mavericks 3.0.6 内部使用 map 和 distinctUntilChanged。默认 RedeliverOnStart 还会在生命周期恢复时重新交付，不能说字段不变就永远不再回调。</p><p>LiveData 也能用 map、distinctUntilChanged 转换，再通过 observe(viewLifecycleOwner) 观察；它们是 AndroidX LiveData 扩展，和 Flow 的同名操作属于不同 API。</p>
+</details>
+
+<h3 id="mvi-ui-effects">5 · Toast、跳转要放进 State 吗？如何避免重复消费？</h3>
+<blockquote><p>列表、加载和错误占位图属于可以重复渲染的状态。Toast、跳转等动作如果每次渲染都执行，重新收集或其他字段变化时可能再次触发。我会先确定页面离开时能否丢弃、回来是否要补、重复收到怎么办，再选择事件通道或在状态中记录待处理事项。</p><p>SharedFlow 的 replay 为零时，没有订阅者期间发出的事件会丢失；设置 replay 又可能重放旧事件。Channel 可以按配置排队，但也不自动保证恰好执行一次。重要事项可以保留待处理状态，处理后确认清除，并按需要做幂等和持久化。</p></blockquote>
+<details><summary>追问：点击按钮后直接在 Fragment 跳转不行吗？</summary><p>纯导航可以由 UI 处理，不必为了形式经过 ViewModel。需要业务判断或等待请求结果时，再通过明确的状态或事件交付结果。State 管理的显隐不能又由别的回调独立决定。Effect 在不同框架中含义也不同，网络和数据库操作也属于广义副作用，不要把所有 Effect 都等同于一次性 UI 事件。</p></details>
+
+<h3 id="mvi-request-races">6 · MVI 能避免请求竞态吗？Reducer 为什么要保持纯函数？</h3>
+<blockquote><p>不能自动避免。切换分类时，旧请求可能比新请求更晚返回，仍然覆盖最新列表。需要按业务选择取消旧任务、校验请求标识后丢弃旧结果、忽略重复操作或排队处理。即使 Reducer 串行执行，也可能按返回顺序处理了过期结果。</p><p>Reducer 通常只计算新状态，相同输入得到相同输出，便于测试和追踪。网络请求、日志上报等操作放在外部。MutableStateFlow.update 保证状态更新的原子性，但不会判断请求是否过期，而且转换函数可能重试，所以里面不应执行有副作用的操作。</p></blockquote>
+<details><summary>追问：取消旧请求、校验请求标识，需要注意什么？</summary><p>取消是协作式的，要确认异步适配层支持取消，并重新抛出 CancellationException。用请求标识过滤旧结果时，校验和提交状态应在同一受控执行环境或原子更新中完成，避免检查之后又被新请求插入。具体策略取决于业务：搜索通常以最新输入为准，加载更多通常避免同一页重复请求。</p></details>
+
+<details><summary>MVI 参考题单与实现依据</summary><p>问法来自此前核对的公开面经和备考整理，按本轮学习合并；不代表公司固定题库或面试频率。示例中的 onAction、UiState 是教学设计，首页真实实现以源码说明为准。</p><ul>
+<li><a href="https://blog.nowcoder.net/n/ccd716b4555249ae8cf6ba15941ee3b0">2022 年牛客面经</a>：包含架构区别、使用 MVVM 遇到的问题等问法，没有单独列出 MVI 专题。</li>
+<li><a href="https://devanddroid.com/2024/11/12/android-interview-questions-part-8-android-architecture/">Android 架构题集</a> · <a href="https://medium.com/@sharmapraveen91/android-mvi-interview-questions-98fafcb4fc12">MVI 备考题集</a>：用于归并架构选择、状态、事件与性能问题，答案需结合具体 API 的边界理解。</li>
+<li><a href="https://developer.android.com/topic/architecture/ui-layer">Android 官方：UI 层与单向数据流</a> · <a href="https://developer.android.com/topic/architecture/ui-layer/events">UI 事件处理</a> · <a href="https://developer.android.com/kotlin/flow/stateflow-and-sharedflow">StateFlow 与 SharedFlow</a></li>
+<li><a href="https://github.com/airbnb/mavericks/blob/v3.0.6/mvrx/src/main/kotlin/com/airbnb/mvrx/MavericksViewModelExtensions.kt">Mavericks 3.0.6：字段订阅中的 map 与去重</a> · <a href="https://github.com/airbnb/mavericks/blob/v3.0.6/mvrx/src/main/kotlin/com/airbnb/mvrx/MavericksView.kt">生命周期交付策略</a></li>
+</ul></details>
+<h2 id="threads-vs-coroutines">09 · 多线程与 Kotlin 协程有什么区别？</h2>
+<p><strong>面试官：</strong>线程和协程有什么区别？Android 中为什么使用协程？先说明两者关系，再从等待方式、开销和任务管理展开。</p>
+<h3>约 1 分钟回答</h3>
+<blockquote>
+<p>线程是操作系统调度执行的基本单位，Kotlin 协程是运行在线程上的任务抽象。协程最终仍然需要线程执行，通过调度器决定执行所用的线程或线程池；多个协程可以复用线程。</p>
+<p>两者的重要区别是等待方式。线程执行阻塞操作时，会占住当前线程；协程遇到真正的挂起点，可以保存执行进度，让当前线程去处理其他任务，条件满足后再恢复。因此，大量需要等待的并发任务，用协程通常更轻量。</p>
+<p>协程还可以把异步逻辑写成顺序代码，并通过结构化并发管理父子任务。在 Android 中，配合 viewModelScope、lifecycleScope，也更方便管理任务生命周期。</p>
+<p>但协程不会自动切到后台，也不会自动保证线程安全。阻塞操作仍需要选择合适的调度器，共享数据仍然需要同步保护。</p>
+</blockquote>
+<details><summary>展开对比：执行、调度、等待、开销和任务管理</summary>
+<table>
+<thead><tr><th scope="col">对比点</th><th scope="col">线程／线程池</th><th scope="col">Kotlin 协程</th></tr></thead>
+<tbody>
+<tr><th scope="row">执行关系</th><td>线程承载代码执行，线程池复用线程。</td><td>协程在线程上执行，多个协程可以复用线程。</td></tr>
+<tr><th scope="row">调度</th><td>线程主要由操作系统调度。</td><td>通过 Dispatcher 安排执行，底层线程仍由操作系统调度。</td></tr>
+<tr><th scope="row">等待方式</th><td>sleep、阻塞 IO 等会占住线程。</td><td>真正挂起时可以让出线程，等待期间不必一直占着线程；调用阻塞 API 仍然会阻塞。</td></tr>
+<tr><th scope="row">开销</th><td>每个线程有线程栈等资源，创建和切换成本较高。</td><td>通常更轻量，适合大量等待型任务，但不是零成本。</td></tr>
+<tr><th scope="row">代码组织</th><td>常通过回调、Future 等衔接异步结果。</td><td>挂起函数让异步逻辑可以按顺序书写。</td></tr>
+<tr><th scope="row">任务管理</th><td>通过线程池、Future、中断等管理。</td><td>通过 Scope、Job 和父子关系管理。</td></tr>
+<tr><th scope="row">取消</th><td>interrupt 需要任务响应。</td><td>cancel 同样是协作式取消。</td></tr>
+<tr><th scope="row">共享数据</th><td>并发修改需要同步保护。</td><td>一样需要；使用协程不代表没有并发问题。</td></tr>
+</tbody>
+</table>
+</details>
+<details><summary>追问 1：协程是不是一定在子线程？</summary>
+<p>不是。Android 常规使用的 <code>viewModelScope.launch</code> 默认使用主线程调度器。需要后台执行时，根据任务选择调度器：</p>
+<pre><code class="language-kotlin">viewModelScope.launch {
+    val result = withContext(Dispatchers.Default) {
+        calculate() // 教学示例：CPU 密集型计算
+    }
+    // 回到主线程，使用 result 更新状态
+}</code></pre>
+<p>阻塞文件 IO 通常使用 <code>Dispatchers.IO</code>。如果网络库本身通过异步接口实现非阻塞等待，并支持从主线程安全调用，就不必仅因为“是网络请求”再包一层 IO。实际网络执行线程由库管理。</p>
+</details>
+<details><summary>追问 2：挂起是不是切线程？</summary>
+<p>不是。挂起是暂停当前协程的后续执行，让出线程；恢复时可能仍在原线程，也可能换到其他线程，取决于调度器等因素。<code>suspend</code> 表示函数允许挂起，不代表每次调用都一定挂起，也不会自动把阻塞代码变成非阻塞代码。</p>
+</details>
+<details><summary>追问 3：协程里写耗时代码，就不会卡 UI 吗？</summary>
+<p>仍然可能卡。下面是两种独立的对比写法，不要一起执行：</p>
+<pre><code class="language-kotlin">// 错误示范：在默认主线程作用域中阻塞线程
+viewModelScope.launch {
+    Thread.sleep(3000) // 阻塞主线程，影响 UI
+}
+
+// 非阻塞等待
+viewModelScope.launch {
+    delay(3000) // 挂起当前协程，主线程可以继续处理 UI
+    // 这里的代码仍然要等 delay 结束后才执行
+}</code></pre>
+<p><code>delay</code> 后面的代码仍然要等，只是主线程不用陪着等。真正的耗时计算应安排到合适的后台调度器，不能用 delay 代替计算或指望 suspend 自动处理。</p>
+</details>
+<details><summary>追问 4：协程一定比线程池更快吗？</summary>
+<p>不是。协程主要改善异步代码组织、等待时的资源利用和任务管理。CPU 密集型计算的速度仍受 CPU 能力、算法和并行度限制，协程数量多不代表计算更快。同一线程也能交替推进多个协程，这属于并发，不代表多个任务正在同时执行。</p>
+</details>
+<p><strong>记忆提示：</strong>协程依赖线程执行；挂起可以让出线程；顺序代码组织异步任务；Scope 和 Job 管理生命周期；不会自动切后台，也不会自动保证线程安全。</p>
+<p><a href="#coroutine-definition">复习挂起与恢复</a> · <a href="#coroutine-structured">复习结构化并发与生命周期</a> · <a href="#coroutine-cancel">复习协作式取消</a></p>
+<section aria-labelledby="binder">
+<h2 id="binder">10 · Binder：7 道核心面试题</h2>
+<p>先练引用框里的口述回答，面试官追问时再展开详细解释。题目按客户端岗位的准备价值归并，不是精确的面试频率榜。音频服务代码是教学示例，不代表项目实际采用独立播放进程。</p>
+<ol>
+<li><a href="#binder-flow">Binder 原理与一次调用流程</a></li>
+<li><a href="#binder-choice">为什么选择 Binder</a></li>
+<li><a href="#binder-copy">一次拷贝与 mmap</a></li>
+<li><a href="#binder-aidl">AIDL、Stub、Proxy 与 asInterface</a></li>
+<li><a href="#binder-threads">执行线程与线程安全</a></li>
+<li><a href="#binder-oneway">同步调用、ANR 与 oneway</a></li>
+<li><a href="#binder-size">事务大小限制与大数据传输</a></li>
+</ol>
+
+<h3 id="binder-flow">1 · Binder 是什么，一次跨进程调用怎么完成？</h3>
+<blockquote>
+<p>Binder 是 Android 中主要的进程间通信机制。不同进程的内存相互隔离，一个进程不能直接调用另一个进程里的对象，所以需要 Binder 帮我们传递请求和结果。</p>
+<p>一次典型的 AIDL 跨进程调用，会先调用客户端的 Proxy。Proxy 把方法编号和参数写入 Parcel，通过 Binder 驱动发送给服务端。服务端收到请求后，由 Stub 解析参数、找到对应方法并执行，最后把结果返回客户端。</p>
+<p>对业务代码来说，看起来像调用普通接口，但实际经历了参数打包、跨进程传输、服务端执行和结果返回。普通 Binder 远程调用是同步的，调用线程需要等待返回，所以主线程调用耗时的远程接口可能导致 ANR。</p>
+</blockquote>
+<details><summary>详细解释：用独立音频进程串起调用链</summary>
+<p>假设页面在主进程，音频播放放在 <code>:player</code> 进程。用户点击按钮时，主进程执行：</p>
+<pre><code class="language-kotlin">playerService.play("audio_123")</code></pre>
+<p>这里的 <code>playerService</code> 通常是一个代理对象，真正控制播放器的对象在另一个进程。两边各有自己的内存，主进程不能拿着自己的对象引用，直接访问远端播放器。</p>
+<pre><code>主进程：业务代码调用 play("audio_123")
+    ↓
+Proxy 把方法编号和 "audio_123" 写入 Parcel
+    ↓
+Binder 驱动把请求交给目标进程
+    ↓
+:player 进程：Stub 读取方法编号和参数
+    ↓
+执行服务端实现的 play("audio_123")
+    ↓
+执行结束，把回复传回主进程</code></pre>
+<table><thead><tr><th>名称</th><th>负责什么</th></tr></thead><tbody>
+<tr><td>Proxy</td><td>客户端代理，将接口调用转换成跨进程请求。</td></tr>
+<tr><td>Parcel</td><td>承载方法参数、返回值等数据的容器。</td></tr>
+<tr><td>Binder 驱动</td><td>在内核中传递事务，找到目标 Binder 对象，并协调请求处理。</td></tr>
+<tr><td>Stub</td><td>服务端接收请求、解析参数、分发到具体方法的代码。</td></tr>
+</tbody></table>
+<p>服务端执行代码时，用的是服务端的线程。客户端线程不会“跑到另一个进程里面”。</p>
+<p>传递普通 <code>Parcelable</code> 对象时，通常会在接收方重建数据对象，双方并没有共享同一个 Java/Kotlin 对象。Binder 对象引用、文件描述符等属于特殊传递机制，不能与普通数据对象混为一谈。</p>
+</details>
+<p>记忆提示：进程隔离 → Proxy 打包 → 驱动传输 → Stub 分发 → 返回结果。</p>
+
+<h3 id="binder-choice">2 · Android 为什么选择 Binder，而不是 Socket 或共享内存？</h3>
+<blockquote>
+<p>Android 选择 Binder，主要是它适合设备内部大量的跨进程服务调用。</p>
+<p>性能方面，Binder 通过内存映射减少数据拷贝。安全方面，内核能够提供调用方的 UID 等身份信息，服务端可以据此做权限校验。开发方式上，Binder 支持代理对象和远程接口，配合 AIDL，业务可以像调用接口一样使用远程服务。</p>
+<p>Socket 更通用，也适合网络通信；共享内存适合大量数据交换，但需要自行处理同步、通知和数据协议。Binder 把请求调用、身份信息、对象引用和死亡通知等机制结合在一起，比较符合 Android 的系统服务架构。</p>
+</blockquote>
+<details><summary>详细解释：从请求服务、身份校验和数据交换理解选型</summary>
+<p>Android 应用启动 Activity、访问系统服务时，可能需要与系统进程通信。请求通常需要描述“做什么事情、携带什么参数、返回什么结果”，Binder 很适合这种请求与回复的交互。</p>
+<p>系统还必须知道是谁在调用。服务端不能只相信客户端传来的 <code>callerPackage = "某个有权限的应用"</code>，因为这是调用方自行填写的数据。Binder 提供由内核确定的调用方身份，服务端可以结合 <code>Binder.getCallingUid()</code>、权限检查等限制访问。有身份信息不代表业务权限自动校验，服务端仍然需要正确实施权限控制。</p>
+<p>共享内存能让两个进程访问同一块物理内存，适合大量数据，但还需要配套解决：</p>
+<ul><li>一方什么时候写完，另一方如何得到通知。</li><li>两边同时读写时如何同步。</li><li>数据怎么组织和解析。</li><li>对方进程死亡后如何清理资源。</li></ul>
+<table><thead><tr><th>方式</th><th>适合的用途</th><th>需要注意</th></tr></thead><tbody>
+<tr><td>Binder</td><td>设备内部接口调用、系统服务通信。</td><td>事务大小有限，不适合直接塞大量数据。</td></tr>
+<tr><td>Socket</td><td>网络通信，也可以做本机 IPC。</td><td>需要设计协议和连接管理，具体开销取决于实现。</td></tr>
+<tr><td>共享内存</td><td>大量数据交换。</td><td>需要配套同步、通知、访问控制等机制。</td></tr>
+</tbody></table>
+<p>不要只背“Binder 性能好”，也不要说它一定比共享内存快。Android 同样使用 Socket 和共享内存，还可以组合使用：Binder 传递控制信息和共享内存句柄，大量内容放进共享内存。</p>
+</details>
+<p>记忆提示：设备内服务调用 → 传输开销 → 可信身份与权限检查 → 接口化调用 → 按数据规模组合选型。</p>
+
+<h3 id="binder-copy">3 · Binder 为什么只需要一次拷贝？mmap 起什么作用？</h3>
+<blockquote>
+<p>常见的传统 IPC 数据路径，是先把数据从发送方用户空间复制到内核缓冲区，再从内核缓冲区复制到接收方用户空间，因此通常需要两次拷贝。</p>
+<p>Binder 会把接收进程的用户态地址空间，与内核管理的接收缓冲区映射到相同的物理页。发送时，驱动把发送方的数据复制到接收缓冲区，接收方就能通过自己的映射读取，不需要再从内核复制到接收方的一块独立缓冲区。</p>
+<p>所以，一次拷贝主要指驱动传输事务数据的这段路径，不代表整个远程调用没有其他复制或序列化开销。</p>
+</blockquote>
+<details><summary>详细解释：拷贝、映射和两种传输路径</summary>
+<p>复制数据，是另外找一块空间，把内容复制过去。内存映射则是为实际存放数据的物理内存建立可访问的虚拟地址，通过这个地址访问原来的内存。映射本身不等于把内容重新复制一份。</p>
+<pre><code>常见的两次拷贝路径：
+发送进程的用户缓冲区
+    │ 第一次复制
+    ↓
+内核缓冲区
+    │ 第二次复制
+    ↓
+接收进程的用户缓冲区
+
+Binder 的主要数据复制路径：
+发送进程的用户缓冲区
+    │ 一次复制
+    ↓
+接收方的 Binder 缓冲区
+    ↑
+接收进程通过 mmap 建立的用户态映射读取</code></pre>
+<p>接收方读取的是那块已写入数据的缓冲区，不需要再复制到另一块接收缓冲区。</p>
+<dl>
+<dt>客户端和服务端直接共享了客户端那块内存吗？</dt><dd><p>不是。发送方数据仍然需要复制到接收方的 Binder 缓冲区。</p></dd>
+<dt>Binder 是零拷贝吗？</dt><dd><p>这套常见机制仍然有一次主要数据复制，不能说成零拷贝。</p></dd>
+<dt>请求加返回一共只复制一次吗？</dt><dd><p>不是。请求和回复是两个方向的传输。参数写入 Parcel、读取后重建对象等，也可能产生额外开销。</p></dd>
+</dl>
+<p>“Socket 两次、Binder 一次”是常见的基础模型，不能进一步说所有 Socket 实现和使用方式都严格固定为两次。</p>
+</details>
+<p>记忆提示：接收缓冲区做映射 → 发送方复制进去 → 接收方直接通过映射读取 → 省掉第二次复制。</p>
+
+<h3 id="binder-aidl">4 · AIDL 和 Binder 是什么关系？Stub、Proxy、asInterface 干什么？</h3>
+<blockquote>
+<p>Binder 是底层通信机制，AIDL 是定义跨进程接口、生成通信代码的工具。</p>
+<p>我们用 AIDL 声明方法，编译工具会生成接口和 Stub、Proxy 等代码。服务端继承 Stub 实现业务方法，再通过 Service 的 onBind 暴露 Binder。客户端绑定成功后，使用 Stub.asInterface 把拿到的 IBinder 转换成业务接口。</p>
+<p>如果是同进程并且能取得匹配的本地接口，asInterface 会直接返回本地实现；如果是跨进程，就返回 Proxy，由代理完成参数打包和远程调用。</p>
+</blockquote>
+<details><summary>详细解释：从 AIDL 定义到客户端调用的教学代码</summary>
+<p>先定义双方约定的接口，规定能调用什么方法，不写播放逻辑：</p>
+<pre><code class="language-java">// IPlayerService.aidl，省略 package 声明
+interface IPlayerService {
+    void play(String audioId);
+    boolean isPlaying();
+}</code></pre>
+<p>编译工具生成 IPlayerService 相关代码。服务端继承其中的 Stub，实现业务方法：</p>
+<pre><code class="language-kotlin">class PlayerService : Service() {
+
+    private val binder = object : IPlayerService.Stub() {
+
+        override fun play(audioId: String) {
+            // 执行或安排播放任务
+        }
+
+        override fun isPlaying(): Boolean {
+            return false // 教学占位，不是真实播放状态
+        }
+    }
+
+    override fun onBind(intent: Intent): IBinder {
+        return binder
+    }
+}</code></pre>
+<p>客户端绑定成功后，系统通过 ServiceConnection 回调交给它一个 IBinder：</p>
+<pre><code class="language-kotlin">override fun onServiceConnected(
+    name: ComponentName,
+    service: IBinder
+) {
+    playerService = IPlayerService.Stub.asInterface(service)
+}
+
+// 连接成功后，业务代码调用：
+playerService.play("audio_123")</code></pre>
+<p>同进程且能取得匹配的本地接口时，playerService 是本地实现，直接进行普通方法调用。跨进程时，playerService 是 Proxy，调用经过 Parcel 和 Binder 驱动。asInterface 的作用，是从底层 IBinder 取得能够调用业务方法的接口对象。</p>
+<table><thead><tr><th>追问</th><th>回答</th></tr></thead><tbody>
+<tr><td>transact() 干什么？</td><td>客户端提交 Binder 事务的入口。</td></tr>
+<tr><td>onTransact() 干什么？</td><td>服务端根据事务编号解析参数、分发方法。</td></tr>
+<tr><td>不用 AIDL 可以使用 Binder 吗？</td><td>可以，只是可能需要自己写通信代码。</td></tr>
+<tr><td>asInterface() 负责连接 Service 吗？</td><td>不负责，建立绑定是 bindService() 等流程的事情。</td></tr>
+</tbody></table>
+<p>这些是说明接口关系的片段，省略包名、导入、Manifest、完整绑定与清理流程，不是可直接运行的完整示例。Service 默认不会自动运行在独立进程；演示跨进程时还需相应的 android:process 配置。实际项目还需处理线程、解绑、远程异常和进程死亡。</p>
+</details>
+<p>记忆提示：AIDL 定接口并生成代码 → 服务端实现 Stub → onBind 暴露 → 客户端 asInterface → 本地实现或远程 Proxy。</p>
+
+<h3 id="binder-threads">5 · AIDL 方法在哪个线程执行？需要加锁吗？</h3>
+<blockquote>
+<p>要区分本地调用和远程调用。同进程通过本地接口直接调用时，方法就在调用方当前线程执行，不会自动切线程。跨进程调用时，服务端方法通常由服务端 Binder 线程池执行，多个请求可能并发进入，因此共享可变数据需要考虑线程安全。</p>
+<p>Service 的 onCreate、onBind 等生命周期回调通常在所在进程的主线程执行，这和远程 AIDL 方法的执行线程不同。是否需要加锁，要看是否存在共享数据和并发访问，也可以通过串行处理等方式保证安全。</p>
+</blockquote>
+<details><summary>详细解释：Service 回调、Binder 线程和播放器线程</summary>
+<table><thead><tr><th>代码</th><th>通常执行在哪</th></tr></thead><tbody>
+<tr><td>Service 的 onCreate、onBind、onStartCommand</td><td>Service 所在进程的主线程。</td></tr>
+<tr><td>远程客户端调用的 AIDL 业务方法</td><td>服务端 Binder 线程池中的线程。</td></tr>
+<tr><td>通过本地接口直接调用的业务方法</td><td>调用方当前线程。</td></tr>
+</tbody></table>
+<p>不能用“Service 在主线程”推导出“Service 中所有方法都在主线程”。例如服务端维护一个播放队列：</p>
+<pre><code class="language-kotlin">// 并发风险示例，未做同步保护
+private val playlist = mutableListOf&lt;String&gt;()
+
+override fun add(audioId: String) {
+    playlist.add(audioId)
+}
+
+override fun clear() {
+    playlist.clear()
+}</code></pre>
+<p>Binder 线程 1 执行 add，Binder 线程 2 同时执行 clear，会访问同一个 playlist。普通可变列表不能保证这些并发访问安全。</p>
+<p>可以用同一把锁保护相关读写，使用合适的并发容器，或者统一交给固定线程、串行队列执行。即使使用并发容器，也要确认组合操作是否原子。</p>
+<p>如果播放器要求控制操作在指定线程执行，就应把 Binder 请求转交给那个线程：</p>
+<pre><code class="language-kotlin">override fun play(audioId: String) {
+    playerHandler.post {
+        player.play(audioId)
+    }
+}</code></pre>
+<p>这里假设 playerHandler 已绑定播放器要求的线程。接口返回只说明投递这一步已结束，不代表 player.play 已执行，更不代表音频已经开始播放。实际代码还要处理投递失败，以及通过状态查询或回调报告播放结果。</p>
+</details>
+<p>记忆提示：本地调用跟随调用线程；远程调用通常进入 Binder 线程池；生命周期回调通常在主线程；共享状态要保护。</p>
+
+<h3 id="binder-oneway">6 · Binder 是同步还是异步？为什么会导致 ANR？oneway 有什么用？</h3>
+<blockquote>
+<p>普通 AIDL 远程调用默认是同步的。客户端发出请求后，调用线程会等待服务端处理并返回回复。</p>
+<p>虽然业务在另一个进程执行，客户端线程仍可能被阻塞。如果主线程发起调用，而服务端处理耗时、等待锁，或者 Binder 线程池繁忙，就可能造成卡顿甚至 ANR。</p>
+<p>oneway 可以把远程调用改成不等待业务回复的方式，但它不保证业务已经执行成功，也不会让服务端的耗时任务消失。本地调用时，oneway 不会自动把普通方法调用变成异步。</p>
+</blockquote>
+<details><summary>详细解释：客户端为什么等待，以及 oneway 的边界</summary>
+<pre><code class="language-kotlin">// 假设运行在主线程
+Log.d("IPC", "开始调用")
+val result = remoteService.loadSomething()
+Log.d("IPC", "调用返回")</code></pre>
+<p>如果服务端三秒后才返回，客户端主线程也要等到回复，才能执行后面的日志。等待期间，主线程不能正常处理自己的 UI 工作。跨进程只说明业务执行的位置，不能推导出客户端不会等待。</p>
+<p>普通 AIDL 方法即使返回 void，默认也仍然是同步调用。没有业务返回值，不代表不等待方法执行结束的回复。</p>
+<pre><code class="language-java">interface IPlayerService {
+    oneway void play(String audioId);
+}</code></pre>
+<p>oneway 让客户端提交请求后，不等待远端业务完成的回复，便可以继续执行后面的代码。服务端随后处理收到的请求。</p>
+<ul>
+<li>oneway 方法必须返回 void，不能通过返回值或 out、inout 参数带回结果。</li>
+<li>调用返回不代表业务成功；需要结果时，可以设计单独的回调接口。</li>
+<li>服务端仍然要花时间执行任务，请求过多仍然可能积压。</li>
+<li>同进程本地调用时，oneway 不会帮你创建线程或排队。</li>
+</ul>
+<p>准确表述是“不等待远程方法完成的回复”，不要说成“调用绝对没有任何耗时或等待”。</p>
+</details>
+<p>记忆提示：普通调用等回复 → 主线程可能被拖住 → void 也会等 → oneway 不等业务回复，但不保证业务成功。</p>
+
+<h3 id="binder-size">7 · Binder 能传多大的数据？大图片、大列表怎么跨进程传？</h3>
+<blockquote>
+<p>Binder 的事务缓冲区大小有限。Android 文档通常描述为 1 MB，而且这块缓冲区由进程中正在进行的事务共享，不是每次调用独占 1 MB。</p>
+<p>参数或者返回值过大，可能导致 TransactionTooLargeException。即使单个请求不到 1 MB，也不能保证成功，因为还受到其他进行中的事务和传输开销影响。</p>
+<p>对大数据，我会尽量让 Binder 只传控制信息、数据标识或句柄。比如列表分页传输，图片通过文件或带访问权限的 URI 获取，较大的二进制数据可以使用共享内存或文件描述符。</p>
+</blockquote>
+<details><summary>详细解释：共享缓冲区、返回值和 Intent／Bundle 场景</summary>
+<p>不能把限制背成“每次 Binder 调用都能传 1 MB”。多个进行中的事务会共享有限的缓冲区，单次安全载荷不能直接按这个数计算。请求参数和返回结果都可能过大：</p>
+<pre><code class="language-kotlin">// 参数只有一个 ID，但返回结果可能很大
+val records = remoteService.getAllRecords(userId)</code></pre>
+<p>即使请求很小，一次返回几十万条记录，也可能因为回复过大而失败。</p>
+<table><thead><tr><th>数据</th><th>更合适的方案</th></tr></thead><tbody>
+<tr><td>少量参数、状态、标识</td><td>直接通过 Binder 传递。</td></tr>
+<tr><td>大列表</td><td>分页，每次只取需要的一部分。</td></tr>
+<tr><td>图片、文件</td><td>传递可访问的 URI 或文件描述符。</td></tr>
+<tr><td>大块二进制内容、频繁的大数据交换</td><td>评估共享内存，Binder 传递句柄和控制信息。</td></tr>
+</tbody></table>
+<p>例如，提供方准备图片文件，通过 Binder 传递 URI 或文件描述符，接收方再读取图片内容。这样不用把完整图片字节数组塞进事务参数。</p>
+<p>跨应用传文件时，只传私有文件路径并不能保证对方能读。需要处理访问权限，例如使用 FileProvider 提供 URI，并授予必要权限。</p>
+<p>追问：为什么 Intent 或 onSaveInstanceState 的 Bundle 放太多内容，也可能报这个异常？因为这些数据在相关系统交互中可能通过 Binder 传输。应保存数据 ID 和必要的小状态，大内容放在文件、数据库等位置，恢复时再加载。</p>
+</details>
+<p>记忆提示：缓冲区共享 → 请求和回复都可能超限 → 不承诺单次 1 MB 安全 → 大数据传标识、句柄或分页。</p>
+
+<details><summary>题目来源与官方解释</summary>
+<p>公开面经用于选择题型，官方文档用于理解接口和行为边界。以下来源已在本轮学习中核对；没有据此统计全行业提问频率。</p>
+<ul>
+<li><a href="https://blog.nowcoder.net/n/ccd716b4555249ae8cf6ba15941ee3b0">2022 年求职面经</a>：得物一面包含 Binder 机制。</li>
+<li><a href="https://www.nowcoder.com/feed/main/detail/6bce20c6f8f94b6397f13a4ac706dbbe">美团 Android 面经</a>：包含 Binder 如何实现一次拷贝。</li>
+<li><a href="https://source.android.com/docs/core/architecture/ipc/binder-overview">AOSP：Binder overview</a>：代理、事务与跨进程调用链。</li>
+<li><a href="https://developer.android.com/develop/background-work/services/aidl">Android：AIDL</a>：接口生成、Stub、本地与远程线程、oneway。</li>
+<li><a href="https://source.android.com/docs/core/architecture/ipc/binder-threading">AOSP：Binder 线程模型</a>：同步事务等待、异步事务与线程处理。</li>
+<li><a href="https://developer.android.com/reference/android/os/TransactionTooLargeException">Android：TransactionTooLargeException</a>：共享事务缓冲区、请求与回复的大小限制。</li>
+</ul>
+</details>
+</section>
+
+<footer class="article-footer">口述内容整理：2026-10-24。协程与 Flow 8 组、MVI 6 组、线程与协程对比，以及 Binder 7 题，附可选追问。项目例子来自本地源码阅读；Binder 音频服务为教学示例，未进行编译或设备运行验证。</footer>
+</article><aside class="page-toc" aria-label="本页目录"><div class="toc-heading">本页目录</div><a class="toc-link level-2" href="#handler">01 · Handler 是什么？</a><a class="toc-link level-2" href="#lifecycle">02 · Android 生命周期</a><a class="toc-link level-2" href="#activity-switch">03 · Activity 跳转时序</a><a class="toc-link level-2" href="#coroutines-basics">04 · 基础与任务管理</a><a class="toc-link level-2" href="#coroutines-cancel-errors">05 · 取消与失败处理</a><a class="toc-link level-2" href="#coroutines-flow">06 · Flow 与界面</a><a class="toc-link level-2" href="#coroutines-projects">07 · 项目怎么讲</a><a class="toc-link level-2" href="#mvi">08 · MVI 面试问答</a><a class="toc-link level-2" href="#threads-vs-coroutines">09 · 线程与协程对比</a><a class="toc-link level-2" href="#binder">10 · Binder 七题</a><a class="back-to-top" href="#">↑ 返回顶部</a></aside></div></main></div><script src="assets/search-data.js"></script><script src="assets/docs.js"></script></body></html>

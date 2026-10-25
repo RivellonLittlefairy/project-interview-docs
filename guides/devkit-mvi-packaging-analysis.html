@@ -1,0 +1,1850 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="author" content="DeepSeek Harness">
+<title>MVI 落地与 DevKit 打包解析 · 知乎 VIP Android</title>
+<script src="../assets/site-theme.js"></script>
+<style>
+  :root {
+    --bg: #f4f1ea;
+    --bg-2: #ece7dd;
+    --paper: #fffdf8;
+    --paper-2: #f7f2e9;
+    --ink: #1d1c1a;
+    --muted: #6b645a;
+    --line: #ddd4c5;
+    --soft: #f0ebe1;
+    --accent: #b4472e;
+    --accent-2: #8e3522;
+    --accent-soft: #f6e2d9;
+    --teal: #2e6f68;
+    --teal-soft: #dfeeea;
+    --gold: #96702a;
+    --gold-soft: #f3ead3;
+    --violet: #665a9e;
+    --violet-soft: #e9e6f4;
+    --red: #a33a32;
+    --red-soft: #f4dedb;
+    --green: #4f7040;
+    --green-soft: #e5eddc;
+    --code-bg: #191a1c;
+    --code-head: #232427;
+    --code-ink: #ece6da;
+    --code-muted: #a9a294;
+    --shadow: 0 16px 44px rgba(48, 38, 24, 0.09);
+    --shadow-sm: 0 6px 18px rgba(48, 38, 24, 0.07);
+    --sans: "Inter", "PingFang SC", "Microsoft YaHei", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --serif: "Songti SC", "Noto Serif SC", "Source Han Serif SC", ui-serif, Georgia, serif;
+    --mono: "JetBrains Mono", "Cascadia Code", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --radius: 14px;
+    --maxw: 1200px;
+  }
+  html[data-theme="dark"] {
+    --bg: #121211;
+    --bg-2: #171716;
+    --paper: #1d1d1c;
+    --paper-2: #232320;
+    --ink: #f0ebe2;
+    --muted: #aaa196;
+    --line: #35322c;
+    --soft: #262420;
+    --accent: #e08a63;
+    --accent-2: #f0a884;
+    --accent-soft: #38231c;
+    --teal: #7fc0b5;
+    --teal-soft: #1e3431;
+    --gold: #d3ab63;
+    --gold-soft: #342b1a;
+    --violet: #aaa0dc;
+    --violet-soft: #2a2740;
+    --red: #e08a81;
+    --red-soft: #3a221f;
+    --green: #9eba7f;
+    --green-soft: #26321f;
+    --code-bg: #0f1011;
+    --code-head: #191a1c;
+    --code-ink: #e9e2d6;
+    --code-muted: #9f988b;
+    --shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+    --shadow-sm: 0 8px 22px rgba(0, 0, 0, 0.28);
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    color: var(--ink);
+    background:
+      radial-gradient(1100px 520px at 88% -8%, var(--accent-soft), transparent 62%),
+      radial-gradient(900px 480px at -10% 12%, var(--teal-soft), transparent 58%),
+      var(--bg);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.75;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  ::selection { background: var(--accent); color: #fff; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; text-underline-offset: 3px; }
+  .progress {
+    position: fixed; top: 0; left: 0; height: 3px; width: 0;
+    background: linear-gradient(90deg, var(--accent), var(--gold));
+    z-index: 60; transition: width .08s linear;
+  }
+  .topbar {
+    position: sticky; top: 0; z-index: 50;
+    backdrop-filter: blur(14px) saturate(140%);
+    background: var(--bg);
+    background: color-mix(in srgb, var(--bg) 82%, transparent);
+    border-bottom: 1px solid var(--line);
+  }
+  .topbar-inner {
+    max-width: var(--maxw); margin: 0 auto; padding: 12px 28px;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: .02em; }
+  .brand-mark {
+    width: 26px; height: 26px; border-radius: 8px;
+    display: grid; place-items: center;
+    background: var(--ink); color: var(--paper);
+    font-family: var(--mono); font-size: 11px; font-weight: 700;
+    transform: rotate(-6deg);
+  }
+  .brand small { color: var(--muted); font-weight: 500; font-family: var(--mono); font-size: 11px; letter-spacing: .06em; }
+  .top-actions { display: flex; align-items: center; gap: 8px; }
+  .btn {
+    appearance: none; border: 1px solid var(--line); background: var(--paper);
+    color: var(--ink); border-radius: 999px; padding: 7px 13px;
+    font: 600 12px/1 var(--sans); cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: transform .15s ease, border-color .15s ease, background .15s ease;
+  }
+  .btn:hover { transform: translateY(-1px); border-color: var(--accent); }
+  .btn:active { transform: translateY(0); }
+  main { min-width: 0; overflow-wrap: anywhere; }
+  :not(pre) > code { white-space: normal; overflow-wrap: anywhere; }
+  .layout {
+    max-width: var(--maxw); margin: 0 auto; padding: 0 28px 80px;
+    display: grid; grid-template-columns: 236px minmax(0, 1fr); gap: 54px;
+  }
+  .toc {
+    position: sticky; top: 78px; align-self: start;
+    max-height: calc(100vh - 110px); overflow: auto;
+    padding: 18px 0 30px;
+    font-size: 13px;
+  }
+  .toc-title {
+    font: 700 10px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase;
+    color: var(--muted); margin: 0 0 12px 10px;
+  }
+  .toc ol { list-style: none; margin: 0; padding: 0; }
+  .toc li { margin: 1px 0; }
+  .toc a {
+    display: flex; gap: 9px; align-items: baseline;
+    color: var(--muted); padding: 6px 10px; border-radius: 8px;
+    border-left: 2px solid transparent; line-height: 1.45;
+  }
+  .toc a .n { font-family: var(--mono); font-size: 10px; opacity: .75; min-width: 16px; }
+  .toc a:hover { background: var(--soft); color: var(--ink); text-decoration: none; }
+  .toc a.active { color: var(--accent); border-left-color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+  .toc-mobile { display: none; }
+  main { min-width: 0; }
+  .hero { padding: 76px 0 30px; }
+  .kicker {
+    display: inline-flex; align-items: center; gap: 8px;
+    font: 700 11px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 20px;
+  }
+  .kicker::before { content: ""; width: 30px; height: 1px; background: currentColor; }
+  h1 {
+    font-family: var(--serif); font-weight: 700;
+    font-size: clamp(36px, 5.2vw, 58px); line-height: 1.16;
+    letter-spacing: -.015em; margin: 0 0 20px;
+  }
+  h1 em { font-style: normal; color: var(--accent); }
+  .lead { font-size: 18px; line-height: 1.8; color: var(--muted); max-width: 70ch; margin: 0 0 26px; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    border: 1px solid var(--line); background: var(--paper);
+    background: color-mix(in srgb, var(--paper) 70%, transparent);
+    border-radius: 999px; padding: 5px 11px;
+    font: 500 11.5px/1.5 var(--mono); color: var(--muted);
+  }
+  .chip b { color: var(--ink); font-weight: 700; }
+  section { scroll-margin-top: 86px; margin-top: 66px; }
+  .section-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 10px; }
+  .idx {
+    flex: none; font: 700 11px/1 var(--mono); color: var(--accent);
+    border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--line));
+    padding: 4px 7px; border-radius: 6px; letter-spacing: .04em;
+    background: var(--accent-soft);
+  }
+  h2 {
+    font-family: var(--serif); font-size: clamp(26px, 3.1vw, 34px);
+    line-height: 1.3; margin: 0; letter-spacing: -.01em;
+  }
+  h3 { font-size: 21px; line-height: 1.45; margin: 36px 0 12px; letter-spacing: -.005em; }
+  h4 { font-size: 16px; margin: 22px 0 8px; }
+  p { margin: 0 0 14px; }
+  .section-head + p, .section-head + .lead-sm { margin-top: 12px; }
+  .lead-sm { font-size: 17px; color: var(--muted); }
+  strong { font-weight: 700; }
+  .muted { color: var(--muted); }
+  .mono { font-family: var(--mono); }
+  code {
+    font-family: var(--mono); font-size: .86em;
+    background: var(--soft); border: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+    padding: .08em .34em; border-radius: 5px; white-space: break-spaces;
+  }
+  .callout {
+    position: relative; margin: 20px 0; padding: 16px 18px 16px 52px;
+    border: 1px solid var(--line); border-left: 3px solid var(--accent);
+    border-radius: 10px; background: var(--paper); box-shadow: var(--shadow-sm);
+  }
+  .callout::before {
+    content: "i"; position: absolute; left: 16px; top: 16px;
+    width: 22px; height: 22px; border-radius: 50%;
+    display: grid; place-items: center;
+    font: 700 12px/1 var(--serif); color: #fff; background: var(--accent);
+  }
+  .callout > :last-child { margin-bottom: 0; }
+  .callout.note { border-left-color: var(--teal); }
+  .callout.note::before { content: "→"; background: var(--teal); }
+  .callout.warn { border-left-color: var(--red); background: var(--red-soft); background: color-mix(in srgb, var(--red-soft) 42%, var(--paper)); }
+  .callout.warn::before { content: "!"; background: var(--red); }
+  .callout.good { border-left-color: var(--green); background: var(--green-soft); background: color-mix(in srgb, var(--green-soft) 42%, var(--paper)); }
+  .callout.good::before { content: "✓"; background: var(--green); }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; margin: 18px 0; }
+  .card {
+    background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 18px 19px; box-shadow: var(--shadow-sm); min-width: 0;
+  }
+  .card h4 { margin: 0 0 7px; font-size: 15.5px; }
+  .card p { margin: 0; font-size: 14.2px; color: var(--muted); }
+  .card .num-big { font: 700 28px/1 var(--mono); color: var(--accent); display: block; margin-bottom: 8px; }
+  .card .num-big small { font-size: 12px; color: var(--muted); font-weight: 500; }
+  .pill {
+    display: inline-block; font: 700 10px/1 var(--mono); letter-spacing: .04em;
+    padding: 3px 7px; border-radius: 999px; vertical-align: 2px;
+  }
+  .pill.full { background: var(--green-soft); color: var(--green); border: 1px solid color-mix(in srgb, var(--green) 30%, transparent); }
+  .pill.partial { background: var(--gold-soft); color: var(--gold); border: 1px solid color-mix(in srgb, var(--gold) 30%, transparent); }
+  .pill.marker { background: var(--violet-soft); color: var(--violet); border: 1px solid color-mix(in srgb, var(--violet) 30%, transparent); }
+  .pill.risk { background: var(--red-soft); color: var(--red); border: 1px solid color-mix(in srgb, var(--red) 30%, transparent); }
+  .table-wrap {
+    margin: 16px 0 20px; border: 1px solid var(--line); border-radius: 12px;
+    background: var(--paper); overflow: auto; box-shadow: var(--shadow-sm);
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 13.8px; min-width: 620px; }
+  th, td { text-align: left; padding: 10px 13px; vertical-align: top; border-bottom: 1px solid var(--line); }
+  th {
+    background: var(--paper-2); font: 700 11px/1.4 var(--mono);
+    letter-spacing: .06em; text-transform: uppercase; color: var(--muted);
+    white-space: nowrap; position: sticky; top: 0;
+  }
+  tbody tr:last-child td { border-bottom: 0; }
+  tbody tr:nth-child(even) { background: color-mix(in srgb, var(--soft) 35%, transparent); }
+  td code { white-space: nowrap; }
+  .num { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .code {
+    margin: 16px 0 20px; border-radius: 12px; overflow: hidden;
+    border: 1px solid color-mix(in srgb, var(--code-bg) 60%, var(--line));
+    box-shadow: var(--shadow-sm); background: var(--code-bg);
+  }
+  .code-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 8px 13px; background: var(--code-head);
+    border-bottom: 1px solid rgba(255,255,255,.06);
+    font: 500 11.5px/1.5 var(--mono); color: var(--code-muted);
+  }
+  .code-head .path { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .code-head .path b { color: #e8ddd0; font-weight: 600; }
+  .copy {
+    appearance: none; border: 1px solid rgba(255,255,255,.14); background: transparent;
+    color: var(--code-muted); border-radius: 6px; padding: 3px 8px;
+    font: 600 10.5px/1.4 var(--mono); cursor: pointer; flex: none;
+  }
+  .copy:hover { color: #fff; border-color: rgba(255,255,255,.35); }
+  .code pre {
+    margin: 0; padding: 15px 17px 17px; overflow: auto;
+    color: var(--code-ink); font: 400 12.6px/1.68 var(--mono);
+    tab-size: 4; -webkit-overflow-scrolling: touch;
+  }
+  .code pre code { background: none; border: 0; padding: 0; font-size: inherit; color: inherit; white-space: pre; }
+  .tok-k { color: #e29a7d; }
+  .tok-t { color: #8fc1c4; }
+  .tok-s { color: #b9cf8f; }
+  .tok-c { color: #7d786e; font-style: italic; }
+  .tok-n { color: #d9c08a; }
+  .flow {
+    display: flex; flex-wrap: wrap; align-items: stretch; gap: 9px;
+    margin: 20px 0 8px; padding: 18px; border: 1px solid var(--line);
+    border-radius: var(--radius); background: var(--paper); box-shadow: var(--shadow-sm);
+  }
+  .flow-box {
+    flex: 1 1 150px; min-width: 140px; padding: 12px 13px;
+    border: 1px solid var(--line); border-radius: 10px; background: var(--paper-2);
+  }
+  .flow-box b { display: block; font-size: 13.5px; margin-bottom: 2px; }
+  .flow-box span { display: block; font-size: 11.5px; color: var(--muted); line-height: 1.55; }
+  .flow-box.hot { border-color: color-mix(in srgb, var(--accent) 50%, var(--line)); background: var(--accent-soft); }
+  .arrow { align-self: center; color: var(--muted); font-family: var(--mono); font-size: 16px; padding: 0 1px; }
+  .flow-caption { font-size: 12.5px; color: var(--muted); margin: 0 0 4px; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 18px 0; }
+  .two-col > .card { height: auto; }
+  .list-tight { margin: 10px 0 16px; padding-left: 1.25em; }
+  .list-tight li { margin: 5px 0; }
+  .list-tight li::marker { color: var(--accent); }
+  .checks { list-style: none; padding: 0; margin: 12px 0 18px; }
+  .checks li { position: relative; padding-left: 26px; margin: 7px 0; font-size: 14.5px; }
+  .checks li::before {
+    content: "✓"; position: absolute; left: 0; top: 1px;
+    width: 17px; height: 17px; border-radius: 50%; display: grid; place-items: center;
+    font: 700 10px/1 var(--sans); color: #fff; background: var(--green);
+  }
+  .checks li.anti::before { content: "!"; background: var(--red); }
+  .tree {
+    color: var(--code-ink); background: var(--code-bg); border-radius: 12px;
+    padding: 17px 19px; overflow: auto; font: 12.6px/1.7 var(--mono);
+    border: 1px solid color-mix(in srgb, var(--code-bg) 60%, var(--line));
+    margin: 16px 0 20px;
+  }
+  .tree .dir { color: #e2b07f; }
+  .tree .file { color: #a9c7c9; }
+  .tree .cm { color: #777268; }
+  details.qa {
+    border: 1px solid var(--line); border-radius: 11px; background: var(--paper);
+    margin: 9px 0; padding: 0 16px; box-shadow: var(--shadow-sm);
+  }
+  details.qa summary {
+    cursor: pointer; padding: 13px 0; font-weight: 600; font-size: 15px;
+    list-style: none; display: flex; gap: 10px; align-items: baseline;
+  }
+  details.qa summary::-webkit-details-marker { display: none; }
+  details.qa summary::before { content: "Q"; font: 700 11px/1 var(--mono); color: var(--accent); flex: none; }
+  details.qa[open] summary { color: var(--accent); }
+  details.qa .a { padding: 0 0 14px 22px; color: var(--muted); font-size: 14.5px; }
+  details.qa .a p { margin: 0 0 8px; }
+  .ref { font-family: var(--mono); font-size: 11.5px; color: var(--muted); }
+  .src {
+    display: block; font: 500 11px/1.5 var(--mono); color: var(--muted);
+    margin-top: 6px; letter-spacing: .01em;
+  }
+  .divider { height: 1px; background: var(--line); border: 0; margin: 34px 0; }
+  footer {
+    border-top: 1px solid var(--line); margin-top: 70px; padding: 26px 0 50px;
+    color: var(--muted); font-size: 13px;
+  }
+  footer b { color: var(--ink); }
+  .kbd {
+    font: 600 11px/1 var(--mono); border: 1px solid var(--line); border-bottom-width: 2px;
+    border-radius: 5px; padding: 2px 5px; background: var(--paper);
+  }
+  @media (max-width: 1000px) {
+    .layout { grid-template-columns: 1fr; gap: 0; padding: 0 18px 60px; }
+    .toc { display: none; }
+    .toc-mobile { display: block; margin-top: 26px; }
+    .toc-mobile details {
+      border: 1px solid var(--line); border-radius: 11px; background: var(--paper);
+      padding: 0 16px; box-shadow: var(--shadow-sm);
+    }
+    .toc-mobile summary { cursor: pointer; padding: 12px 0; font-weight: 600; font-size: 14px; }
+    .toc-mobile ol { margin: 0 0 14px; padding-left: 1.3em; font-size: 13.5px; }
+    .toc-mobile li { margin: 5px 0; }
+    .hero { padding-top: 46px; }
+    .two-col { grid-template-columns: 1fr; }
+    .topbar-inner { padding: 10px 16px; }
+    .brand small { display: none; }
+    section { margin-top: 52px; }
+  }
+  @media (max-width: 560px) {
+    body { font-size: 15.5px; }
+    h1 { font-size: 34px; }
+    .lead { font-size: 16px; }
+    .code pre { font-size: 11.6px; }
+    th, td { padding: 9px 10px; }
+    .flow { padding: 13px; }
+    .arrow { display: none; }
+  }
+  @media print {
+    .topbar, .toc, .toc-mobile, .progress, .copy, footer { display: none !important; }
+    body { background: #fff; color: #000; font-size: 12px; }
+    .layout { display: block; max-width: none; padding: 0; }
+    section { margin-top: 28px; page-break-inside: auto; }
+    .card, .callout, .table-wrap, .code { box-shadow: none; }
+    .code { border: 1px solid #ccc; }
+    .code pre { white-space: pre-wrap; color: #111; background: #f7f7f7; }
+    .code-head { background: #eee; color: #333; }
+    .code-head .path b { color: #000; }
+    a { color: #000; text-decoration: none; }
+    details.qa { page-break-inside: avoid; }
+    details.qa .a { display: block; }
+  }
+</style>
+<link rel="stylesheet" href="../assets/site-theme.css">
+</head>
+<body class="site-unified">
+<div class="progress" id="progress"></div>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-mark">Mvx</span>
+      <span>MVI × DevKit <small>Android 组件考古</small></span>
+    </div>
+    <div class="top-actions">
+      <a class="btn" href="../index.html" title="返回资料首页">← 资料首页</a>
+      <button class="btn" id="printBtn" type="button" title="打印 / 导出 PDF">打印</button>
+      <button class="btn" id="themeBtn" data-site-theme-toggle type="button" title="切换深浅色">◐ 主题</button>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="toc" id="toc">
+    <div class="toc-title">目录 / Contents</div>
+    <ol>
+      <li><a href="#tldr"><span class="n">01</span>结论先行</a></li>
+      <li><a href="#landscape"><span class="n">02</span>全景：三层结构</a></li>
+      <li><a href="#dialect"><span class="n">03</span>Mavericks 的“方言”</a></li>
+      <li><a href="#api"><span class="n">04</span>DevKit 的四个扩展点</a></li>
+      <li><a href="#patterns"><span class="n">05</span>业务里的四种用法</a></li>
+      <li><a href="#coverage"><span class="n">06</span>覆盖情况与统计</a></li>
+      <li><a href="#proscons"><span class="n">07</span>好在哪，坑在哪</a></li>
+      <li><a href="#packaging"><span class="n">08</span>DevKit 怎么打包</a></li>
+      <li><a href="#governance"><span class="n">09</span>版本与发布治理</a></li>
+      <li><a href="#template"><span class="n">10</span>接入模板</a></li>
+      <li><a href="#qa"><span class="n">11</span>面试速答</a></li>
+      <li><a href="#evidence"><span class="n">12</span>证据与方法</a></li>
+    </ol>
+  </aside>
+
+  <main>
+    <div class="toc-mobile">
+      <details>
+        <summary>目录：12 个章节</summary>
+        <ol>
+          <li><a href="#tldr">结论先行</a></li>
+          <li><a href="#landscape">全景：三层结构</a></li>
+          <li><a href="#dialect">Mavericks 的“方言”</a></li>
+          <li><a href="#api">DevKit 的四个扩展点</a></li>
+          <li><a href="#patterns">业务里的四种用法</a></li>
+          <li><a href="#coverage">覆盖情况与统计</a></li>
+          <li><a href="#proscons">好在哪，坑在哪</a></li>
+          <li><a href="#packaging">DevKit 怎么打包</a></li>
+          <li><a href="#governance">版本与发布治理</a></li>
+          <li><a href="#template">接入模板</a></li>
+          <li><a href="#qa">面试速答</a></li>
+          <li><a href="#evidence">证据与方法</a></li>
+        </ol>
+      </details>
+    </div>
+
+    <section class="hero">
+      <div class="kicker">代码考古 · MVI 专题</div>
+      <h1>MVI 在这套工程里，<br>是怎么<em>落地</em>的</h1>
+      <p class="lead">
+        这不是一篇 Mavericks 教程，而是对工作区里约 7,000 个 Kotlin 文件做的一次实证扫描：
+        MVI 的“发动机”是 Airbnb Mavericks 3.0.6，DevKit 只做了一层很薄的 Mvx 封装；
+        真正把它用起来的只有 6 个 VIP 业务组件，而 DevKit 的打包方式决定了这套能力如何被发布、升级和调试。
+      </p>
+      <div class="meta">
+        <span class="chip">扫描 <b>7,034</b> 个 .kt</span>
+        <span class="chip">命中 <b>51</b> 个文件</span>
+        <span class="chip">业务组件 <b>6</b> 个</span>
+        <span class="chip">DevKit <b>0.0.19</b></span>
+        <span class="chip">快照 <b>2026-10-17</b></span>
+        <span class="chip">撰写 <b>DeepSeek Harness</b></span>
+      </div>
+    </section>
+
+    <section id="tldr">
+      <div class="section-head"><span class="idx">01</span><h2>结论先行</h2></div>
+      <p class="lead-sm">先给五个判断，后面每一节都用代码和构建文件来支撑。</p>
+
+      <div class="cards">
+        <div class="card">
+          <span class="num-big">5<small> 个文件</small></span>
+          <h4>引擎不是自研的</h4>
+          <p>DevKit 的 <code>mvx</code> 包只有 <code>Mvx.kt</code>、<code>MvxState</code>、<code>MvxView</code>、<code>MvxViewModel</code>、<code>MvxRepository</code> 五个文件，底层是 Mavericks 3.0.6。</p>
+        </div>
+        <div class="card">
+          <span class="num-big">4<small> 件套</small></span>
+          <h4>State / View / VM / Repository</h4>
+          <p>再用 <code>Pager</code> + <code>ResponsePagingSource</code> + <code>SuperAdapter</code> 把“列表型 MVI”补齐；这是这套工程最常用的组合。</p>
+        </div>
+        <div class="card">
+          <span class="num-big">6<small> 个业务仓</small></span>
+          <h4>主 App 不写 Mvx</h4>
+          <p>Futureve / VipAndroid 只在 app 层用 <code>api</code> 引入 DevKit；真正写 Mvx 的是稿件、音频、会员主页、关注、首页等 VIP 业务组件。</p>
+        </div>
+        <div class="card">
+          <span class="num-big">混合<small> 而非纯血</small></span>
+          <h4>状态容器 + 命令式 UI</h4>
+          <p>Mavericks 管状态和 <code>Async</code>，列表用 Paging3；但 LiveData、RxBus、Fragment 里直接订阅依然大量存在，不能称为“纯 MVI”。</p>
+        </div>
+        <div class="card">
+          <span class="num-big">AAR<small> + 源码</small></span>
+          <h4>两种消费方式</h4>
+          <p>默认走内网 Maven 的 <code>com.zhihu.android.library:devkit</code> AAR；需要改库时，用 <code>sourcecode.properties</code> 把 AAR 替换成本地工程。</p>
+        </div>
+        <div class="card">
+          <span class="num-big">19<small> 个 tag</small></span>
+          <h4>Athena 负责发布</h4>
+          <p><code>athena.json</code> 声明版本与发布命令，CI 机器人提交版本号并打 tag；最新是 0.0.19，但各仓版本并不齐。</p>
+        </div>
+      </div>
+
+      <div class="callout good">
+        <p><strong>一句话总结：</strong>DevKit 把 Mavericks 包装成公司内的“MVI 标准件”（状态、异步、分页、适配器、初始化、版本锁定、AAR 发布），业务按需取用；这是一次<strong>渐进式、工具化</strong>的 MVI 落地，而不是全量架构改造。</p>
+      </div>
+
+      <div class="callout note">
+        <p><strong>术语对齐：</strong>仓库里把 MVI 写成 <strong>Mvx</strong>（Mavericks 的缩写），包名 <code>com.zhihu.android.devkit.mvx</code>。本文中的“MVI / Mvx / Mavericks”指同一套东西，不表示自研框架。</p>
+      </div>
+    </section>
+
+    <section id="landscape">
+      <div class="section-head"><span class="idx">02</span><h2>全景：三层结构</h2></div>
+      <p>把仓库按职责拆开，会看到一条很清晰的三层链路。MVI 能力不在业务仓里实现，也不在宿主 App 里实现，而是沉在 DevKit 这个基础库中，由宿主以 <code>api</code> 暴露给所有组件。</p>
+
+      <div class="flow">
+        <div class="flow-box">
+          <b>① 宿主 App</b>
+          <span>Futureve / VipAndroid<br>app 层 <code>api devkit</code><br>负责初始化与打包</span>
+        </div>
+        <div class="arrow">→</div>
+        <div class="flow-box hot">
+          <b>② DevKit（AAR）</b>
+          <span>Mvx 四件套 + Paging<br>Mavericks 3.0.6<br>SuperAdapter / viewScope</span>
+        </div>
+        <div class="arrow">→</div>
+        <div class="flow-box">
+          <b>③ 业务组件</b>
+          <span>Manuscript / Audio<br>Profile / Attention / Home<br>各自写 State 与页面</span>
+        </div>
+      </div>
+      <p class="flow-caption">图 1：能力从基础库流向业务，宿主只做“接线”和“分发”。组件不直接依赖 Mavericks 坐标，而是依赖 DevKit 暴露的传递依赖。</p>
+
+      <div class="flow">
+        <div class="flow-box">
+          <b>View</b>
+          <span>Fragment / 自定义 View<br>实现 <code>MvxView</code></span>
+        </div>
+        <div class="arrow">→ 事件</div>
+        <div class="flow-box">
+          <b>ViewModel</b>
+          <span>公开方法接收事件<br><code>execute</code> / <code>collectState</code></span>
+        </div>
+        <div class="arrow">→</div>
+        <div class="flow-box hot">
+          <b>State</b>
+          <span><code>setState { copy(...) }</code><br>不可变 data class</span>
+        </div>
+        <div class="arrow">→</div>
+        <div class="flow-box">
+          <b>View 重绘</b>
+          <span><code>invalidate</code> / <code>onAsync</code><br><code>onEach</code> / <code>collectFrom</code></span>
+        </div>
+      </div>
+      <p class="flow-caption">图 2：单向数据流。注意这套代码里没有显式的 Intent / Action 类型，所谓“事件”就是 ViewModel 的公开方法。</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>角色</th><th>仓库 / 位置</th><th>关键文件</th><th>职责</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>基础设施</td>
+              <td><code>DevKit/devkit</code></td>
+              <td><code>mvx/</code>、<code>paging/</code>、<code>DevKit.kt</code></td>
+              <td>封装 Mavericks、统一依赖版本、提供分页与适配器工具、初始化 Mavericks、发布 AAR。</td>
+            </tr>
+            <tr>
+              <td>样例壳</td>
+              <td><code>DevKit/app</code></td>
+              <td><code>App.java</code>、<code>MainActivity.java</code></td>
+              <td>一个最小可运行的示例 App：初始化 TaskManager、路由、登录页跳转；<strong>没有 Mvx 示例</strong>。</td>
+            </tr>
+            <tr>
+              <td>宿主</td>
+              <td><code>Futureve/app</code>、<code>VipAndroid/app</code></td>
+              <td><code>build.gradle</code> 的 <code>api devkit</code></td>
+              <td>把 DevKit 作为基础组件暴露给全部业务模块；用 TaskManager 触发 <code>T_DevKitInit</code>。</td>
+            </tr>
+            <tr>
+              <td>业务组件</td>
+              <td>VipManuscript、VipKmAudio、VipProfile、km-attention、km_home_base、KnowledgeMarket</td>
+              <td>各自的 <code>State</code> / <code>ViewModel</code> / <code>Fragment</code></td>
+              <td>定义页面状态、发请求、驱动列表与局部 UI。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout warn">
+        <p><strong>一个容易误判的点：</strong>DevKit 的示例 App 并没有演示 Mvx。它只验证了“库能编译、能初始化、能跳路由”。所有 Mvx 的真实用法都散落在业务仓里，这意味着这套封装<strong>缺少可执行的官方用法样例</strong>，新人只能靠读业务代码学习。</p>
+      </div>
+    </section>
+
+    <section id="dialect">
+      <div class="section-head"><span class="idx">03</span><h2>Mavericks 的“方言”</h2></div>
+      <p>DevKit 没有重新发明概念，而是给 Mavericks 的每个核心概念起了一个 <code>Mvx</code> 前缀的名字。理解这张映射表，基本就能读懂所有业务页面。</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Mavericks 概念</th><th>项目里的名字</th><th>定义位置</th><th>这套工程里的用法</th></tr></thead>
+          <tbody>
+            <tr><td>State</td><td><code>MvxState</code></td><td><code>MvxState.kt:8</code></td><td>空接口，仅作为类型约束与扩展挂载点；业务 State 通常是带默认值的 <code>data class</code>（并非强制，见下文）。</td></tr>
+            <tr><td>ViewModel</td><td><code>MvxViewModel&lt;S : MvxState&gt;</code></td><td><code>MvxViewModel.kt:21</code></td><td>继承 <code>MavericksViewModel</code>，额外提供 Rx 的 <code>execute</code> 与 Flow / Rx 的 <code>collectState</code>。</td></tr>
+            <tr><td>View</td><td><code>MvxView</code></td><td><code>MvxView.kt:16</code></td><td>继承 <code>MavericksView</code>，额外提供 <code>SuperAdapter.collectFrom</code> / <code>collectFromAsync</code>；仍需实现 <code>invalidate()</code>。</td></tr>
+            <tr><td>Repository</td><td><code>MvxRepository&lt;S : MvxState&gt;</code></td><td><code>MvxRepository.kt:29</code></td><td>继承 <code>MavericksRepository</code>，用于<strong>非 ViewModel 的长生命周期状态容器</strong>；全仓只有音频播放器在用。</td></tr>
+            <tr><td>Async</td><td><code>com.airbnb.mvrx.Async</code></td><td>Mavericks 库</td><td><code>Uninitialized</code> / <code>Loading</code> / <code>Success</code> / <code>Fail</code> 四态；请求结果统一放这里。</td></tr>
+            <tr><td>Reducer</td><td><code>setState { copy(...) }</code></td><td>业务代码</td><td>用 data class 的 <code>copy</code> 生成新状态；没有独立的 reducer 文件。</td></tr>
+            <tr><td>Event / Intent</td><td>公开方法</td><td>业务 ViewModel</td><td>如 <code>refresh()</code>、<code>loadData()</code>、<code>setScene()</code>；没有 sealed class 的 Intent 建模。</td></tr>
+            <tr><td>Factory / DI</td><td>无</td><td>页面 <code>fragmentViewModel()</code></td><td>不写 Factory；由 <code>fragmentViewModel()</code> 委托创建，业务参数通过 <code>initParams</code> / <code>setXxx</code> 事后注入。</td></tr>
+            <tr><td>初始化</td><td><code>DevKit.init()</code></td><td><code>DevKit.kt:16</code></td><td>内部调用 <code>Mavericks.initialize(DEBUG)</code>；宿主必须在启动时调用。</td></tr>
+            <tr><td>调试模式</td><td><code>DevKit.DEBUG</code></td><td><code>DevKit.kt:13</code></td><td>只有 <code>dev</code> flavor 为 true；用于 Mavericks 校验与 Repository 的 correctness checks。</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>如果对照经典 MVI 的三段式 <strong>Intent → Model → View</strong>，这套实现其实做了两次“简化”：<strong>Intent</strong> 退化成 ViewModel 的公开方法（没有 sealed class、没有可枚举的事件类型），<strong>Model</strong> 就是 <code>MvxState</code>，<strong>View</strong> 通过 <code>invalidate</code> / <code>onAsync</code> / <code>onEach</code> 消费状态。好处是接入成本低、和现有 Rx/Paging 代码兼容；坏处是事件不可枚举、不可回放，复杂页面很难靠类型系统约束。</p>
+
+      <h3>为什么这些 ViewModel 都没有写 Factory？</h3>
+      <p>页面统一用 <code>fragmentViewModel()</code> 拿 ViewModel，没有自定义 Factory；State 大多给字段提供默认值，业务参数则在 <code>onViewCreated</code> 里通过普通方法补进去。这只是团队约定，不是框架强制：例如 <code>ManuscriptState</code> 的最后一个字段 <code>adMemberPopupConfig</code> 就没有默认值。</p>
+
+      <div class="code">
+        <div class="code-head"><span class="path"><b>VipProfile/.../vm/VipNewProfileViewModel.kt</b>:34-41</span><button class="copy" type="button">复制</button></div>
+        <pre><code><span class="tok-k">data class</span> <span class="tok-t">VipNewProfileState</span>(
+    <span class="tok-k">val</span> data: Async&lt;ProfileInfo&gt; = Uninitialized,
+    <span class="tok-k">val</span> moreVipData: MoreVipData = MoreVipData(),
+    <span class="tok-k">val</span> messageCount: MessageCount = MessageCount(),
+) : MvxState
+
+<span class="tok-k">class</span> <span class="tok-t">VipNewProfileViewModel</span>(initialState: VipNewProfileState) :
+    MvxViewModel&lt;VipNewProfileState&gt;(initialState) { <span class="tok-c">/* ... */</span> }</code></pre>
+      </div>
+
+      <p>页面里则是这样拿 ViewModel 的：</p>
+
+      <div class="code">
+        <div class="code-head"><span class="path"><b>VipProfile/.../fragment/VipNewProfileFragment.kt</b>:62-65</span><button class="copy" type="button">复制</button></div>
+        <pre><code><span class="tok-k">class</span> <span class="tok-t">VipNewProfileFragment</span> : BaseFragment(), MvxView, AppBarLayout.OnOffsetChangedListener {
+    <span class="tok-k">private val</span> profileViewModel: VipNewProfileViewModel <span class="tok-k">by</span> fragmentViewModel()
+    <span class="tok-c">// ...</span>
+}</code></pre>
+      </div>
+
+      <div class="callout note">
+        <p><strong>约定比机制更重要：</strong>现有代码把“参数注入”放在构造之后（<code>initParams</code>、<code>setMemberToken</code>、<code>setScene</code>），并假设这些 setter 在请求前被调用。好处是页面接入简单；代价是<strong>参数与请求的时序靠调用方保证</strong>，没有编译期约束，也没有 Factory / SavedStateHandle 的恢复能力。</p>
+      </div>
+
+      <h3>线程与生命周期</h3>
+      <ul class="list-tight">
+        <li><code>MvxViewModel</code> 通过委托实现 <code>LifecycleViewModel</code>，因此可以直接用 <code>bindToLifecycle()</code> 绑定 Rx 订阅，并在 <code>onCleared()</code> 里 <code>sendClearEvent()</code>。</li>
+        <li>协程侧统一使用 <code>viewModelScope</code>；列表分页在 <code>Pager</code> 内部用传入的 scope 启停。</li>
+        <li><code>setState</code> 是 Mavericks 的入口，状态更新由 Mavericks 串行化；业务侧通常在主线程或 <code>viewModelScope</code> 中调用。</li>
+        <li><code>MvxView.invalidate()</code> 是 Mavericks 在状态变化 / 页面启动时回调的“全量重绘”入口；很多页面把它留空，改用更细粒度的 <code>onEach</code> / <code>onAsync</code>。</li>
+      </ul>
+    </section>
+
+    <section id="api">
+      <div class="section-head"><span class="idx">04</span><h2>DevKit 的四个扩展点</h2></div>
+      <p>把 <code>mvx</code> 包拆开看，它真正增加的能力只有四类：类型约束、异步执行、列表收集、长生命周期仓库。下面按“源码 + 用途 + 注意点”逐個说明。</p>
+
+      <h3>4.1 <code>MvxState</code>：一个空接口</h3>
+      <div class="code">
+        <div class="code-head"><span class="path"><b>DevKit/devkit/.../mvx/MvxState.kt</b>:1-8</span><button class="copy" type="button">复制</button></div>
+        <pre><code><span class="tok-k">package</span> com.zhihu.android.devkit.mvx
+
+<span class="tok-k">import</span> com.airbnb.mvrx.MavericksState
+
+<span class="tok-c">/** 继承自 MavericksState 方便添加扩展方法 */</span>
+<span class="tok-k">interface</span> <span class="tok-t">MvxState</span> : MavericksState</code></pre>
+      </div>
+      <p>它现在是空的，但有两个作用：一是把所有业务的 State 收敛到同一个类型上（<code>S : MvxState</code>），二是给未来加扩展方法留了口子。真正的约束来自 Mavericks 的 <code>MavericksState</code>。</p>
+
+      <h3>4.2 <code>MvxViewModel</code>：把 Rx / Flow 塞进 <code>Async</code></h3>
+      <p>这是使用频率最高的扩展。它做了两件事：把“成功值”收集进 state，以及把 Rx 的 <code>Single</code> / <code>Observable</code> / <code>Completable</code> 包成 Mavericks 的 <code>Async</code>。</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>API</th><th>所在行</th><th>行为</th><th>适用场景</th></tr></thead>
+          <tbody>
+            <tr><td><code>Flow&lt;T&gt;.collectState(reducer)</code></td><td><code>MvxViewModel.kt:26-32</code></td><td><code>onEach</code> 后 <code>setState(reducer)</code>；异常只记日志，不进入 <code>Async</code>。</td><td>持续流、轮询、播放器状态镜像。</td></tr>
+            <tr><td><code>Observable&lt;T&gt;.collectState(reducer)</code></td><td><code>:37-43</code></td><td>绑定生命周期后订阅，成功值写入 state，错误记日志。</td><td>Rx 数据流。</td></tr>
+            <tr><td><code>Single&lt;T&gt;.execute(reducer)</code></td><td><code>:48-50</code></td><td>转成 <code>Observable</code> 后调用完整的 <code>execute</code>。</td><td>一次性请求。</td></tr>
+            <tr><td><code>Single&lt;T&gt;.execute(mapper, reducer)</code></td><td><code>:59-62</code></td><td>先把结果 <code>map</code> 成 UI 需要的类型，再包 <code>Async</code>。</td><td>网络 DTO → UI 模型。</td></tr>
+            <tr><td><code>Observable&lt;T&gt;.execute(reducer)</code></td><td><code>:67-69</code></td><td>完整执行：先 <code>Loading()</code>，成功 <code>Success</code>，失败 <code>Fail</code>。</td><td>需要 loading / error 的请求。</td></tr>
+            <tr><td><code>Completable.execute(reducer)</code></td><td><code>:74-76</code></td><td>转成 <code>Single&lt;Unit&gt;</code> 再执行。</td><td>写操作、上报。</td></tr>
+            <tr><td><code>Observable&lt;T&gt;.execute(mapper, meta, reducer)</code></td><td><code>:92-121</code></td><td>支持 <code>successMetaData</code>；受 <code>config.onExecute</code> 的 <code>blockExecutions</code> 控制；最终 <code>bindToLifecycle()</code>。</td><td>需要元数据或统一拦截的请求。</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="code">
+        <div class="code-head"><span class="path"><b>DevKit/devkit/.../mvx/MvxViewModel.kt</b>:92-121（节选）</span><button class="copy" type="button">复制</button></div>
+        <pre><code><span class="tok-k">fun</span> &lt;T, V&gt; Observable&lt;T&gt;.execute(
+    mapper: (T) -&gt; V,
+    successMetaData: ((T) -&gt; Any)? = <span class="tok-k">null</span>,
+    stateReducer: S.(Async&lt;V&gt;) -&gt; S
+): Disposable {
+    <span class="tok-k">val</span> blockExecutions = config.onExecute(<span class="tok-k">this</span>@MvxViewModel)
+    <span class="tok-k">if</span> (blockExecutions != MavericksBlockExecutions.No) { <span class="tok-c">/* ... */</span> }
+
+    setState { stateReducer(Loading()) }
+
+    <span class="tok-k">return</span> map&lt;Async&lt;V&gt;&gt; { value -&gt;
+        <span class="tok-k">val</span> success = Success(mapper(value))
+        success.metadata = successMetaData?.invoke(value)
+        success
+    }
+        .onErrorReturn { e -&gt; Fail(e) }
+        .compose(bindToLifecycle())
+        .subscribe { asyncData -&gt; setState { stateReducer(asyncData) } }
+}</code></pre>
+      </div>
+
+      <div class="callout note">
+        <p><strong>注意：</strong><code>execute</code> 的“先 Loading 再 Success/Fail”是手写顺序，注释里专门解释了为什么不用 Rx 的 <code>startWith</code>——如果用了，紧跟其后的 <code>withState</code> 可能还看不到 Loading。这是一个很典型的“状态时序”细节。</p>
+      </div>
+
+      <p>另外，业务里也直接用 Mavericks 原生的 <code>suspend { ... }.execute { }</code>，例如购买弹窗的请求：</p>
+
+      <div class="code">
+        <div class="code-head"><span class="path"><b>VipKmAudio/.../viewmodel/AudioPurchaseViewModel.kt</b>:29-41</span><button class="copy" type="button">复制</button></div>
+        <pre><code><span class="tok-k">fun</span> loadData(businessId: String, sectionId: String) {
+    suspend {
+        dialogService.getAudioPurchaseInfo(businessId, sectionId)
+            .compose(NetworkUtils.simplifyRequest())
+            .awaitFirst()
+    }.execute {
+        copy(dialogInfo = it)
+    }
+}</code></pre>
+      </div>
+      <p class="ref">这说明 DevKit 的扩展不是“唯一入口”：Mavericks 原生 API 与 DevKit 扩展可以混用，团队按熟悉程度选择。</p>
+
+      <h3>4.3 <code>MvxView</code>：把 <code>PagingData</code> 直接喂给 <code>SuperAdapter</code></h3>
+      <div class="code">
+        <div class="code-head"><span class="path"><b>DevKit/devkit/.../mvx/MvxView.kt</b>:16-45</span><button class="copy" type="button">复制</button></div>
+        <pre><code><span class="tok-k">interface</span> <span class="tok-t">MvxView</span> : MavericksView {
+
+    <span class="tok-k">fun</span> &lt;S : MavericksState, A : Any&gt; SuperAdapter.collectFrom(
+        viewModel: MavericksViewModel&lt;S&gt;,
+        prop1: KProperty1&lt;S, PagingData&lt;<span class="tok-k">out</span> A&gt;&gt;,
+        deliveryMode: DeliveryMode = RedeliverOnStart,
+    ): SuperAdapter {
+        viewModel.onEach(prop1, deliveryMode) { submitAnyData(it) }
+        <span class="tok-k">return</span> <span class="tok-k">this</span>
+    }
+
+    <span class="tok-k">fun</span> &lt;S : MavericksState, A : Any&gt; SuperAdapter.collectFromAsync(
+        viewModel: MavericksViewModel&lt;S&gt;,
+        prop1: KProperty1&lt;S, Async&lt;PagingData&lt;<span class="tok-k">out</span> A&gt;&gt;&gt;,
+        deliveryMode: DeliveryMode = RedeliverOnStart,
+    ): SuperAdapter {
+        viewModel.onAsync(prop1, deliveryMode) { submitAnyData(it) }
+        <span class="tok-k">return</span> <span class="tok-k">this</span>
+    }
+}</code></pre>
+      </div>
+      <p>它把“订阅 state 里的 <code>PagingData</code>”和“提交给适配器”两步合成一行。实际页面里通常写成链式：</p>
+
+      <div class="code">
+        <div class="code-head"><span class="path"><b>VipProfile/.../message/MessageContainerFragment.kt</b>:110-115</span><button class="copy" type="button">复制</button></div>
+        <pre><code>adapter = SuperAdapter(differ)
+    .registerViewHolder(MessageVH::class.java) { }
+    .inject(viewModel)
+    .collectFrom(viewModel, MessageState::data)
+    .setupWithRecyclerView(binding.messageRecyclerView, footerType = DefaultLoadState.TYPE_NONE)</code></pre>
+      </div>
+      <p>当同一页面有多个列表、或多个页面共享同一个 Flow 时，会传入 <code>DeliveryMode</code> 做去重：<code>UniqueOnly("mini_series")</code>、<code>uniqueOnly(childTabType)</code> 都是这种用法。</p>
+
+      <h3>4.4 <code>MvxRepository</code>：给“不是 ViewModel 的状态容器”用</h3>
+      <p>Mavericks 本身有 <code>MavericksRepository</code>（实验 API）。DevKit 把它包成 <code>MvxRepository</code>，并委托 <code>LifecycleViewModel</code>，让它可以绑定生命周期、发送清理事件。</p>
+
+      <div class="code">
+        <div class="code-head"><span class="path"><b>DevKit/devkit/.../mvx/MvxRepository.kt</b>:29-64</span><button class="copy" type="button">复制</button></div>
+        <pre><code><span class="tok-k">@OptIn</span>(ExperimentalMavericksApi::<span class="tok-k">class</span>, InternalMavericksApi::<span class="tok-k">class</span>)
+<span class="tok-k">abstract class</span> <span class="tok-t">MvxRepository</span>&lt;S : MvxState&gt;(
+    <span class="tok-k">private val</span> config: MavericksRepositoryConfig&lt;S&gt;,
+) : MavericksRepository&lt;S&gt;(config),
+    LifecycleViewModel <span class="tok-k">by</span> LifecycleViewModel.Delegate() {
+
+    <span class="tok-k">constructor</span>(
+        initialState: S,
+        coroutineScope: CoroutineScope,
+        performCorrectnessValidations: Boolean = DevKit.DEBUG,
+    ) : <span class="tok-k">this</span>(
+        MavericksRepositoryConfig(
+            performCorrectnessValidations = performCorrectnessValidations,
+            stateStore = CoroutinesStateStore(
+                initialState = initialState,
+                scope = coroutineScope,
+            ),
+            coroutineScope = coroutineScope,
+        )
+    )
+
+    <span class="tok-k">init</span> {
+        coroutineScope.launch { awaitCancellation() }.invokeOnCompletion {
+            sendClearEvent()
+        }
+    }
+    <span class="tok-c">// 与 MvxViewModel 基本一致的 Rx execute 扩展 …</span>
+}</code></pre>
+      </div>
+
+      <p>全仓只有一个实现：音频播放器的 <code>KMPlayer2</code>。它不是页面级 ViewModel，而是一个<strong>跨页面单例状态容器</strong>，用一个 <code>MultiCoroutineScope</code> 把多个页面的生命周期“挂”在一起。</p>
+
+      <div class="code">
+        <div class="code-head"><span class="path"><b>VipKmAudio/.../util/KMPlayer2.kt</b>:167-221（节选）</span><button class="copy" type="button">复制</button></div>
+        <pre><code><span class="tok-k">data class</span> <span class="tok-t">KmPlayerState</span>(
+    <span class="tok-k">val</span> playParams: AudioPlayParams = AudioPlayParams(<span class="tok-s">""</span>, <span class="tok-s">""</span>, <span class="tok-s">""</span>),
+    <span class="tok-k">val</span> audioDetail: Async&lt;VipAppAudioDetail&gt; = Uninitialized,
+    <span class="tok-k">val</span> playState: PlayState = PlayState(),
+    <span class="tok-c">// … 共 10 个字段</span>
+) : MvxState
+
+<span class="tok-k">class</span> <span class="tok-t">KMPlayer2</span> : MvxRepository&lt;KmPlayerState&gt;(
+    initialState = KmPlayerState(),
+    coroutineScope = MultiCoroutineScope(),
+) {
+    <span class="tok-k">companion object</span> {
+        <span class="tok-k">private var</span> instance: KMPlayer2? = <span class="tok-k">null</span>
+
+        <span class="tok-k">@Synchronized</span>
+        <span class="tok-k">fun</span> get(scope: CoroutineScope): KMPlayer2 {
+            <span class="tok-k">val</span> current = instance
+            <span class="tok-k">if</span> (current != <span class="tok-k">null</span> &amp;&amp; current.coroutineScope.isActive) {
+                current.attachScope(scope)
+                <span class="tok-k">return</span> current
+            }
+            <span class="tok-c">// 创建新实例、attachScope、在 scope 结束时释放播放器与缓存</span>
+        }
+    }
+}</code></pre>
+      </div>
+
+      <p><code>MultiCoroutineScope</code> 的机制是：给每个外部 scope 起一个 <code>awaitCancellation()</code> 的 Job，所有 Job 都结束（页面都退出）后取消自身；<code>MvxRepository</code> 在 init 里也挂了一个 <code>awaitCancellation()</code>，于是 scope 结束会触发 <code>sendClearEvent()</code>，<code>KMPlayer2</code> 再清理单例、播放器和缓存。</p>
+
+      <div class="callout warn">
+        <p><strong>代价：</strong><code>MvxRepository</code> 使用了 Mavericks 的 <code>ExperimentalMavericksApi</code> 与 <code>InternalMavericksApi</code>，并依赖 <code>MavericksBlockExecutions</code> 等内部符号。Mavericks 升级时需要重点回归这一块——这是整套封装里最“贴底层”的地方。</p>
+      </div>
+
+      <h3>4.5 初始化：必须在宿主启动时完成</h3>
+      <div class="code">
+        <div class="code-head"><span class="path"><b>DevKit/devkit/.../DevKit.kt</b>:11-21</span><button class="copy" type="button">复制</button></div>
+        <pre><code><span class="tok-k">object</span> <span class="tok-t">DevKit</span> {
+    <span class="tok-k">var</span> DEBUG: Boolean = <span class="tok-k">false</span>
+        <span class="tok-k">internal set</span>
+
+    <span class="tok-k">fun</span> init(context: Context) {
+        DEBUG = ComponentBuildConfig.FLAVOR() == <span class="tok-s">"dev"</span>
+        Mavericks.initialize(DEBUG)
+    }
+}</code></pre>
+      </div>
+      <p>宿主通过 TaskManager 的 <code>ZHTask</code> 触发：</p>
+      <div class="code">
+        <div class="code-head"><span class="path"><b>DevKit/devkit/.../T_DevKitInit.kt</b>:10-14</span><button class="copy" type="button">复制</button></div>
+        <pre><code><span class="tok-k">class</span> <span class="tok-t">T_DevKitInit</span>(name: String) : ZHTask(name) {
+    <span class="tok-k">override fun</span> onRun() {
+        <span class="tok-k">val</span> app = getInput(<span class="tok-s">"app"</span>) <span class="tok-k">as</span> Application
+        DevKit.init(app)
+    }
+}</code></pre>
+      </div>
+      <p>在 VipAndroid 的构建产物里，可以看到它被列进了启动任务：<code>VipAndroid/app/build/launch_config/.../TaskManagerConfig.java:74</code> 的初始化数组中包含 <code>"T_DevKitInit"</code>。这说明 DevKit 不自己初始化，而是<strong>依赖宿主在 Application 启动链路里显式接入</strong>。</p>
+
+      <div class="callout note">
+        <p><code>Mvx.initialize(context)</code> 已标记 <code>@Deprecated</code>，并会在 debuggable 包中打印“请使用 T_DevKitInit 初始化 DevKit”。现有代码应统一走 <code>DevKit.init</code> 或 <code>T_DevKitInit</code>。</p>
+      </div>
+
+      <h3>4.6 顺带补齐的“列表基础设施”</h3>
+      <p>这套 MVI 的主战场是列表，因此 DevKit 里的 paging 包和 mvx 包是配套使用的。读懂下面几个类，基本就能读懂业务页面的数据链路：</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>类 / 扩展</th><th>作用</th><th>典型组合</th></tr></thead>
+          <tbody>
+            <tr><td><code>Pager</code></td><td>包装 Paging3 的 <code>Pager</code>，接收 <code>viewModelScope</code> 与 <code>prefetchDistance</code>。</td><td><code>Pager(viewModelScope) { Source() }</code></td></tr>
+            <tr><td><code>ResponsePagingSource</code></td><td>把 Retrofit <code>Response</code> 分页响应对齐成 <code>PagingSource</code>，暴露 <code>resolveNextKey</code> / <code>resolvePreKey</code> / <code>resolveValue</code>。</td><td>列表型 ViewModel 的 <code>inner class DataSource</code></td></tr>
+            <tr><td><code>PagerMediator</code></td><td>对分页数据做局部增删改，避免整页刷新。</td><td><code>bindMediator(pagerMediator)</code> + <code>remove/update</code></td></tr>
+            <tr><td><code>filterPaging</code> / <code>mapPagingItem</code> / <code>insertPagingSeparators</code></td><td>对 <code>Flow&lt;PagingData&gt;</code> 做过滤、映射、插入分隔项。</td><td><code>pager.flow.filterPaging {...}.setOnEach { copy(data = it) }</code></td></tr>
+            <tr><td><code>viewScope</code></td><td>绑定到 View attach/detach 的协程作用域，detach 时自动取消。</td><td><code>binding.rv.viewScope.launch { ... }</code></td></tr>
+            <tr><td><code>SafeCoroutine</code> / <code>MultiCoroutineScope</code></td><td>异常安全的协程启动；后者用于多页面共享的长生命周期仓库。</td><td>播放器、跨页面状态</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>这也解释了一个现象：业务代码里 <code>MvxViewModel</code> 常常和 <code>Pager</code> 一起出现，而单纯的 <code>MvxView</code> 反而不多。MVI 在这里更像是“列表状态管理”的代名词。</p>
+    </section>
+
+    <section id="patterns">
+      <div class="section-head"><span class="idx">05</span><h2>业务里的四种用法</h2></div>
+      <p>把 46 个业务文件按“状态参与程度”分类，能看到四种非常不同的写法。它们不是四个框架，而是同一套 API 的四种使用深度。</p>
+
+      <h3>用法 A：Async 单请求 —— 最标准的“状态驱动”</h3>
+      <p>代表是会员主页。State 里放一个 <code>Async&lt;ProfileInfo&gt;</code>，ViewModel 用 <code>execute</code> 发请求，Fragment 用 <code>onEach</code> 处理 Uninitialized / Success / Fail（Loading 走 <code>else</code> 分支），用 <code>onAsync</code> 处理成功后的渲染。</p>
+
+      <div class="code">
+        <div class="code-head"><span class="path"><b>VipProfile/.../vm/VipNewProfileViewModel.kt</b>:53-67</span><button class="copy" type="button">复制</button></div>
+        <pre><code><span class="tok-k">private fun</span> getProfileInfo() {
+    <span class="tok-k">val</span> currentUserId = AccountManager.getInstance().currentAccount?.id.toString()
+    service.getProfileInfo()
+        .compose(NetCache.asyncJsonCache(channelsCacheKey + currentUserId, ProfileInfo::class.java)
+            .netFirst(CACHE_TIME_30).result())
+        .compose(NetworkUtils.simplifyRequest(bindToLifecycle()))
+        .map { it.result }
+        .execute {
+            copy(data = it)
+        }
+}</code></pre>
+      </div>
+
+      <div class="code">
+        <div class="code-head"><span class="path"><b>VipProfile/.../fragment/VipNewProfileFragment.kt</b>:215-233</span><button class="copy" type="button">复制</button></div>
+        <pre><code>profileViewModel.onEach(VipNewProfileState::data) {
+    <span class="tok-k">when</span> (it) {
+        <span class="tok-k">is</span> Uninitialized -&gt; showLoadingOrErrorLayout(isLoad = <span class="tok-k">true</span>, isError = <span class="tok-k">false</span>, error = <span class="tok-k">null</span>)
+        <span class="tok-k">is</span> Success -&gt; showLoadingOrErrorLayout(isLoad = <span class="tok-k">false</span>, isError = <span class="tok-k">false</span>, error = <span class="tok-k">null</span>)
+        <span class="tok-k">is</span> Fail -&gt; showLoadingOrErrorLayout(isLoad = <span class="tok-k">false</span>, isError = lastTabStr.isEmpty(), error = it.error)
+        <span class="tok-k">else</span> -&gt; {}
+    }
+}
+profileViewModel.onAsync(VipNewProfileState::data, onSuccess = {
+    setHeaderView(it)
+}, onFail = { })</code></pre>
+      </div>
+      <p>这是整套工程里最接近“单一状态源”的写法：UI 不直接接收网络回调，而是观察 <code>Async</code> 的四种状态。缺点是 <code>onEach</code> 与 <code>onAsync</code> 同时订阅同一个属性，成功时会触发两次逻辑，需要业务自己区分“状态渲染”和“成功副作用”。</p>
+
+      <h3>用法 B：分页列表 —— Pager + State + collectFrom</h3>
+      <p>代表是稿件榜单 / 目录和消息列表。ViewModel 在 <code>init</code> 里把 <code>pager.flow</code> 经过过滤、映射、组合后写进 state；Fragment 用 <code>collectFrom</code> 一行绑定。</p>
+
+      <div class="code">
+        <div class="code-head"><span class="path"><b>VipManuscript/.../catalog/ManuscriptBillboardViewModel.kt</b>:54-59、175-205（节选）</span><button class="copy" type="button">复制</button></div>
+        <pre><code><span class="tok-k">data class</span> <span class="tok-t">BillboardState</span>(
+    <span class="tok-k">val</span> catalogData: PagingData&lt;NetCatalogData&gt; = PagingData.empty(),
+    <span class="tok-k">val</span> headerInfo: Async&lt;NetCatalogHeaderInfo&gt; = Uninitialized,
+) : MvxState
+
+<span class="tok-k">class</span> <span class="tok-t">ManuscriptBillboardViewModel</span>(initState: BillboardState) :
+    MvxViewModel&lt;BillboardState&gt;(initState), IRecommendCatalogVM {
+
+    <span class="tok-k">private val</span> pager = Pager(viewModelScope) { ManuscriptBillboardSource() }
+
+    <span class="tok-k">init</span> {
+        pager.flow
+            .combine(isLikeFlow) { pagingData, isLike -&gt;
+                pagingData.map { it.copy(headerInfo = it.headerInfo?.copy(isLike = isLike)) }
+            }
+            .combine(isShelfFlow) { pagingData, isShelf -&gt;
+                pagingData.map { it.copy(headerInfo = it.headerInfo?.copy(hasInterested = isShelf)) }
+            }
+            .setOnEach {
+                copy(catalogData = it)
+            }
+    }
+}</code></pre>
+      </div>
+
+      <div class="code">
+        <div class="code-head"><span class="path"><b>VipManuscript/.../catalog/ManuscriptBillboardFragment.kt</b>:185-192</span><button class="copy" type="button">复制</button></div>
+        <pre><code>superAdapter = SuperAdapter(differ)
+    .registerViewHolder(ManuscriptBillboardVH::class.java)
+    <span class="tok-c">// …</span>
+    .inject(viewModel)
+    .collectFrom(viewModel, BillboardState::catalogData)
+    .setupWithRecyclerView(binding.recyclerview)
+    .registerViewHolder(DefaultLoadState.Footer.ReachEnd::class.java, DefaultReachEndViewHolder::class.java) {
+        it.binding.footerView.setText(<span class="tok-s">"已显示全部内容"</span>)
+    }</code></pre>
+      </div>
+
+      <p>这个例子还有一个值得注意的细节：<code>ManuscriptBillboardSource.onRefresh</code> 内部直接调用了 <code>setState { copy(headerInfo = Success(...)) }</code>。也就是说，<strong>状态写入发生在 PagingSource 的加载过程中</strong>，而不是在 ViewModel 的公开方法里。Mavericks 允许这么做，但它模糊了“数据源”和“状态容器”的边界，测试和复用都会更难。</p>
+
+      <h3>用法 C：全局播放器 —— Repository 做“单一事实源”</h3>
+      <p>音频播放是这套工程里最复杂的场景：播放状态要跨页面、跨 Fragment 存在，不能被某个页面的 ViewModel 生命周期绑死。解决方式是两层：</p>
+      <ul class="list-tight">
+        <li><code>KMPlayer2</code> 继承 <code>MvxRepository</code>，作为单例持有 <code>KmPlayerState</code>（播放参数、详情、播放列表、弹幕、书架状态等）。</li>
+        <li><code>VipAudioPlayViewModel</code> 通过 <code>KMPlayer2.get(viewModelScope)</code> 拿到仓库，再把仓库的状态“镜像”到页面的 <code>VipAudioPlayState</code>；页面只观察自己的 State。</li>
+      </ul>
+
+      <div class="code">
+        <div class="code-head"><span class="path"><b>VipKmAudio/.../viewmodel/AudioPlayViewModel.kt</b>:139-199（节选）</span><button class="copy" type="button">复制</button></div>
+        <pre><code><span class="tok-k">class</span> <span class="tok-t">VipAudioPlayViewModel</span>(initialState: VipAudioPlayState) :
+    MvxViewModel&lt;VipAudioPlayState&gt;(initialState) {
+
+    <span class="tok-k">val</span> kmPlayer: KMPlayer2 = KMPlayer2Class.get(viewModelScope)
+
+    <span class="tok-k">init</span> {
+        kmPlayer.stateFlow.onEach { state -&gt;
+            <span class="tok-k">if</span> (interceptFlow) <span class="tok-k">return</span>@onEach
+            setState {
+                copy(
+                    audioDetail = state.audioDetail,
+                    playState = state.playState,
+                    <span class="tok-c">// … 把仓库状态投影到页面状态</span>
+                )
+            }
+        }.launchIn(viewModelScope)
+    }
+}</code></pre>
+      </div>
+
+      <p>页面侧则大量使用 <code>withState</code> / <code>onAsync</code> / <code>onEach</code>，并且保留了一个非空的 <code>invalidate()</code> 来做兜底渲染：</p>
+
+      <div class="code">
+        <div class="code-head"><span class="path"><b>VipKmAudio/.../ui/AudioPlayerFragment.kt</b>:1056-1062</span><button class="copy" type="button">复制</button></div>
+        <pre><code><span class="tok-k">override fun</span> invalidate() {
+    withState(viewModel) { state -&gt;
+        binding.progress.visibility =
+            <span class="tok-k">if</span> (state.audioDetail <span class="tok-k">is</span> Loading) View.VISIBLE <span class="tok-k">else</span> View.GONE
+        <span class="tok-c">// … 还有 next 按钮的 tint / 进度条颜色等</span>
+    }
+}</code></pre>
+      </div>
+
+      <p>这是“MVI + 单例仓库”的组合：Repository 保证跨页面一致，ViewModel 负责把仓库状态投影成页面状态，View 只消费页面状态。代价是状态字段多（<code>VipAudioPlayState</code> 有 14 个字段），且需要手动镜像，容易漏字段或产生两份真相。</p>
+
+      <h3>用法 D：只挂个 <code>MvxView</code> —— 半采用与误用</h3>
+      <p>还有一批页面，<strong>实现了 <code>MvxView</code>，但没有真正走状态驱动</strong>：</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>页面</th><th>实际写法</th><th>问题</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><code>NativeManuscriptRecommendCatalogFragment</code></td>
+              <td>用 <code>fragmentViewModel()</code> 拿 VM，但请求直接在 Fragment 里 <code>getNativeRecommend(...).subscribe { ... }</code>；<code>invalidate()</code> 为空。</td>
+              <td>ViewModel 只承载了几个参数字段，真正的数据流绕过了 State，属于“为了用 Mvx 而用 Mvx”。</td>
+            </tr>
+            <tr>
+              <td><code>PinTabFragment</code></td>
+              <td>实现 <code>MvxView</code>，但 ViewModel 是 <code>BaseAndroidViewModel</code> + <code>MutableLiveData</code>，没有 <code>MvxState</code>。</td>
+              <td><code>MvxView</code> 在这里只是标记接口；Mavericks 的 <code>invalidate()</code> 永远不会带来状态，空实现即可。</td>
+            </tr>
+            <tr>
+              <td><code>ManuscriptFreePopupFragment</code></td>
+              <td>标准 <code>MvxView</code> + <code>MvxViewModel</code>，用 <code>onAsync</code> 绑定两个 Async 字段。</td>
+              <td>这是“半采用”里比较健康的写法：小页面、少量状态、没有硬套 Paging。</td>
+            </tr>
+            <tr>
+              <td><code>CharacterLiveView</code></td>
+              <td>不是 Fragment，而是一个普通 View 类，直接 <code>implements MvxView</code>，自己持有 <code>CharacterLiveViewModel</code>。</td>
+              <td>说明 <code>MvxView</code> 并不绑定 Fragment；但 View 自己创建/持有 VM 的边界需要团队约定。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout warn">
+        <p><strong>判断“是不是 MVI”的标准：</strong>看页面是否<strong>只通过 State 渲染</strong>。如果 Fragment 里还有 <code>subscribe { ... }</code> 直接改 View，或者 ViewModel 只是参数容器，那它只是“挂了 Mvx 的类型”，不是状态驱动。</p>
+      </div>
+    </section>
+
+    <section id="coverage">
+      <div class="section-head"><span class="idx">06</span><h2>覆盖情况与统计</h2></div>
+      <p>下面的数字来自对整个工作区的静态扫描（匹配 <code>Mvx*</code> / <code>Mavericks*</code> 的 Kotlin 文件）。它不代表运行时行为，但足以回答“这套东西到底铺开了没有”。</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>业务仓</th><th class="num">命中文件</th><th class="num">State / VM</th><th class="num">onAsync</th><th class="num">onEach</th><th class="num">collectFrom</th><th>判断</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>VipManuscript（稿件）</td><td class="num">18</td><td class="num">7 / 7</td><td class="num">36</td><td class="num">3</td><td class="num">4</td><td><span class="pill full">重度</span> 目录、榜单、角色直播、免费弹窗</td></tr>
+            <tr><td>VipKmAudio（音频）</td><td class="num">9</td><td class="num">4 / 3</td><td class="num">14</td><td class="num">8</td><td class="num">2</td><td><span class="pill full">重度</span> 播放器 + 菜单 + 购买</td></tr>
+            <tr><td>VipProfile（会员主页）</td><td class="num">8</td><td class="num">3 / 3</td><td class="num">1</td><td class="num">4</td><td class="num">2</td><td><span class="pill full">中</span> 主页 Async + 子 Tab 分页</td></tr>
+            <tr><td>km-attention（关注）</td><td class="num">4</td><td class="num">1 / 1</td><td class="num">0</td><td class="num">0</td><td class="num">1</td><td><span class="pill partial">局部</span> 仅 MiniSeries 真正用</td></tr>
+            <tr><td>km_home_base（首页）</td><td class="num">2</td><td class="num">1 / 1</td><td class="num">0</td><td class="num">3</td><td class="num">1</td><td><span class="pill partial">局部</span> 发现页信息流</td></tr>
+            <tr><td>KnowledgeMarket（知识市场）</td><td class="num">5</td><td class="num">2 / 2</td><td class="num">0</td><td class="num">0</td><td class="num">1</td><td><span class="pill marker">分叉副本</span> 与 VipManuscript 同源但已漂移</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="cards">
+        <div class="card"><span class="num-big">18 / 17</span><p><strong>State / ViewModel</strong><br>基本一一对应；唯一不对应的是 <code>KmPlayerState</code>，它属于 <code>MvxRepository</code>，没有页面级 VM。</p></div>
+        <div class="card"><span class="num-big">25</span><p><strong>MvxView 实现</strong><br>其中 1 个是自定义 View（<code>CharacterLiveView</code>），2 个是抽象 Fragment，其余是具体 Fragment。</p></div>
+        <div class="card"><span class="num-big">51</span><p><strong>onAsync 调用点</strong><br>36 处集中在 VipManuscript，14 处在 VipKmAudio，1 处在 VipProfile。</p></div>
+        <div class="card"><span class="num-big">11</span><p><strong>collectFrom 调用点</strong><br>列表型页面的标准动作；另有 2 处 <code>collectFrom</code> 是 paging 包里的 Flow 重载。</p></div>
+      </div>
+
+      <div class="callout note">
+        <p><strong>覆盖结论：</strong>MVI 只在 <strong>VIP 内容消费链路</strong>（稿件、音频、会员主页、关注、首页）里真正落地；主 App 不写 Mvx，知识市场是稿件代码的分叉副本。把它称为“全公司 MVI 标准”会高估现状，称为“VIP 业务的状态管理工具”更准确。</p>
+      </div>
+
+      <p class="ref">统计口径：<code>.kt</code> 文件；排除 <code>build/</code> 产物；<code>MvxView</code> 计入 <code>: MvxView</code> / <code>, MvxView</code> 的实现声明；<code>onAsync</code> / <code>onEach</code> 计入调用点而非文件数。</p>
+    </section>
+
+    <section id="proscons">
+      <div class="section-head"><span class="idx">07</span><h2>好在哪，坑在哪</h2></div>
+      <p>这套 MVI 不是“教科书式”的：它没有 Intent、没有 reducer 目录、没有依赖注入，甚至没有 Factory。但它解决了 VIP 业务最痛的两个问题：<strong>异步状态的表达</strong>和<strong>分页列表的复用</strong>。</p>
+
+      <div class="two-col">
+        <div class="card">
+          <h4>做得好的地方</h4>
+          <ul class="checks">
+            <li>用 <code>Async</code> 统一了 Loading / Success / Fail，页面不再各自发明加载态。</li>
+            <li><code>Pager</code> + <code>ResponsePagingSource</code> + <code>SuperAdapter</code> 把分页样板代码压到很低。</li>
+            <li><code>MvxRepository</code> 让播放器这类跨页面状态有了合法容器，不必塞进单例工具类。</li>
+            <li>DevKit 统一了 Mavericks 版本、初始化和 AAR 发布，业务不用各自接 Mavericks。</li>
+            <li><code>collectFrom</code> / <code>collectFromAsync</code> 把“状态 → 列表”变成一行链式调用。</li>
+            <li>源码依赖机制让“改库 + 调业务”可以在同一个 IDE 工程里完成。</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>明显的坑</h4>
+          <ul class="checks">
+            <li class="anti">没有 Intent / Event 建模，事件就是公开方法；页面一复杂，VM 的方法会膨胀。</li>
+            <li class="anti">State 里塞 <code>PagingData</code>、可变集合、派生属性，状态不可比较、不好测试。</li>
+            <li class="anti">Fragment 直接 <code>subscribe</code> 绕过了 VM，出现“双数据源”。</li>
+            <li class="anti"><code>MvxView</code> 被当成 marker 用，<code>invalidate()</code> 空实现，MVI 名存实亡。</li>
+            <li class="anti">参数靠 <code>initParams</code> / setter 注入，时序没有编译期保障，也没有 SavedState 恢复。</li>
+            <li class="anti"><code>MvxRepository</code> 依赖 Mavericks 内部 API，升级风险高。</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>典型症状与后果</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>症状</th><th>直接后果</th><th>建议</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>State 里放 <code>PagingData</code> 与可变 <code>ArrayList</code></td>
+              <td>状态无法做相等比较，<code>DiffUtil</code> / 测试 / 回放都困难；容易在原地修改。</td>
+              <td>State 只放不可变数据；列表用 <code>PagingData</code> 没问题，但不要混入可变集合。</td>
+            </tr>
+            <tr>
+              <td>Fragment 里直接 <code>service.xxx().subscribe { binding... }</code></td>
+              <td>UI 与网络强耦合，状态不可追踪；页面重建后可能重复请求。</td>
+              <td>请求收回到 VM，结果写 <code>Async</code>；Fragment 只观察。</td>
+            </tr>
+            <tr>
+              <td>在 PagingSource 的 <code>onRefresh</code> 里 <code>setState</code></td>
+              <td>数据源承担了状态容器职责；重试、预加载、缓存命中时行为难预测。</td>
+              <td>把 header / 附属状态放到 VM 的方法里，由 <code>pager.flow</code> 的结果驱动。</td>
+            </tr>
+            <tr>
+              <td>一个页面同时用 <code>onEach</code> 和 <code>onAsync</code> 订阅同一个 Async</td>
+              <td>成功回调触发两次；loading / success / fail 的渲染顺序依赖注册顺序。</td>
+              <td>明确分工：<code>onEach</code> 只做状态渲染，<code>onAsync</code> 只做一次性副作用。</td>
+            </tr>
+            <tr>
+              <td><code>MvxView</code> + LiveData VM</td>
+              <td>Mavericks 的状态机制完全没参与，<code>invalidate()</code> 没有意义。</td>
+              <td>要么迁到 <code>MvxState</code>，要么不要实现 <code>MvxView</code>，避免误导。</td>
+            </tr>
+            <tr>
+              <td>同一份代码在 VipManuscript 与 KnowledgeMarket 各维护一份</td>
+              <td>修 bug 只修一边，行为漂移；依赖版本也不同。</td>
+              <td>抽出共享模块，或明确“知识市场是旧版、只维护安全修复”。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout good">
+        <p><strong>如果只做一件事：</strong>先把 Fragment 里的网络订阅收回到 ViewModel，用 <code>Async</code> + <code>execute</code> 表达。收益最大，改动最小，也不会动到现有 Mvx 基础设施。</p>
+      </div>
+    </section>
+
+    <section id="packaging">
+      <div class="section-head"><span class="idx">08</span><h2>DevKit 怎么打包</h2></div>
+      <p>这一节回答“DevKit 这个仓库是怎么把 MVI 包起来的”。分成三层看：<strong>仓库结构</strong>（谁包含谁）、<strong>AAR 内容</strong>（发布什么）、<strong>发布与消费</strong>（怎么到业务手里）。</p>
+
+      <h3>8.1 仓库结构：一个库 + 一个样例壳</h3>
+      <div class="tree"><span class="dir">DevKit/</span>
+├── <span class="file">build.gradle</span>          <span class="cm"># buildscript：AGP 4.2.0、知乎插件、Kotlin、内部 Maven</span>
+├── <span class="file">settings.gradle</span>       <span class="cm"># include ':app', ':devkit' + sourcecode.gradle</span>
+├── <span class="file">version.gradle</span>        <span class="cm"># 从主工程同步的版本目录（427 行）</span>
+├── <span class="file">athena.json</span>          <span class="cm"># 发布元数据：0.0.19 / library / devkit</span>
+├── <span class="file">.gitlab-ci.yml</span>       <span class="cm"># 引入知乎 Android 公共 CI 模板</span>
+├── <span class="file">gradle/</span>
+│   ├── <span class="file">sourcecode.gradle</span>  <span class="cm"># 源码依赖替换（250 行）</span>
+│   └── <span class="file">wrapper/</span>
+├── <span class="dir">app/</span>                 <span class="cm"># 示例 App：App.java / MainActivity.java / T_AppOnCreate.java</span>
+│   ├── <span class="file">build.gradle</span>      <span class="cm"># apply com.zhihu.android.application + api project(':devkit')</span>
+│   └── <span class="file">src/main/</span>        <span class="cm"># 只有资源、清单和 3 个 Java 文件</span>
+└── <span class="dir">devkit/</span>              <span class="cm"># 真正的发布模块</span>
+    ├── <span class="file">build.gradle</span>      <span class="cm"># apply com.zhihu.android.library + kotlin-android</span>
+    ├── <span class="file">consumer-rules.pro</span>
+    ├── <span class="file">gradle/lock_third_versions.gradle</span>
+    └── <span class="file">src/main/</span>
+        ├── <span class="file">java/com/zhihu/android/devkit/</span>
+        │   ├── <span class="file">mvx/</span>          <span class="cm"># 5 个文件：Mvx / State / View / ViewModel / Repository</span>
+        │   ├── <span class="file">paging/</span>       <span class="cm"># Pager / Source / Adapter / Collector …</span>
+        │   ├── <span class="file">coroutine/</span>    <span class="cm"># ViewScope / SafeCoroutine / MultiCoroutineScope</span>
+        │   ├── <span class="file">rxbus/</span>
+        │   └── <span class="file">util/</span>
+        └── <span class="file">res/</span>             <span class="cm"># layout 下 6 个 devkit_load_state_* 布局；values/ids.xml</span></div>
+
+      <p>两个模块的分工很清楚：</p>
+      <ul class="list-tight">
+        <li><strong><code>devkit</code></strong>：唯一要发布的 AAR。它包含 Mvx、Paging、协程、RxBus、工具类和 6 个加载态布局；清单文件是空的（<code>&lt;manifest package="com.zhihu.android.devkit" /&gt;</code>），没有 Activity / Service / Provider。</li>
+        <li><strong><code>app</code></strong>：只用于本地验证的壳。它 <code>api project(':devkit')</code>，跑的是源码工程而不是 AAR；但它<strong>没有 Mvx 示例</strong>，只演示了 TaskManager 初始化与路由。</li>
+      </ul>
+
+      <div class="callout note">
+        <p><strong>为什么要把 MVI 包进 DevKit，而不是让业务直接用 Mavericks？</strong>组件化工程里每个业务仓独立构建，直接依赖 Mavericks 会让版本和初始化方式各写各的；DevKit 把 <strong>Mavericks + Paging3 + SuperAdapter + 加载态布局 + 初始化 + 版本锁定</strong>打成一件“标准件”，宿主在 app 层 <code>api</code> 一次，所有业务模块就能编译。代价是 DevKit 成为发布瓶颈，且 Mavericks 的版本升级要由它统一推动。</p>
+      </div>
+
+      <h3>8.2 <code>devkit/build.gradle</code>：每一块都在解决一个“组件化后遗症”</h3>
+      <div class="code">
+        <div class="code-head"><span class="path"><b>DevKit/devkit/build.gradle</b>:1-67（节选）</span><button class="copy" type="button">复制</button></div>
+        <pre><code>apply plugin: <span class="tok-s">'com.zhihu.android.library'</span>
+apply plugin: <span class="tok-s">'kotlin-android'</span>
+apply from: file(<span class="tok-s">"gradle/lock_third_versions.gradle"</span>)
+
+zhihu {
+    autoRestrict { enabled <span class="tok-k">false</span> } <span class="tok-c">// 内部插件的自动约束检查，注释建议开启</span>
+}
+
+android {
+    compileSdkVersion versions.compileSDK
+    resourcePrefix <span class="tok-s">'devkit'</span>          <span class="tok-c">// 约束资源名必须以 devkit 开头，避免合并冲突</span>
+    defaultConfig {
+        minSdkVersion versions.minSDK
+        targetSdkVersion versions.targetSDK
+        consumerProguardFiles <span class="tok-s">'consumer-rules.pro'</span>
+        javaCompileOptions {
+            annotationProcessorOptions {
+                arguments = [moduleName: <span class="tok-s">'devkit'</span>]
+            }
+        }
+    }
+    viewBinding { enabled <span class="tok-k">true</span> }
+}
+
+dependencies {
+    api <span class="tok-s">"com.airbnb.android:mavericks:${versions.mavericks}"</span> <span class="tok-c">// 3.0.6</span>
+    api <span class="tok-s">"androidx.paging:paging-runtime-ktx:3.2.0"</span>
+    api <span class="tok-s">"org.jetbrains.kotlinx:kotlinx-coroutines-rx2:${versions.kotlinx}"</span>
+    api <span class="tok-s">"org.jetbrains.kotlinx:kotlinx-coroutines-android:${versions.kotlinx}"</span>
+    api <span class="tok-s">"androidx.fragment:fragment-ktx:${versions.fragment}"</span>
+    api <span class="tok-s">"com.zhihu.android.library:rxbus:${versions.rxbus}"</span>
+    api <span class="tok-s">"com.zhihu.android.library:basemodel:${versions.basemodel}"</span>
+    api <span class="tok-s">"com.zhihu.android.library:net:${versions.net}"</span>
+    api(<span class="tok-s">"com.zhihu.android.library:zui:${versions.zui}"</span>) { transitive = <span class="tok-k">false</span> }
+    api(<span class="tok-s">"com.zhihu.android:sugaradapter:${versions.sugaradapter}"</span>) { transitive = <span class="tok-k">false</span> }
+    api <span class="tok-s">"com.zhihu.android:logback-zhihu:${versions.logback}"</span>
+}
+
+archivesBaseName = <span class="tok-s">'devkit'</span>
+group = <span class="tok-s">'com.zhihu.android.library'</span></code></pre>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>配置块</th><th>解决的问题</th><th>不这么做的后果</th></tr></thead>
+          <tbody>
+            <tr><td><code>com.zhihu.android.library</code></td><td>知乎内部封装的 Android Library 插件，统一组件化配置、发布任务与依赖约定。</td><td>用原生 <code>com.android.library</code> 会缺少内部发布/约束能力，版本与仓库对不齐。</td></tr>
+            <tr><td><code>resourcePrefix 'devkit'</code></td><td>约束资源名必须以 <code>devkit</code> 开头，AAR 合并进宿主时不与业务资源重名。</td><td>6 个 <code>load_state</code> 布局很容易与业务同名，合并时报错或串资源。</td></tr>
+            <tr><td><code>consumerProguardFiles</code></td><td>把混淆规则随 AAR 发布，宿主打包时自动应用。</td><td>ViewBinding 的 <code>bind/inflate</code> 与 <code>ViewBindingViewHolder</code> 构造器被裁掉，运行期崩溃。</td></tr>
+            <tr><td><code>annotationProcessorOptions</code></td><td>给 router / sugaradapter 的注解处理器传 <code>moduleName</code>。</td><td>路由表或 Adapter 注册表生成失败。</td></tr>
+            <tr><td><code>viewBinding { enabled true }</code></td><td>库内布局用 ViewBinding，避免 <code>findViewById</code>。</td><td>与 DevKit 的 <code>ViewBindingViewHolder</code> 体系不匹配。</td></tr>
+            <tr><td><code>lock_third_versions.gradle</code></td><td>强制 room / appcompat / fragment / activity / lifecycle / core / kotlin 等版本与主工程一致。</td><td>库编译用的 AndroidX 版本与宿主不同，运行期 <code>NoSuchMethodError</code>。</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="code">
+        <div class="code-head"><span class="path"><b>DevKit/devkit/gradle/lock_third_versions.gradle</b>:1-39（节选）</span><button class="copy" type="button">复制</button></div>
+        <pre><code>configurations.all {
+    resolutionStrategy {
+        eachDependency { details -&gt;
+            <span class="tok-k">switch</span> (details.requested.group) {
+                <span class="tok-k">case</span> <span class="tok-s">'androidx.room'</span>:     details.useVersion versions.room; <span class="tok-k">break</span>
+                <span class="tok-k">case</span> <span class="tok-s">'androidx.appcompat'</span>: details.useVersion versions.appcompat; <span class="tok-k">break</span>
+                <span class="tok-k">case</span> <span class="tok-s">'androidx.fragment'</span>:  details.useVersion versions.fragment; <span class="tok-k">break</span>
+                <span class="tok-k">case</span> <span class="tok-s">'androidx.lifecycle'</span>: details.useVersion versions.lifecycle; <span class="tok-k">break</span>
+                <span class="tok-k">case</span> <span class="tok-s">'org.jetbrains.kotlin'</span>: details.useVersion versions.kotlin; <span class="tok-k">break</span>
+            }
+        }
+    }
+}</code></pre>
+      </div>
+      <p class="ref">注意：这个 <code>configurations.all</code> 只作用于 <code>devkit</code> 模块自身的编译/打包配置，<strong>不会</strong>自动强加给消费方。宿主的最终版本仍由宿主自己的 lock 文件决定——所以 DevKit 的锁定是“保证自己能编译”，不是“保证宿主一定用它”。</p>
+
+      <h3>8.3 为什么依赖全是 <code>api</code>？</h3>
+      <p>因为 DevKit 的<strong>公开签名里直接出现了 Mavericks / Paging / SugarAdapter 的类型</strong>：</p>
+      <ul class="list-tight">
+        <li><code>MvxViewModel&lt;S&gt; : MavericksViewModel&lt;S&gt;</code> —— 业务必须能看见 <code>MavericksViewModel</code>、<code>Async</code>、<code>setState</code>。</li>
+        <li><code>MvxView.collectFrom(... PagingData ...)</code> —— 业务必须能看见 <code>PagingData</code>、<code>DeliveryMode</code>。</li>
+        <li><code>SuperAdapter</code>、<code>registerViewHolder</code>、<code>DefaultLoadState</code> —— 业务直接使用。</li>
+      </ul>
+      <p>如果改成 <code>implementation</code>，这些类型不会出现在消费方的编译类路径上，业务代码会直接编译失败。所以 <code>api</code> 不是“懒”，而是<strong>这套封装把 Mavericks 当成了公共 API 的一部分</strong>。</p>
+
+      <div class="callout warn">
+        <p><strong>代价是依赖穿透：</strong>任何引入 DevKit 的模块，都会自动获得 Mavericks、Paging、SugarAdapter、ZUI、net、basemodel、logback 等一整串依赖。好处是接入快；坏处是版本冲突面大，最终只能靠宿主的 lock 文件兜底。</p>
+      </div>
+
+      <h3>8.4 AAR 里到底有什么</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>内容</th><th>数量 / 说明</th><th>是否公共 API</th></tr></thead>
+          <tbody>
+            <tr><td><code>com.zhihu.android.devkit.mvx</code></td><td>5 个文件：<code>Mvx</code>（已废弃的 object）、<code>MvxState</code>（接口）、<code>MvxView</code>（接口）、<code>MvxViewModel</code>、<code>MvxRepository</code></td><td>是，业务直接继承 / 实现</td></tr>
+            <tr><td><code>com.zhihu.android.devkit.paging</code></td><td>23 个 Kotlin 文件（含扩展）：<code>Pager</code>、<code>ResponsePagingSource</code>、<code>PagerMediator</code>、<code>SuperAdapter</code>、各类 <code>ViewHolder</code> / <code>LoadStateAdapter</code> / Collector</td><td>是，列表页面的主力</td></tr>
+            <tr><td><code>com.zhihu.android.devkit.coroutine</code></td><td><code>ViewScope</code>、<code>SafeCoroutine</code>、<code>MultiCoroutineScope</code></td><td>是</td></tr>
+            <tr><td><code>rxbus</code> / <code>util</code></td><td><code>RxBus</code>、<code>LifecycleAware</code>、<code>Logget</code></td><td>是（但用得少）</td></tr>
+            <tr><td><code>res/layout</code></td><td>6 个 <code>devkit_load_state_*</code> 布局；<code>ids.xml</code> 里一个 <code>devkit_view_scope</code></td><td>否，内部使用</td></tr>
+            <tr><td><code>AndroidManifest.xml</code></td><td>空清单，只有 package 声明，没有组件</td><td>否</td></tr>
+            <tr><td><code>consumer-rules.pro</code></td><td>7 行：保留 ViewBinding 的 <code>bind/inflate</code> 与 <code>ViewBindingViewHolder</code> 构造器</td><td>随 AAR 生效</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="code">
+        <div class="code-head"><span class="path"><b>DevKit/devkit/consumer-rules.pro</b>:1-7</span><button class="copy" type="button">复制</button></div>
+        <pre><code>-keep <span class="tok-k">class</span> * <span class="tok-k">implements</span> androidx.viewbinding.ViewBinding {
+    <span class="tok-k">public static</span> *** bind(android.view.View);
+    <span class="tok-k">public static</span> *** inflate(...);
+}
+-keep <span class="tok-k">class</span> * <span class="tok-k">extends</span> com.zhihu.android.devkit.paging.ViewBindingViewHolder {
+   &lt;init&gt;(...);
+}</code></pre>
+      </div>
+
+      <h3>8.5 发布链路：Athena 才是“版本号的主人”</h3>
+      <p>DevKit 的<strong>发布版本号</strong>不在 <code>version.gradle</code> 里，而在 <code>athena.json</code> 和 Git tag 里。<code>version.gradle</code> 是从主工程同步来的依赖目录，里面的 <code>versions.devkit = "0.0.7"</code> 只是目录中的一个依赖项版本，与 <code>athena.json</code> / tag 不一致，<strong>不能直接当作发布版本</strong>。</p>
+
+      <div class="code">
+        <div class="code-head"><span class="path"><b>DevKit/athena.json</b>:1-15</span><button class="copy" type="button">复制</button></div>
+        <pre><code>{
+  <span class="tok-s">"name"</span>: <span class="tok-s">"devkit"</span>,
+  <span class="tok-s">"version"</span>: <span class="tok-s">"0.0.19"</span>,
+  <span class="tok-s">"dev"</span>: <span class="tok-s">"yangjinyang"</span>,
+  <span class="tok-s">"qa"</span>: <span class="tok-s">""</span>,
+  <span class="tok-s">"type"</span>: <span class="tok-s">"library"</span>,
+  <span class="tok-s">"main_module"</span>: <span class="tok-s">"devkit"</span>,
+  <span class="tok-s">"modules"</span>: [
+    {
+      <span class="tok-s">"name"</span>: <span class="tok-s">"devkit"</span>,
+      <span class="tok-s">"command"</span>: <span class="tok-s">"./gradlew :devkit:uploadArchives"</span>,
+      <span class="tok-s">"deploy_local"</span>: <span class="tok-s">"./gradlew :devkit:uploadLocalRepo"</span>
+    }
+  ]
+}</code></pre>
+      </div>
+
+      <p>配套的发布要素：</p>
+      <ul class="list-tight">
+        <li><strong>坐标</strong>：<code>com.zhihu.android.library:devkit:&lt;version&gt;</code>，由 <code>group</code> + <code>archivesBaseName</code> 决定。</li>
+        <li><strong>仓库</strong>：<code>http://android-maven.dev.zhihu.com/repository/maven-public/</code>，根工程里写死了，不额外引入其他 Maven。</li>
+        <li><strong>命令</strong>：<code>uploadArchives</code> 发布到内网；<code>uploadLocalRepo</code> 安装到本地仓库，方便联调。</li>
+        <li><strong>CI</strong>：<code>.gitlab-ci.yml</code> 只做了一件事——<code>include remote</code> 知乎 Android 公共 CI 模板；真正的发布由 Athena 2.0 读取 <code>athena.json</code> 执行。</li>
+        <li><strong>版本提交</strong>：Git 历史里能看到机器人提交，例如 <code>Athena2.0 update version：0.0.18 --&gt; 0.0.19, operated by lilang</code>；tag 从 <code>0.0.1</code> 一路打到 <code>0.0.19</code>。</li>
+      </ul>
+
+      <div class="flow">
+        <div class="flow-box"><b>开发者 push</b><span>develop 分支</span></div>
+        <div class="arrow">→</div>
+        <div class="flow-box"><b>Athena 2.0</b><span>读 athena.json<br>执行 uploadArchives</span></div>
+        <div class="arrow">→</div>
+        <div class="flow-box hot"><b>内网 Maven</b><span>devkit-0.0.19.aar<br>+ pom</span></div>
+        <div class="arrow">→</div>
+        <div class="flow-box"><b>宿主 / 组件</b><span>api 依赖解析<br>合并 AAR</span></div>
+      </div>
+      <p class="flow-caption">图 3：发布-消费时序。DevKit 不直接进入 App，而是先变成内网 Maven 上的 AAR，再由宿主的依赖图拉进来。</p>
+
+      <h3>8.6 消费链路：宿主的 <code>api</code> 是关键</h3>
+      <p>DevKit 并不是每个业务模块都显式声明。两个宿主 App 在 <strong>app 模块</strong>用 <code>api</code> 引入它，于是所有依赖 app 的业务模块都能编译到 DevKit 的类型：</p>
+
+      <div class="code">
+        <div class="code-head"><span class="path"><b>VipAndroid/app/build.gradle</b>:689-691 / <b>Futureve/app/build.gradle</b>:802</span><button class="copy" type="button">复制</button></div>
+        <pre><code><span class="tok-c">// VipAndroid：放在“基础组件”区块</span>
+api <span class="tok-s">"com.zhihu.android.library:devkit:${versions.devkit}"</span>
+
+<span class="tok-c">// Futureve：与 vip_manuscript-api 等放在一起</span>
+api <span class="tok-s">"com.zhihu.android.library:devkit:${versions.devkit}"</span></code></pre>
+      </div>
+
+      <p>业务组件里再按需声明，典型写法是直接写坐标，或者走 <code>deps</code> 映射：</p>
+
+      <div class="code">
+        <div class="code-head"><span class="path"><b>VipManuscript/vip_manuscript/build.gradle</b>:95 / <b>VipKmAudio/version_kmaudio.gradle</b>:159</span><button class="copy" type="button">复制</button></div>
+        <pre><code><span class="tok-c">// 直接写坐标</span>
+api <span class="tok-s">"com.zhihu.android.library:devkit:${versions.devkit}"</span>
+
+<span class="tok-c">// 走 deps 映射</span>
+zhihu.devkit = <span class="tok-s">"com.zhihu.android.library:devkit:${versions.devkit}"</span>
+<span class="tok-c">// kmaudio/build.gradle</span>
+api deps.zhihu.devkit</code></pre>
+      </div>
+
+      <h3>8.7 版本漂移：同一个 DevKit，六种版本</h3>
+      <p>扫描各仓的 <code>version.gradle</code>，<code>versions.devkit</code> 的分布是这样的：</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>版本</th><th class="num">仓库数</th><th>仓库</th><th>风险</th></tr></thead>
+          <tbody>
+            <tr><td><code>0.0.19</code></td><td class="num">18</td><td>Futureve、VipAndroid、Comment、Feed、km-attention、Kmaudio、kmcommon、Mercury、Net、Netdns、Picture、Premium、VideoEntity、vip_rn_comment、VipCommon、zh_vip_ad_fabric、Zhplayer、ZIM</td><td>最新，主流</td></tr>
+            <tr><td><code>0.0.18</code></td><td class="num">8</td><td>bottomnav、FutureveGlobal、km_home_base、KnowledgeMarket、mercury-core、Share、VipHome、VipManuscript</td><td>落后一个版本；其中 VipManuscript 是重度 Mvx 用户</td></tr>
+            <tr><td><code>0.0.17</code></td><td class="num">2</td><td>vip_react_entry、VipKmAudio</td><td>落后两个版本；VipKmAudio 是重度 Mvx 用户</td></tr>
+            <tr><td><code>0.0.17-TEMP_08</code></td><td class="num">1</td><td>VipProfile</td><td>TEMP 版本，不应进入正式包</td></tr>
+            <tr><td><code>0.0.9</code></td><td class="num">1</td><td>VipReader（硬编码）</td><td>极旧，可能缺少 Mvx 修复</td></tr>
+            <tr><td><code>0.0.7</code></td><td class="num">1</td><td>DevKit 自己的 <code>version.gradle</code></td><td>与 athena.json 不一致，容易误导排查</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout warn">
+        <p><strong>漂移的现实影响：</strong>VipManuscript（0.0.18）和 VipKmAudio（0.0.17）恰好是 Mvx 使用最重的两个仓，却都不是最新版。DevKit 在 0.0.18 → 0.0.19 之间修过日志与分页能力；如果这两个仓没有升级，行为可能不一致。VipProfile 的 <code>TEMP_08</code> 更需要在发版前清理。</p>
+      </div>
+
+      <h3>8.8 源码依赖：不改 Maven，也能改 DevKit</h3>
+      <p>DevKit 的 <code>settings.gradle</code> 只 include 两个模块，但它 apply 了一个 250 行的 <code>gradle/sourcecode.gradle</code>。这个脚本是知乎组件化体系里的“源码替换器”：</p>
+
+      <div class="code">
+        <div class="code-head"><span class="path"><b>DevKit/settings.gradle</b>:17-19</span><button class="copy" type="button">复制</button></div>
+        <pre><code>include <span class="tok-s">':app'</span>, <span class="tok-s">':devkit'</span>
+<span class="tok-c">// 这里决定了可以源码引用</span>
+apply from: <span class="tok-s">'gradle/sourcecode.gradle'</span></code></pre>
+      </div>
+
+      <p>它支持三种配置来源：</p>
+      <ol class="list-tight">
+        <li><strong><code>local.properties</code></strong>：<code>&lt;组件名&gt;.source=true</code> + <code>&lt;组件名&gt;.dir=路径</code>；配合 <code>gradle.ext.allComponents</code> 或自动扫描。</li>
+        <li><strong><code>sourcecode.properties</code></strong>：一行一条，格式是 <code>group:artifact=路径|模块名</code>；模块名可省略，默认取路径最后一段。</li>
+        <li><strong>组件化工程</strong>：声明 <code>&lt;组件名&gt;.source=true</code> 与 <code>&lt;组件名&gt;.dir=...</code>（脚本会从 <code>local.properties</code> 或 Gradle 属性读取目录），自动把 component 加入源码依赖。</li>
+      </ol>
+
+      <div class="code">
+        <div class="code-head"><span class="path"><b>DevKit/gradle/sourcecode.gradle</b>:176-245（节选）</span><button class="copy" type="button">复制</button></div>
+        <pre><code><span class="tok-k">def</span> sourceConfFile = <span class="tok-k">new</span> File(<span class="tok-s">'sourcecode.properties'</span>)
+<span class="tok-k">if</span> (sourceConfFile.exists()) {
+    sourceConfFile.eachLine { line -&gt;
+        <span class="tok-k">def</span> kv = line.split(<span class="tok-s">"="</span>)
+        <span class="tok-k">if</span> (kv?.length == 2 &amp;&amp; kv[0].trim() &amp;&amp; kv[1].trim()) {
+            sourceConf.add(<span class="tok-k">new</span> SourceModule(line))
+        }
+    }
+}
+
+<span class="tok-k">def</span> sourceCode = {
+    sourceConf.forEach { module -&gt;
+        include <span class="tok-s">":${module.name}"</span>
+        project(<span class="tok-s">":${module.name}"</span>).projectDir = <span class="tok-k">new</span> File(module.path)
+    }
+    gradle.allprojects { prj -&gt;
+        configurations.all { config -&gt;
+            config.dependencies.whenObjectAdded { Dependency object -&gt;
+                <span class="tok-k">def</span> sm = sourceConf.find { object.group + <span class="tok-s">":"</span> + object.name == it.classPath }
+                <span class="tok-k">if</span> (sm) project.dependencies.add(config.name, project(<span class="tok-s">":${sm.name}"</span>))
+            }
+            resolutionStrategy {
+                dependencySubstitution {
+                    sourceConf.forEach { sm -&gt;
+                        substitute module(sm.classPath) with project(<span class="tok-s">":${sm.name}"</span>)
+                    }
+                }
+            }
+        }
+    }
+}
+
+sourceCode()</code></pre>
+      </div>
+
+      <p>对 DevKit 来说，这个脚本有两个用途：</p>
+      <ul class="list-tight">
+        <li><strong>DevKit 自己</strong>可以用它源码依赖别的组件（例如调试某个下游库），而不必等 Maven。</li>
+        <li><strong>宿主/业务仓</strong>可以在自己的 <code>sourcecode.properties</code> 里写一行，把 <code>com.zhihu.android.library:devkit</code> 替换成 <code>../DevKit/devkit</code>，这样改 DevKit 代码能立刻在主工程生效，不需要 <code>uploadLocalRepo</code>。</li>
+      </ul>
+
+      <div class="code">
+        <div class="code-head"><span class="path">使用示例（按仓库现有约定整理，不是仓库原文件）</span><button class="copy" type="button">复制</button></div>
+        <pre><code><span class="tok-c"># 宿主工程 sourcecode.properties</span>
+com.zhihu.android.library:devkit=../../DevKit/devkit|devkit
+
+<span class="tok-c"># 或者用 local.properties</span>
+devkit.source=true
+devkit.dir=../../DevKit/devkit</code></pre>
+      </div>
+
+      <div class="callout note">
+        <p><strong>机制的边界：</strong>源码替换依赖 <code>dependencySubstitution</code>，但脚本注释也写明了限制——如果构建时用 <code>./gradlew :app:assembleAlphaDebug</code> 指定了模块，替换可能不生效，需要像脚本里那样手动再 <code>add</code> 一次依赖。另外 <code>enableVCS</code> 会自动改写 <code>.idea/vcs.xml</code>，把源码目录登记成 Git 根，团队协作时要注意别把本地路径提交上去。</p>
+      </div>
+
+      <h3>8.9 打包层面的“缺口清单”</h3>
+      <ul class="checks">
+        <li class="anti"><code>README.md</code> 只有一行标题，<code>CHANGELOG.md</code> 只有一句“记录版本修改记录”，没有任何 Mvx 用法或升级说明。</li>
+        <li class="anti">示例 App 没有 Mvx 页面，库的核心能力没有可执行样例。</li>
+        <li class="anti"><code>version.gradle</code> 的 <code>versions.devkit = 0.0.7</code> 与 <code>athena.json</code> 的 0.0.19 不一致，容易误导排查。</li>
+        <li class="anti"><code>devkit/build.gradle</code> 里保留 <code>api fileTree(dir: 'libs', ...)</code>，但 <code>libs/</code> 目录并不存在（无害但属于死配置）。</li>
+        <li class="anti">没有针对 <code>MvxViewModel</code> / <code>MvxView</code> 的单元测试；测试目录只有 <code>InstanceContainer</code>、<code>SafeCoroutine</code>、<code>SuperAdapter</code>。</li>
+        <li class="anti">所有依赖都是 <code>api</code>，没有收敛公共 API 的意图；升级 Mavericks 会同时影响所有消费方。</li>
+      </ul>
+
+      <p>这些不是“致命缺陷”，但它们解释了为什么这套 MVI 在团队里更像“能用”，而不是“好维护”。</p>
+    </section>
+
+    <section id="governance">
+      <div class="section-head"><span class="idx">09</span><h2>版本与发布治理</h2></div>
+      <p>如果要让这套东西从“若干业务仓各自用”变成“可长期维护的基础设施”，优先级最高的不是加功能，而是收敛版本和补齐文档。下面是一份可以直接照着做的清单。</p>
+
+      <h3>9.1 先统一版本</h3>
+      <ul class="checks">
+        <li>把所有 <code>versions.devkit</code> 对齐到最新稳定版（当前是 <code>0.0.19</code>），至少让 VipManuscript / VipKmAudio 这两个重度用户先升级。</li>
+        <li>删除 <code>VipReader</code> 里的硬编码 <code>0.0.9</code>，改为 <code>${versions.devkit}</code>。</li>
+        <li>发版前扫描并禁止 <code>TEMP_</code> 版本进入正式渠道（仓库已有类似的依赖检查机制，可复用）。</li>
+        <li>在 DevKit 里维护一张“版本 → 变更 → 消费方最低版本”的表，替代空白的 CHANGELOG。</li>
+      </ul>
+
+      <h3>9.2 再收敛依赖</h3>
+      <ul class="checks">
+        <li><code>Mavericks</code> 必须保持 <code>api</code>（公开签名需要）；但 <code>zui</code>、<code>logback</code>、<code>net</code>、<code>basemodel</code> 可以评估改成 <code>implementation</code>，减少穿透。</li>
+        <li>如果短期不能改，至少在 DevKit 的 README 里列出“引入 DevKit 会带入哪些传递依赖”，让业务有预期。</li>
+        <li>把 <code>lock_third_versions.gradle</code> 与宿主的 lock 文件做一次比对，确认 AndroidX / Kotlin 版本没有分叉。</li>
+        <li>升级 Mavericks 时，优先验证 <code>MvxRepository</code>（内部 API）和 <code>execute</code> 的 <code>blockExecutions</code> 行为。</li>
+      </ul>
+
+      <h3>9.3 最后补使用约束</h3>
+      <ul class="checks">
+        <li>在 README 写清“宿主必须初始化”：<code>T_DevKitInit</code> 或 <code>DevKit.init(app)</code>，否则 <code>DevKit.DEBUG</code> 与 Mavericks 的调试配置不会生效。</li>
+        <li>给 <code>MvxView</code> 加注释：它只增加 <code>SuperAdapter</code> 扩展，<strong>不强制</strong>你使用 State；不要为了“看起来像 MVI”而实现它。</li>
+        <li>给 <code>MvxRepository</code> 标注“实验性 / 仅长生命周期状态容器”，避免被当成普通 Repository 滥用。</li>
+        <li>补一个最小 Mvx 示例（State + VM + Fragment + Pager），放在示例 App 里，作为可执行文档。</li>
+        <li>为 <code>MvxViewModel.execute</code> 的 Loading → Success/Fail 顺序、错误映射写单元测试。</li>
+      </ul>
+
+      <div class="callout good">
+        <p><strong>一个务实的顺序：</strong>先统一到 0.0.19（一周内可完成）→ 补 README/CHANGELOG/示例（两周）→ 再谈 <code>api</code> 收敛与 Mavericks 升级（一个版本周期）。不要反过来先重构 API，否则会同时得罪所有消费方。</p>
+      </div>
+    </section>
+
+    <section id="template">
+      <div class="section-head"><span class="idx">10</span><h2>接入模板</h2></div>
+      <p>下面这份模板是按仓库现有约定整理的，不是仓库里的原文件。它把“State → VM → Fragment → 列表”串成一条最小可用链路，可以直接套到新页面。</p>
+
+      <h3>10.1 定义 State</h3>
+      <div class="code">
+        <div class="code-head"><span class="path">模板：State（建议给默认值，List 用 PagingData）</span><button class="copy" type="button">复制</button></div>
+        <pre><code><span class="tok-k">data class</span> <span class="tok-t">DemoState</span>(
+    <span class="tok-k">val</span> list: PagingData&lt;DemoItem&gt; = PagingData.empty(),
+    <span class="tok-k">val</span> detail: Async&lt;DemoDetail&gt; = Uninitialized,
+    <span class="tok-k">val</span> refreshing: Boolean = <span class="tok-k">false</span>,
+) : MvxState</code></pre>
+      </div>
+
+      <h3>10.2 定义 ViewModel</h3>
+      <div class="code">
+        <div class="code-head"><span class="path">模板：ViewModel（Pager + execute + 参数字段）</span><button class="copy" type="button">复制</button></div>
+        <pre><code><span class="tok-k">class</span> <span class="tok-t">DemoViewModel</span>(initialState: DemoState) :
+    MvxViewModel&lt;DemoState&gt;(initialState) {
+
+    <span class="tok-k">private var</span> businessId: String = <span class="tok-s">""</span>
+    <span class="tok-k">private val</span> service = Net.createService(DemoService::class.java)
+
+    <span class="tok-k">private val</span> pager = Pager(viewModelScope) { DemoSource() }
+
+    <span class="tok-k">init</span> {
+        pager.flow
+            .filterPaging { it.isVisible }
+            .setOnEach { copy(list = it) }
+    }
+
+    <span class="tok-k">fun</span> initParams(businessId: String) {
+        <span class="tok-k">this</span>.businessId = businessId
+    }
+
+    <span class="tok-k">fun</span> loadDetail() {
+        service.getDetail(businessId)
+            .compose(NetworkUtils.simplifyRequest(bindToLifecycle()))
+            .execute { copy(detail = it) }
+    }
+
+    <span class="tok-k">fun</span> refresh() {
+        pager.invalidate()
+    }
+
+    <span class="tok-k">inner class</span> <span class="tok-t">DemoSource</span> :
+        ResponsePagingSource&lt;DemoPaging, DemoItem, DemoResponse&gt;() {
+        <span class="tok-k">override suspend fun</span> onRefresh(params: LoadParams&lt;DemoPaging&gt;): Response&lt;<span class="tok-k">out</span> DemoResponse&gt; =
+            service.getList(businessId, <span class="tok-k">null</span>).awaitFirst()
+
+        <span class="tok-k">override suspend fun</span> onLoadMore(params: LoadParams.Append&lt;DemoPaging&gt;): Response&lt;<span class="tok-k">out</span> DemoResponse&gt; =
+            service.getList(businessId, params.key.next).awaitFirst()
+
+        <span class="tok-k">override fun</span> resolveValue(result: DemoResponse?): List&lt;DemoItem&gt; = result?.data ?: emptyList()
+        <span class="tok-k">override fun</span> resolveNextKey(curParams: LoadParams&lt;DemoPaging&gt;?, result: DemoResponse?, lastValue: DemoItem?): DemoPaging? =
+            result?.paging?.takeIf { !it.isEnd }
+        <span class="tok-k">override fun</span> resolvePreKey(curParams: LoadParams&lt;DemoPaging&gt;?, result: DemoResponse?, firstValue: DemoItem?): DemoPaging? = <span class="tok-k">null</span>
+    }
+}</code></pre>
+      </div>
+
+      <h3>10.3 定义 View</h3>
+      <div class="code">
+        <div class="code-head"><span class="path">模板：Fragment（MvxView + collectFrom + onAsync）</span><button class="copy" type="button">复制</button></div>
+        <pre><code><span class="tok-k">class</span> <span class="tok-t">DemoFragment</span> : BaseFragment(), MvxView {
+
+    <span class="tok-k">private val</span> viewModel: DemoViewModel <span class="tok-k">by</span> fragmentViewModel()
+    <span class="tok-k">private lateinit var</span> adapter: SuperAdapter
+
+    <span class="tok-k">override fun</span> onViewCreated(view: View, savedInstanceState: Bundle?) {
+        <span class="tok-k">super</span>.onViewCreated(view, savedInstanceState)
+        viewModel.initParams(requireArguments().getString(<span class="tok-s">"businessId"</span>, <span class="tok-s">""</span>) ?: <span class="tok-s">""</span>)
+
+        adapter = SuperAdapter(differ)
+            .registerViewHolder(DemoVH::class.java)
+            .inject(viewModel)
+            .collectFrom(viewModel, DemoState::list)
+            .setupWithRecyclerView(binding.rv)
+
+        viewModel.onAsync(DemoState::detail, onSuccess = { renderDetail(it) })
+        viewModel.loadDetail()
+    }
+
+    <span class="tok-k">override fun</span> invalidate() {
+        <span class="tok-c">// 需要全量重绘时在这里读 viewModel.awaitState()；否则留空，用 onAsync/onEach</span>
+    }
+
+    <span class="tok-k">private fun</span> renderDetail(detail: DemoDetail) { <span class="tok-c">/* ... */</span> }
+}</code></pre>
+      </div>
+
+      <div class="callout note">
+        <p><strong>三条硬约定：</strong>① 参数通过 <code>initParams</code> 在请求前注入；② 请求结果只写 <code>Async</code>，不在 Fragment 里 <code>subscribe</code>；③ 列表只通过 <code>collectFrom</code> 提交，不在 Fragment 里手动拼 <code>PagingData</code>。</p>
+      </div>
+    </section>
+
+    <section id="qa">
+      <div class="section-head"><span class="idx">11</span><h2>面试速答</h2></div>
+      <p>如果要在 5 分钟内讲清这套 MVI，记住下面 8 个问答就够了。</p>
+
+      <details class="qa" open>
+        <summary>这套 MVI 的“引擎”是什么？DevKit 做了什么？</summary>
+        <div class="a">
+          <p>引擎是 Airbnb Mavericks 3.0.6。DevKit 的 <code>mvx</code> 包只做薄封装：用 <code>MvxState</code> 约束类型，用 <code>MvxViewModel</code> 补 Rx 的 <code>execute</code> 与 Flow / Rx 的 <code>collectState</code>，用 <code>MvxView</code> 补 <code>SuperAdapter.collectFrom</code>，用 <code>MvxRepository</code> 支持长生命周期状态容器；再通过 <code>api</code> 依赖把 Mavericks 暴露给业务，并统一初始化与 AAR 发布。</p>
+        </div>
+      </details>
+
+      <details class="qa">
+        <summary><code>Async</code> 有哪几种状态？<code>execute</code> 做了什么？</summary>
+        <div class="a">
+          <p><code>Uninitialized</code>、<code>Loading</code>、<code>Success</code>、<code>Fail</code>。DevKit 的 <code>execute</code> 先 <code>setState { reducer(Loading()) }</code>，再把成功值 <code>map</code> 成 <code>Success</code>（可带 metadata），错误 <code>onErrorReturn { Fail(it) }</code>，最后 <code>bindToLifecycle()</code> 订阅。它和 Mavericks 原生 <code>execute</code> 的语义对齐（Loading → Success/Fail），只是把 Rx 入口补在了 DevKit 里。</p>
+        </div>
+      </details>
+
+      <details class="qa">
+        <summary>为什么 ViewModel 都没有写 Factory？初始 State 哪来的？</summary>
+        <div class="a">
+          <p>现有 State <strong>大多带默认值</strong>（并非全部，<code>ManuscriptState</code> 就有字段没默认值），页面用 <code>fragmentViewModel()</code> 直接创建 ViewModel，不写 Factory。业务参数不在构造函数里传，而是在 <code>onViewCreated</code> 里通过 <code>initParams</code> / <code>setMemberToken</code> / <code>setScene</code> 事后注入。这样接入简单，但参数时序没有编译期保障，也没有 SavedState 恢复。</p>
+        </div>
+      </details>
+
+      <details class="qa">
+        <summary><code>MvxView</code> 和 <code>MavericksView</code> 是什么关系？<code>invalidate()</code> 什么时候调用？</summary>
+        <div class="a">
+          <p><code>MvxView</code> 继承 <code>MavericksView</code>，只额外提供 <code>SuperAdapter.collectFrom</code> / <code>collectFromAsync</code> 两个成员扩展；<code>invalidate()</code> 仍由 Mavericks 在状态变化 / 页面启动时回调。很多页面留空 <code>invalidate()</code>，改用 <code>onAsync</code> / <code>onEach</code> 做细粒度更新。注意：实现 <code>MvxView</code> 不等于用了 MVI，<code>PinTabFragment</code> 就是反例。</p>
+        </div>
+      </details>
+
+      <details class="qa">
+        <summary><code>MvxRepository</code> 和 <code>MvxViewModel</code> 有什么区别？为什么播放器要用它？</summary>
+        <div class="a">
+          <p><code>MvxRepository</code> 继承 <code>MavericksRepository</code>，不是 ViewModel，不随页面销毁；它接受外部 <code>CoroutineScope</code>，适合做跨页面的“单一事实源”。音频播放器 <code>KMPlayer2</code> 是单例，用 <code>MultiCoroutineScope</code> 把多个页面 scope 挂在一起，所有页面退出后才释放播放器和缓存；页面级 <code>VipAudioPlayViewModel</code> 再把仓库状态投影成自己的 State。</p>
+        </div>
+      </details>
+
+      <details class="qa">
+        <summary>DevKit 是怎么打包发布的？AAR 里有什么？</summary>
+        <div class="a">
+          <p><code>devkit</code> 模块应用 <code>com.zhihu.android.library</code> + Kotlin 插件，设置 <code>resourcePrefix 'devkit'</code>、<code>consumerProguardFiles</code>、ViewBinding，依赖全部用 <code>api</code>；<code>archivesBaseName = 'devkit'</code>、<code>group = 'com.zhihu.android.library'</code>。发布由 Athena 2.0 读取 <code>athena.json</code>，执行 <code>./gradlew :devkit:uploadArchives</code>，推到内网 Maven；AAR 里是 5 个 Mvx 文件、23 个 Paging 文件（含扩展）、协程/RxBus/工具类、6 个加载态布局和 consumer rules，清单为空。</p>
+        </div>
+      </details>
+
+      <details class="qa">
+        <summary>源码依赖是怎么把 AAR 换成本地工程的？</summary>
+        <div class="a">
+          <p>宿主在 <code>sourcecode.properties</code> 写 <code>com.zhihu.android.library:devkit=../../DevKit/devkit|devkit</code>（或在 <code>local.properties</code> 写 <code>devkit.source=true</code> + <code>devkit.dir=...</code>）。<code>sourcecode.gradle</code> 把目标模块 <code>include</code> 进来，再用 <code>dependencySubstitution</code> 把 Maven 坐标替换成 <code>project(":devkit")</code>；同时监听依赖添加，手动补一次 project 依赖。限制是：指定模块构建时可能不生效，且脚本会改写 <code>.idea/vcs.xml</code>。</p>
+        </div>
+      </details>
+
+      <details class="qa">
+        <summary>为什么 <code>debugMode</code> 只在 dev 开？这和 Robust 有什么关系？</summary>
+        <div class="a">
+          <p><code>DevKit.DEBUG = ComponentBuildConfig.FLAVOR() == "dev"</code>，然后 <code>Mavericks.initialize(DEBUG)</code>。Git 历史里有一条明确记录：<code>mvx validate 和 robust 有冲突，选择 dev 关闭 robust，启用 mvx validate</code>；随后又提交“Mavericks 只在 dev 时启用 debugMode”。可以这样理解：Mavericks 的校验主要在开发期提供价值，线上关掉可以减少校验开销，也避免与热修复 / AOP 链路互相干扰。代价是<strong>线上没有 Mavericks 的状态正确性校验</strong>，只能靠测试兜底。</p>
+        </div>
+      </details>
+    </section>
+
+    <section id="evidence">
+      <div class="section-head"><span class="idx">12</span><h2>证据与方法</h2></div>
+      <p>下面列出关键结论对应的文件、行号与 Git 记录，便于复核。所有路径都相对于工作区 <code>yyyyy-cdoe/</code>。</p>
+
+      <h3>12.1 关键文件索引</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>结论</th><th>证据</th><th>位置</th></tr></thead>
+          <tbody>
+            <tr><td>DevKit 封装 5 个 Mvx 文件</td><td><code>Mvx.kt</code> / <code>MvxState.kt</code> / <code>MvxView.kt</code> / <code>MvxViewModel.kt</code> / <code>MvxRepository.kt</code></td><td><code>DevKit/devkit/src/main/java/com/zhihu/android/devkit/mvx/</code></td></tr>
+            <tr><td>Mavericks 3.0.6</td><td><code>versions.mavericks = "3.0.6"</code>；<code>api "com.airbnb.android:mavericks:${versions.mavericks}"</code></td><td><code>DevKit/version.gradle:427</code>；<code>DevKit/devkit/build.gradle:43</code></td></tr>
+            <tr><td><code>Async</code> 执行与 Loading 时序</td><td><code>Observable.execute</code> 的注释与实现</td><td><code>MvxViewModel.kt:92-121</code></td></tr>
+            <tr><td>Repository 生命周期</td><td><code>awaitCancellation().invokeOnCompletion { sendClearEvent() }</code></td><td><code>MvxRepository.kt:58-64</code></td></tr>
+            <tr><td>初始化只在 dev 开 debug</td><td><code>DEBUG = ComponentBuildConfig.FLAVOR() == "dev"</code></td><td><code>DevKit.kt:16-20</code></td></tr>
+            <tr><td>宿主注册初始化任务</td><td>生成的 <code>TaskManagerConfig</code> 包含 <code>"T_DevKitInit"</code></td><td><code>VipAndroid/app/build/launch_config/com/zhihu/android/taskmanager/TaskManagerConfig.java:74</code></td></tr>
+            <tr><td>宿主以 api 暴露 DevKit</td><td><code>api "com.zhihu.android.library:devkit:${versions.devkit}"</code></td><td><code>VipAndroid/app/build.gradle:691</code>；<code>Futureve/app/build.gradle:802</code></td></tr>
+            <tr><td>发布元数据</td><td><code>athena.json</code> 的 <code>version: 0.0.19</code>、<code>uploadArchives</code></td><td><code>DevKit/athena.json:1-15</code></td></tr>
+            <tr><td>源码依赖替换</td><td><code>SourceModule</code>、<code>dependencySubstitution</code>、<code>enableVCS</code></td><td><code>DevKit/gradle/sourcecode.gradle:174-250</code></td></tr>
+            <tr><td>示例 App 不演示 Mvx</td><td>只有 <code>App.java</code> / <code>MainActivity.java</code> / <code>T_AppOnCreate.java</code></td><td><code>DevKit/app/src/main/java/</code></td></tr>
+            <tr><td>VipProfile 的标准 Async 用法</td><td><code>execute { copy(data = it) }</code> + <code>onEach</code> + <code>onAsync</code></td><td><code>VipNewProfileViewModel.kt:53-67</code>；<code>VipNewProfileFragment.kt:215-233</code></td></tr>
+            <tr><td>分页 + collectFrom</td><td><code>Pager</code> / <code>setOnEach</code> / <code>collectFrom</code></td><td><code>ManuscriptBillboardViewModel.kt:175-205</code>；<code>ManuscriptBillboardFragment.kt:185-192</code></td></tr>
+            <tr><td>播放器 Repository</td><td><code>KMPlayer2 : MvxRepository&lt;KmPlayerState&gt;</code></td><td><code>KMPlayer2.kt:167-221</code></td></tr>
+            <tr><td>半采用反例</td><td>直接 <code>subscribe</code>、空 <code>invalidate</code>、LiveData VM</td><td><code>NativeManuscriptRecommendCatalogFragment.kt:122-135</code>；<code>PinTabFragment.kt:51-64</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>12.2 Git 时间线（DevKit）</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>日期</th><th>提交</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td>2023-08-04</td><td><code>fd662f6</code></td><td>Move package：把 mvx 包移入 <code>com.zhihu.android.devkit</code>。</td></tr>
+            <tr><td>2023-08-21</td><td><code>ad90ab4</code></td><td>Update mavericks to 3.0.6（同时引入 <code>MvxRepository</code> 的配置构造）。</td></tr>
+            <tr><td>2023-08-28</td><td><code>ec395cc</code></td><td>SuperAdapter extensions for Mvx（<code>collectFrom</code> 的来源）。</td></tr>
+            <tr><td>2023-09-01 / 09-03</td><td><code>e957bc1</code> / <code>fb96bd5</code></td><td>泛型优化；RxJava <code>execute</code> 扩展。</td></tr>
+            <tr><td>2023-09-20</td><td><code>ca9a212</code></td><td>调整方法签名。</td></tr>
+            <tr><td>2023-12-11</td><td><code>3e28d41</code></td><td>使用 ZHTask 初始化 DevKit（<code>T_DevKitInit</code>）。</td></tr>
+            <tr><td>2023-12-18</td><td><code>ac72bbf</code></td><td>mvx validate 和 robust 有冲突：dev 关闭 robust，启用 mvx validate。</td></tr>
+            <tr><td>2024-01-03</td><td><code>7908e0c</code></td><td>Mavericks 只在 dev 时启用 debugMode。</td></tr>
+            <tr><td>2024-08-20</td><td><code>a393488</code></td><td>补充日志（<code>collectState</code> / <code>execute</code> 的 warn 日志）。</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="ref">版本 tag：<code>0.0.1</code> … <code>0.0.19</code>（共 19 个）；最新版本提交由 Athena 机器人完成，例如 <code>Athena2.0 update version：0.0.18 --&gt; 0.0.19, operated by lilang</code>。</p>
+
+      <h3>12.3 扫描方法</h3>
+      <div class="code">
+        <div class="code-head"><span class="path">本次扫描使用的核心命令（PowerShell，节选）</span><button class="copy" type="button">复制</button></div>
+        <pre><code><span class="tok-c"># 1. 统计所有 Kotlin 文件</span>
+Get-ChildItem $root -Recurse -File -Filter *.kt | Measure-Object
+
+<span class="tok-c"># 2. 找出引用 Mvx / Mavericks 的文件</span>
+Get-ChildItem $root -Recurse -File -Filter *.kt |
+  Select-String -Pattern <span class="tok-s">'MvxViewModel|MvxRepository|MvxView|MvxState|Mavericks'</span> -List
+
+<span class="tok-c"># 3. 统计各仓 versions.devkit</span>
+Get-ChildItem $root -Recurse -File -Filter version*.gradle |
+  Select-String -Pattern <span class="tok-s">'^\s*versions\.devkit\s*='</span>
+
+<span class="tok-c"># 4. 看 mvx 包的历史</span>
+git log --reverse --date=short --format=<span class="tok-s">"%h %ad %s"</span> -- devkit/src/main/java/com/zhihu/android/devkit/mvx</code></pre>
+      </div>
+
+      <h3>12.4 局限</h3>
+      <ul class="list-tight">
+        <li>本文是<strong>静态代码与构建配置分析</strong>，没有运行 App，也没有做性能/内存测量。</li>
+        <li>工作区是多个组件的快照，不是单一完整工程；<code>VipAndroid</code> / <code>Futureve</code> 的 app 层没有 Kotlin 业务实现（<code>.kt</code> 数量为 0，主要是构建配置与少量 Java 壳），业务实现分散在组件仓。</li>
+        <li>“Mvx 使用文件数”按引用统计，可能包含只 import 常量或只实现 marker 的文件；具体判断已在第 5 节按用法分级。</li>
+        <li>版本分布是快照值，读者应以当前各仓 <code>version.gradle</code> 为准；<code>build/</code> 产物仅用于佐证初始化任务与历史依赖版本。</li>
+      </ul>
+    </section>
+
+    <footer>
+      <p><b>MVI 落地与 DevKit 打包解析</b> · 基于 <code>yyyyy-cdoe</code> 工作区静态扫描 · 2026-10-17</p>
+      <p>覆盖：DevKit / VipManuscript / VipKmAudio / VipProfile / km-attention / km_home_base / KnowledgeMarket / Futureve / VipAndroid。文中代码片段为阅读方便做了节选，省略处用 <code>/* ... */</code> 标注；以仓库原文件为准。</p>
+      <p>撰写：<b>DeepSeek Harness</b>。</p>
+    </footer>
+  </main>
+</div>
+
+<script>
+(function () {
+  var printBtn = document.getElementById("printBtn");
+  var progress = document.getElementById("progress");
+
+
+  if (printBtn) {
+    printBtn.addEventListener("click", function () { window.print(); });
+  }
+
+  function updateProgress() {
+    var h = document.documentElement;
+    var max = h.scrollHeight - h.clientHeight;
+    var pct = max > 0 ? (h.scrollTop || document.body.scrollTop) / max * 100 : 0;
+    if (progress) progress.style.width = Math.min(100, Math.max(0, pct)) + "%";
+  }
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  window.addEventListener("resize", updateProgress);
+  updateProgress();
+
+  document.querySelectorAll(".copy").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var box = btn.closest(".code");
+      var code = box ? box.querySelector("pre code") : null;
+      if (!code) return;
+      var text = code.innerText;
+      var done = function () {
+        var old = btn.textContent;
+        btn.textContent = "已复制";
+        setTimeout(function () { btn.textContent = old; }, 1400);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done).catch(function () { fallback(text, done); });
+      } else {
+        fallback(text, done);
+      }
+    });
+  });
+
+  function fallback(text, done) {
+    var ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand("copy"); done(); } catch (e) {}
+    document.body.removeChild(ta);
+  }
+
+  var tocLinks = Array.prototype.slice.call(document.querySelectorAll(".toc a"));
+  var sections = tocLinks.map(function (a) {
+    var id = a.getAttribute("href").slice(1);
+    return document.getElementById(id);
+  }).filter(Boolean);
+
+  function setActive(id) {
+    tocLinks.forEach(function (a) {
+      a.classList.toggle("active", a.getAttribute("href") === "#" + id);
+    });
+  }
+
+  if ("IntersectionObserver" in window && sections.length) {
+    var visible = new Map();
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) visible.set(entry.target.id, entry.boundingClientRect.top);
+        else visible.delete(entry.target.id);
+      });
+      if (visible.size) {
+        var best = null;
+        visible.forEach(function (top, id) {
+          if (best === null || Math.abs(top) < Math.abs(visible.get(best))) best = id;
+        });
+        if (best) setActive(best);
+      }
+    }, { rootMargin: "-90px 0px -55% 0px", threshold: [0, 0.1, 0.5] });
+    sections.forEach(function (s) { observer.observe(s); });
+  }
+
+  document.querySelectorAll('a[href^="#"]').forEach(function (a) {
+    a.addEventListener("click", function (e) {
+      var id = a.getAttribute("href").slice(1);
+      var target = document.getElementById(id);
+      if (!target) return;
+      e.preventDefault();
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+      history.replaceState(null, "", "#" + id);
+    });
+  });
+})();
+</script>
+</body>
+</html>
