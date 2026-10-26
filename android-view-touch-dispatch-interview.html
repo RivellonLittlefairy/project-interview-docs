@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="以12道面试问答理解Android View事件分发、拦截、消费、CANCEL与滑动冲突，结合首页项目和Android 13源码。"><title>View 事件分发：面试问答与项目实例</title><link rel="stylesheet" href="assets/docs.css"><link rel="stylesheet" href="assets/site-theme.css"><script src="assets/site-theme.js"></script><style>.flow-steps{display:grid;gap:10px;padding-left:24px}.flow-steps li{padding:12px;border:1px solid var(--border-color,#8894a555);border-radius:8px}.answer-body pre{overflow:auto}.answer-body code{overflow-wrap:anywhere}.toc a{display:block;margin:10px 0;line-height:1.6}.toc h2{font-size:16px}</style></head>
+<body class="site-unified"><a class="skip-link" href="#main-content">跳到正文</a><header class="topbar"><button class="icon-button menu-button" type="button" data-menu-toggle aria-label="打开文档导航" aria-expanded="false">☰</button><a class="brand" href="index.html"><span class="brand-mark">⌁</span><span>项目面试资料库</span></a><div class="search-shell"><label class="sr-only" for="global-search">搜索所有文档</label><input id="global-search" type="search" data-search-input placeholder="搜索仓库、技术或面试题…" autocomplete="off"><span class="search-shortcut">Ctrl K</span><div class="search-results" data-search-results hidden></div></div><button class="icon-button" type="button" data-theme-toggle aria-label="切换深浅主题">◐</button></header><div class="drawer-backdrop" data-drawer-backdrop hidden></div>
+<div class="docs-layout"><nav class="sidebar" data-sidebar aria-label="事件分发导航"><div class="sidebar-heading">View 事件分发</div><a class="nav-link" href="index.html#android">返回 Android 专题</a><a class="nav-link" href="#flow">先看流程</a><a class="nav-link" href="#p1">P1 · 先掌握的八题</a><a class="nav-link" href="#p2">P2 · 追问与项目实例</a><a class="nav-link" href="#q12">项目怎么处理冲突</a><a class="nav-link" href="#sources">源码与参考资料</a><a class="nav-link" href="guides/android-custom-view-interview-guide.html">测量、布局与绘制</a></nav><main class="article-shell" id="main-content"><div class="breadcrumbs"><a href="index.html">首页</a><span>/</span><span>Android 触摸事件</span></div><div class="article-grid"><article class="markdown-body">
+<h1>View 事件分发：面试问答与项目实例</h1><p>面试先回答“谁把事件交给谁、谁决定拦截、谁最终处理”，再解释滑动冲突。每题开头是可以直接说出口的回答，后面补原因和例子。P1、P2 是建议学习顺序。这里讨论传统 View 体系，源码核对基于 Android 13（android-13.0.0_r1），项目快照核对日期为 2026-10-26。</p>
+<h2 id="flow">先看一根手指的一次手势</h2><p>通常从 DOWN 开始，经过零次或多次 MOVE，以 UP 或 CANCEL 结束。下面从 Activity 这一层看应用内分发，箭头表示调用方向；布尔返回值沿调用栈返回。</p>
+<ol class="flow-steps" aria-label="触摸分发流程图"><li>Activity.dispatchTouchEvent<br>交给 Window.superDispatchTouchEvent；窗口没处理时，调用 Activity.onTouchEvent 兜底。</li><li>Window → DecorView → 内容布局<br>DecorView 是窗口的根 ViewGroup，继续向布局中的子 View 分发。</li><li>父 ViewGroup.dispatchTouchEvent<br>允许拦截时检查 onInterceptTouchEvent。没有拦截则寻找或沿用子目标；拦截后不再正常交给该子目标。</li><li>子 View.dispatchTouchEvent<br>普通 enabled View 先给 OnTouchListener 机会，未消费再调用 onTouchEvent。</li><li>View.onTouchEvent<br>处理按下、移动、抬起等；有效点击通常在 UP 阶段触发 performClick，进而调用 OnClickListener。</li></ol>
+<p>再往上追，窗口输入由 ViewRootImpl 接入，经过 DecorView 的窗口回调进入 Activity；Activity 再通过 Window 将事件交回 DecorView 的 View 层级分发入口。这是不同方法间的调用，不是 Activity 和 DecorView 无休止递归。Fragment 本身不在这条触摸分发链里，接收事件的是它创建的 View。</p>
+<div class="study-toolbar"><label class="sr-only" for="topic-search">筛选问题</label><input id="topic-search" type="search" data-accordion-search placeholder="筛选：CANCEL、拦截、点击、项目…"><button type="button" data-accordion-expand>展开全部</button><button type="button" data-accordion-collapse>收起全部</button><p data-accordion-status aria-live="polite">12 道题</p></div>
+<div class="interview-accordion" data-interview-accordion><section data-topic id="p1"><h2>P1 · 先掌握的八题</h2>
+<details id="q1" open><summary><span class="question-text">01 · 说说 Android 的事件分发机制？</span><span class="question-tag">P1</span></summary><div class="answer-body"><blockquote>事件分发解决的是：一次触摸经过多层布局，最终应该由哪个 View 处理。Activity 把事件交给窗口，再沿 View 树向下分发。ViewGroup 可以决定是否拦截，View 通过 onTouchEvent 等逻辑消费。DOWN 时确定接收目标，后续事件通常继续交给这个目标；父布局中途拦截时，子 View 会收到 CANCEL，后续由父布局处理。</blockquote><p>“向下分发、向上返回处理结果”最容易记。但向上返回 false 是方法返回值，不代表系统一定会重新向父 View 的 onTouchEvent 派发一遍。后续怎么走，要看当前是不是已有子目标，见第 5 题。</p><p>多个重叠子 View 也不是都收到同一个 DOWN：父容器按绘制顺序、Z 顺序等规则寻找命中的候选，能处理的子 View 成为目标。普通单指场景先按一个目标理解；多指拆分可能记录多个目标。</p></div></details>
+<details id="q2" open><summary><span class="question-text">02 · 三个核心方法有什么区别？true、false 各是什么意思？</span><span class="question-tag">P1</span></summary><div class="answer-body"><blockquote>dispatchTouchEvent 是分发入口，决定事件交给谁，并返回是否被处理。onInterceptTouchEvent 是 ViewGroup 判断是否拦截子 View 事件的地方，true 表示拦截。onTouchEvent 是当前 View 自己处理事件的地方，true 表示处理了。拦截和消费是两个动作，拦截不等于一定处理成功。</blockquote><table><thead><tr><th>方法</th><th>true</th><th>false</th></tr></thead><tbody><tr><td>dispatchTouchEvent</td><td>本次分发被处理</td><td>本次分发未被处理</td></tr><tr><td>onInterceptTouchEvent</td><td>父容器接管，不再正常派给子目标</td><td>不拦截，继续正常分发逻辑</td></tr><tr><td>onTouchEvent</td><td>当前 View 处理本次事件</td><td>当前 View 不处理本次事件</td></tr></tbody></table><p><code>super.dispatchTouchEvent(event)</code> 表示调用父类实现，保留框架分发流程。这里的“父类”是继承关系，不是布局中的 parent View。直接 return true 可能跳过子 View、监听器和点击处理；直接 return false 也可能破坏原本正常的分发。</p><p>ViewGroup 没有子 View 消费 DOWN 时，可以自己处理。因而“只有 onInterceptTouchEvent 返回 true，父布局的 onTouchEvent 才会调用”也不准确。</p></div></details>
+<details id="q3"><summary><span class="question-text">03 · DOWN、MOVE、UP、CANCEL 有什么区别？</span><span class="question-tag">P1</span></summary><div class="answer-body"><blockquote>DOWN 表示开始，MOVE 表示位置变化，UP 表示正常抬起，CANCEL 表示当前手势被取消。比如父布局开始滚动，原来接收事件的按钮会收到 CANCEL。自定义 View 要在 CANCEL 时清理按压、拖拽和长按任务，不能把它当成一次点击完成。</blockquote><p>用户不一定先移动再抬起，一次点击可以只有 DOWN 和 UP。MOVE 也不是固定帧率逐像素发送。不要让业务依赖固定事件次数。</p><table><thead><tr><th>情形</th><th>子 View 典型序列</th><th>结果</th></tr></thead><tbody><tr><td>正常点击</td><td>DOWN → UP</td><td>满足点击条件时执行点击</td></tr><tr><td>父布局中途拦截</td><td>DOWN → 若干 MOVE → CANCEL</td><td>子 View 停止，不等 UP 才清理</td></tr><tr><td>子 View 的 DOWN 未消费</td><td>DOWN</td><td>通常不会成为后续 MOVE / UP 的子目标</td></tr></tbody></table><p>清理操作例如 <code>isPressed = false</code>、取消长按 Runnable、释放 VelocityTracker、清空活动 pointerId。UP 可能还要提交拖动结果，CANCEL 通常放弃这次操作，因此两者可以共享清理，但不要共享所有业务行为。</p></div></details>
+<details id="q4"><summary><span class="question-text">04 · OnTouchListener、onTouchEvent、onClick 谁先执行？</span><span class="question-tag">P1</span></summary><div class="answer-body"><blockquote>对于普通启用状态的 View，dispatchTouchEvent 先调用 OnTouchListener；它返回 false 才继续调用 onTouchEvent。点击逻辑通常由 onTouchEvent 在有效 UP 时通过 performClick 触发。因此 OnTouchListener 一直返回 true，默认点击处理往往就被截断了。</blockquote><pre><code>// 教学示例：只观察，不抢走 Button 原本的点击处理
+button.setOnTouchListener { _, event ->
+    Log.d("Touch", MotionEvent.actionToString(event.action))
+    false
+}
+button.setOnClickListener { openDetail() }</code></pre><p>监听器不是只在 DOWN 调用，而是每个派给它的触摸事件都有机会调用。“onTouch → onTouchEvent → onClick”也不是每次事件都必然完整走一遍：前一步消费、手势取消、长按等都会影响后续。</p><p>普通 View 默认不一定 clickable，Button 的行为不同；设置 OnClickListener 通常会使 View 可点击。disabled 也不等于事件一定穿透：AOSP 中 disabled 但 clickable 的 View 仍可能消费触摸，只是不响应正常点击。自定义点击应使用或重写 <code>performClick()</code> 并调用 super，兼顾无障碍；点击也可以来自键盘和无障碍操作。</p></div></details>
+<details id="q5"><summary><span class="question-text">05 · DOWN 返回 false 会怎样？MOVE 返回 false 会交给父布局吗？</span><span class="question-tag">P1</span></summary><div class="answer-body"><blockquote>如果子 View 的 dispatchTouchEvent 对 DOWN 返回 false，父布局通常不会把它记录为本次手势的目标，后续 MOVE 和 UP 也就不会正常发给它。已经消费 DOWN 后，再对 MOVE 返回 false，并不等于把事件交给父布局。是否交接主要看父布局有没有拦截。</blockquote><p>要看子 View 整个 dispatchTouchEvent 的结果，而不只是它的 onTouchEvent：OnTouchListener 也可能已经消费。</p><p>AOSP ViewGroup 用 <code>mFirstTouchTarget</code> 保存子目标。DOWN 时尝试分发并建立目标；普通 MOVE 沿用目标。已有子目标的分发分支中，子目标返回 false 不会因此被删除，也不会重新命中旁边的兄弟 View。调用栈可能继续返回未处理，甚至走到 Activity 的兜底，但不能据此说“父 ViewGroup 的 onTouchEvent 一定接手”。</p><p>这解释了一个常见 bug：自定义拖拽 View 只在 MOVE 返回 true，DOWN 返回 false，最后根本收不到想处理的 MOVE。</p></div></details>
+<details id="q6"><summary><span class="question-text">06 · 父布局在 MOVE 时拦截，子 View 会收到什么？</span><span class="question-tag">P1</span></summary><div class="answer-body"><blockquote>子 View 会收到 ACTION_CANCEL，父布局清除这个子触摸目标，后续事件由父布局自己处理。比如手指先按住按钮，移动距离超过滚动阈值后，外层列表开始滚动，按钮就取消按压和点击。</blockquote><p>拦截判断必须先于本次向子 View 的派发。因此子 View 通常不会先收到原来的这次 MOVE 再收到 CANCEL，而是接到取消事件。</p><p>源码追问：Android 13 的 ViewGroup.dispatchTouchEvent 在“已有子目标”分支里，将触发拦截的事件转成 CANCEL 发给子 View，再删除目标。这个调用中不会重新跳回“没有子目标”分支，把原始 MOVE 再送进父布局自己的 onTouchEvent。父布局在 onInterceptTouchEvent 已经看过这次 MOVE，可以记录拖动状态；后续 MOVE / UP 才按无子目标流程派给自己。</p><p>“父布局从中途接管后，再让 onInterceptTouchEvent 返回 false 就能还给子 View”也不成立：原目标已经取消、删除，不会在普通 MOVE 时重新寻找。标准手势交接通常持续到本次手势结束。</p></div></details>
+<details id="q7"><summary><span class="question-text">07 · requestDisallowInterceptTouchEvent 是干什么的？</span><span class="question-tag">P1</span></summary><div class="answer-body"><blockquote>它是子 View 协调父容器拦截行为的接口。传 true 请求父容器和祖先不要拦截这次手势；传 false 只是允许它们重新判断，是否真的拦截仍由父容器决定。它不负责消费事件，也不是直接把事件发送给父布局。</blockquote><pre><code>// 从子 View 请求父布局及祖先暂时不要拦截
+parent.requestDisallowInterceptTouchEvent(true)
+// 判断这次手势更适合父布局后，允许其再次判断
+parent.requestDisallowInterceptTouchEvent(false)</code></pre><p>标准 ViewGroup 将请求向祖先传播，新的 DOWN 会重置本地禁止拦截标记。子 View 在 DOWN 到达自己之后才提出请求：如果父容器已经在 DOWN 阶段拦截，子 View 就没有这次机会。</p><p>子 View 在当前 MOVE 中放开限制时，这次事件已经经过父布局的拦截判断，通常从下一次事件开始生效。它不是“立即重跑当前 MOVE”。这里描述标准实现；自定义容器仍需遵守和正确实现这项约定。</p></div></details>
+<details id="q8"><summary><span class="question-text">08 · 外层纵向列表、内层横向列表，怎么解决滑动冲突？</span><span class="question-tag">P1</span></summary><div class="answer-body"><blockquote>先按方向分工，横向交给子列表，纵向交给父列表。父容器可在 onInterceptTouchEvent 判断方向，这通常叫外部拦截；也可以由子层先禁止父容器拦截，确定是纵向后再放开，这通常叫内部拦截。判断时要加 touchSlop，超过系统阈值再确定方向，避免轻微抖动把点击误判成滚动。</blockquote><p>内部协调的关键不是在子层 return true，而是修改拦截许可，然后继续 super，让真正的 RecyclerView 收到事件。下面是包住横向滚动控件的 FrameLayout 教学骨架，假设单指、无特殊变换，父容器会处理纵向滚动，子控件能消费 DOWN；不实现滚动、惯性和多指切换。</p><pre><code>class DirectionGate @JvmOverloads constructor(
+    context: Context, attrs: AttributeSet? = null
+) : FrameLayout(context, attrs) {
+    private val slop = ViewConfiguration.get(context).scaledTouchSlop
+    private var downX = 0f
+    private var downY = 0f
+    private var directionDecided = false
+
+    override fun dispatchTouchEvent(e: MotionEvent): Boolean {
+        when (e.actionMasked) {
+            MotionEvent.ACTION_DOWN -> {
+                downX = e.x
+                downY = e.y
+                directionDecided = false
+                parent?.requestDisallowInterceptTouchEvent(true)
+            }
+            MotionEvent.ACTION_MOVE -> if (!directionDecided) {
+                val dx = kotlin.math.abs(e.x - downX)
+                val dy = kotlin.math.abs(e.y - downY)
+                if (maxOf(dx, dy) > slop) {
+                    if (dx > dy * 1.2f) {
+                        directionDecided = true
+                        parent?.requestDisallowInterceptTouchEvent(true)
+                    } else if (dy > dx * 1.2f) {
+                        directionDecided = true
+                        parent?.requestDisallowInterceptTouchEvent(false)
+                    }
+                }
+            }
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                directionDecided = false
+                parent?.requestDisallowInterceptTouchEvent(false)
+            }
+        }
+        return super.dispatchTouchEvent(e)
+    }
+}</code></pre><p><code>1.2f</code> 是教学中的方向判定比例，不是 Android 规定值。斜向移动落在两条判断之间时继续等待；一旦确定就锁定，避免同一手势在横纵方向之间反复切换。外部拦截方式也要保存 DOWN 坐标，纵向超过阈值才拦截；别在 DOWN 无条件拦截，否则子按钮连按下都收不到。</p></div></details>
+</section><section data-topic id="p2"><h2>P2 · 追问与项目实例</h2>
+<details id="q9"><summary><span class="question-text">09 · 内外都是横向滚动，或者需要联动，怎么办？</span><span class="question-tag">P2</span></summary><div class="answer-body"><blockquote>同方向冲突只看横纵距离不够，还要看子控件在当前方向能不能继续滚动。子控件能滚就优先给它，到边界再允许父容器接管。如果需求是一次滑动中父子共同消费不同距离，就考虑嵌套滚动协议，用预消费、已消费和未消费距离来协调。</blockquote><p><code>canScrollHorizontally(-1)</code> 查询内容能否向负方向滚动，<code>+1</code> 查询正方向；垂直类似。常规未变换坐标中，手指向右移时内容滚动偏移通常向负方向变化，所以用“当前 x 减上次 x”的手指位移 dx 推导时，查询方向通常与 dx 符号相反。别把“手指向左”直接当作 API 的负方向。</p><pre><code>// 教学片段：dx 为本次手指的水平位移，0 不触发交接
+if (dx != 0f) {
+    val scrollDirection = if (dx > 0f) -1 else 1
+    val childCanScroll = child.canScrollHorizontally(scrollDirection)
+    parent.requestDisallowInterceptTouchEvent(childCanScroll)
+}</code></pre><p>上述片段只说明方向和边界判断，实际还需要阈值、方向锁定和父控件配合。父容器一旦真正拦截并取消子目标，本次手势不能靠传 true 自动还给子控件。</p><p>NestedScrolling 与拦截解决的问题不同：拦截决定触摸序列由谁接收；嵌套滚动允许滚动子控件把距离、fling 等交给参与协议的父控件协调。不能仅凭 <code>isNestedScrollingEnabled = true</code> 就断言任意 ViewPager2 嵌套都自动解决了。</p></div></details>
+<details id="q10"><summary><span class="question-text">10 · 按钮不响应点击、列表滑不动，怎么排查？</span><span class="question-tag">P2</span></summary><div class="answer-body"><blockquote>我先看 DOWN 有没有到目标，再看有没有被父布局拦截、收到 CANCEL，最后看监听器和自定义返回值是否截断默认处理。不会一上来把所有方法改成 true，因为那样可能让子控件更收不到事件。</blockquote><ol><li>确认目标命中区域、可见性和是否被上层可点击 View 遮挡。</li><li>在 Activity、相关父容器和目标 View 记录 action、返回值和对象身份，观察 DOWN、CANCEL、UP 的去向。</li><li>检查 OnTouchListener 是否消费，父容器是否过早拦截，目标是否 enabled / clickable。</li><li>检查自定义 dispatch 是否调用 super，CANCEL 是否清理，点击是否通过 performClick。</li></ol><pre><code>// 教学示例：super 只调用一次，日志不改变返回值
+override fun dispatchTouchEvent(e: MotionEvent): Boolean {
+    val action = MotionEvent.actionToString(e.action)
+    Log.d("TouchTrace", "enter $action")
+    val handled = super.dispatchTouchEvent(e)
+    Log.d("TouchTrace", "exit $action handled=$handled")
+    return handled
+}</code></pre><p>先保存 action 再调用 super，有助于日志清楚表达当前入口事件。日志会嵌套：父 enter、子 enter、子 exit、父 exit；不要误读成异步事件或线程切换。普通应用 View 触摸处理在 UI 线程，耗时操作会影响响应。</p></div></details>
+<details id="q11"><summary><span class="question-text">11 · x / rawX 有什么区别？多指为什么不能一直 getX(0)？</span><span class="question-tag">P2</span></summary><div class="answer-body"><blockquote>x、y 是接收 View 局部坐标系里的坐标，rawX、rawY 通常用于显示屏坐标系的定位，复杂窗口场景要按 API 定义核对。多指时 pointerId 标识同一根手指，pointerIndex 是它在当前事件中的位置，index 可能变化，所以应该保存 id，再查当前 index。</blockquote><p>父容器派给子 View 时会处理偏移和变换，不能把不同 View 日志里的 x 直接比较。普通拖动计算如果混用局部坐标、屏幕坐标或让 View 自身同时移动，也可能产生跳动。</p><pre><code>// 教学片段：activePointerId 在 DOWN 时取得
+val index = event.findPointerIndex(activePointerId)
+if (index >= 0) {
+    val x = event.getX(index)
+    // 使用该手指的坐标计算位移
+}</code></pre><p>第一根手指按下是 ACTION_DOWN，其他手指加入是 ACTION_POINTER_DOWN；中途某根抬起是 ACTION_POINTER_UP，最后一根才是 ACTION_UP。用 actionMasked 区分动作，用 actionIndex 找本次变化的手指。如果活动手指抬起，要选新手指并重设位移基准；仅使用 actionMasked 并不等于已经支持多指。</p></div></details>
+<details id="q12"><summary><span class="question-text">12 · 项目里有哪些实际做法？面试怎么讲？</span><span class="question-tag">P2</span></summary><div class="answer-body"><blockquote>项目里有横向内容嵌在纵向列表中的场景。做法是先保存按下位置，再通过位移方向控制父容器拦截。有一份实现加了系统 touchSlop 和方向锁定，避免微小抖动导致父子来回抢事件。另一个首页榜单控件还定制了边界判断，结合页签位置决定是否允许向外层交接。具体效果仍需要结合外层容器验证。</blockquote><h3>例一：ConflictView 的方向协调</h3><p>源码：<code>yyyyy-cdoe/KnowledgeMarket/kmarket-home/src/main/java/com/zhihu/android/app/market/feed/ConflictView.kt</code>，第 18–20、30–67 行。以下是原实现的关键摘录，省略其余分支：</p><pre><code>val horizontal = deltaX > deltaY * 1.2f &amp;&amp; deltaX > touchSlop
+val vertical = deltaY > deltaX * 1.2f &amp;&amp; deltaY > touchSlop
+
+if (horizontal) {
+    directionLocked = true
+    disallowParentIntercept = true
+    parent.requestDisallowInterceptTouchEvent(true)
+} else if (vertical) {
+    directionLocked = true
+    disallowParentIntercept = false
+    parent.requestDisallowInterceptTouchEvent(false)
+}</code></pre><p>DOWN 先禁止父容器拦截；移动超过系统阈值再判断方向；横向锁定后继续禁止，纵向则放开。最后仍返回 super.dispatchTouchEvent。它解决方向竞争，没有检查横向子列表是否到边界，不能直接当作所有同向嵌套场景的解法。</p><p>这份代码在 UP / CANCEL 分支没有额外操作，方向变量在下一次 DOWN 重置。若扩展出按压效果、长按任务或拖拽资源，应在取消时清理，不能只等下一次 DOWN。源码使用 event.action，本文教学骨架改用 actionMasked；两者都需要额外处理才能完整支持多指。</p><h3>例二：首页 NewPinTopRecycleView 的业务策略</h3><p>源码：<code>yyyyy-cdoe/km_home_base/km_home_base/src/main/java/com/zhihu/android/feature/km_home_base/View/NewPinTopRecycleView.kt</code>，第 47–73、77–146 行。</p><ul><li>通过外部设置的 conflictView 请求拦截许可；没有设置时，可空调用不会产生协调效果。</li><li>DOWN 禁止拦截；MOVE 比较横纵位移，横向禁止、纵向允许；UP / CANCEL 放开。当前 HORIZONTAL_SCROLL_RATIO 是 1f，这段没有 touchSlop 和方向锁定。</li><li>重写 canScrollHorizontally，根据 GridLayoutManager 的首尾列位置判断，并在边界处返回 isFirstPage / isLastPage 等业务策略。</li></ul><p>因此这里“能否滚动”的返回值含有页签交接策略，不能全部理解成内容还有物理滚动距离。文件注释提到嵌套滚动和 ViewPager2，但仅凭这份代码不能证明自动边界交接已经完整生效，还要检查外层如何使用这个返回值并做设备测试。</p><p>这两例是本地源码阅读结果，不是本次已运行的设备测试，也不自动代表你个人独立实现的项目经历。面试可以讲你理解的机制，再按真实参与范围描述工作。</p></div></details>
+</section></div>
+<h2 id="review">一分钟复习</h2><p>分发看 dispatch，父容器抢不抢看 intercept，自己处理看 onTouchEvent。DOWN 建立目标；中途拦截给子目标 CANCEL。MOVE 返回 false 不自动交接。禁止拦截和消费不是一回事。滑动冲突先区分方向，再看阈值、边界和父子协作。</p>
+<h2 id="sources">源码与参考资料</h2><p>问题选题参考公开面经；具体行为以官方说明和对应版本源码为依据，没有用单篇面经推断全行业提问频率。</p><ul><li><a href="https://blog.nowcoder.net/n/ccd716b4555249ae8cf6ba15941ee3b0">2022 年求职面经</a>：包含事件分发、滑动冲突和长按等问题。</li><li><a href="https://developer.android.com/develop/ui/views/touch-and-input/gestures/viewgroup">Android 官方：ViewGroup 中的触摸事件管理</a></li><li><a href="https://developer.android.com/develop/ui/views/touch-and-input/gestures/movement">Android 官方：跟踪移动与多指</a></li><li><a href="https://android.googlesource.com/platform/frameworks/base/+/android-13.0.0_r1/core/java/android/app/Activity.java#4258">Activity.dispatchTouchEvent</a></li><li><a href="https://android.googlesource.com/platform/frameworks/base/+/android-13.0.0_r1/core/java/android/view/ViewGroup.java#2622">ViewGroup.dispatchTouchEvent</a>：重点看建立目标、disallowIntercept、取消目标和无目标分支。</li><li><a href="https://android.googlesource.com/platform/frameworks/base/+/android-13.0.0_r1/core/java/android/view/View.java#14970">View.dispatchTouchEvent</a>，以及同文件 onTouchEvent。</li><li><a href="https://developer.android.com/reference/androidx/core/view/NestedScrollingChild3">NestedScrollingChild3 API</a></li></ul><p>继续阅读：<a href="guides/android-custom-view-interview-guide.html">View 测量、布局与绘制</a> · <a href="interview-spoken-answers.html">面试口述速记</a></p>
+</article><aside class="toc"><h2>本页目录</h2><a href="#flow">分发流程图</a><a href="#p1">P1 · 基础八题</a><a href="#q5">DOWN 与 MOVE 返回值</a><a href="#q6">拦截与 CANCEL</a><a href="#q8">滑动冲突代码</a><a href="#p2">P2 · 进阶追问</a><a href="#q12">项目实例</a><a href="#review">一分钟复习</a><a href="#sources">参考资料</a></aside></div></main></div><script src="assets/search-data.js"></script><script src="assets/docs.js"></script><script>
+function revealQuestion(){const id=decodeURIComponent(location.hash.slice(1));const target=document.getElementById(id);if(!target)return;const question=target.closest('details');if(question){question.open=true;question.hidden=false;const section=question.closest('[data-topic]');if(section)section.hidden=false;target.scrollIntoView();}}
+window.addEventListener('hashchange',revealQuestion);revealQuestion();
+</script></body></html>
