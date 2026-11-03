@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="项目面试资料库">
+  <rect width="512" height="512" rx="112" fill="#245d47"/>
+  <rect x="136" y="112" width="240" height="288" rx="28" fill="#f7f7f5"/>
+  <g fill="#245d47">
+    <rect x="176" y="164" width="160" height="20" rx="10"/>
+    <rect x="176" y="204" width="160" height="20" rx="10"/>
+    <rect x="176" y="244" width="160" height="20" rx="10"/>
+    <rect x="176" y="284" width="96" height="20" rx="10"/>
+  </g>
+</svg>
