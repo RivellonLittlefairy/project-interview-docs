@@ -31,7 +31,7 @@
   </header>
   <div class="drawer-backdrop" data-drawer-backdrop hidden></div>
   <div class="docs-layout">
-<nav class="sidebar" data-sidebar aria-label="口述速记导航"><div class="sidebar-heading">面试口述速记</div><a class="nav-link" href="index.html#start">返回开始复习</a><a class="nav-link" href="#handler">01 · Handler 是什么？</a><a class="nav-link" href="#lifecycle">02 · Android 生命周期</a><a class="nav-link" href="#activity-switch">03 · Activity 跳转时序</a><a class="nav-link" href="#coroutines-basics">04 · 基础与任务管理</a><a class="nav-link" href="#coroutines-cancel-errors">05 · 取消与失败处理</a><a class="nav-link" href="#coroutines-flow">06 · Flow 与界面</a><a class="nav-link" href="#coroutines-projects">07 · 项目怎么讲</a><a class="nav-link" href="#mvi">08 · MVI 面试问答</a><a class="nav-link" href="#threads-vs-coroutines">09 · 线程与协程对比</a><a class="nav-link" href="#binder">10 · Binder 七题</a><a class="nav-link" href="android-handler-looper-guide.html">Handler 原理详解</a></nav>
+<nav class="sidebar" data-sidebar aria-label="口述速记导航"><div class="sidebar-heading">面试口述速记</div><a class="nav-link" href="index.html#start">返回开始复习</a><a class="nav-link" href="#handler">01 · Handler 是什么？</a><a class="nav-link" href="#lifecycle">02 · Android 生命周期</a><a class="nav-link" href="#activity-switch">03 · Activity 跳转时序</a><a class="nav-link" href="#coroutines-basics">04 · 基础与任务管理</a><a class="nav-link" href="#coroutines-cancel-errors">05 · 取消与失败处理</a><a class="nav-link" href="#coroutines-flow">06 · Flow 与界面</a><a class="nav-link" href="#coroutines-projects">07 · 项目怎么讲</a><a class="nav-link" href="#mvi">08 · MVI 面试问答</a><a class="nav-link" href="#threads-vs-coroutines">09 · 线程与协程对比</a><a class="nav-link" href="#binder">10 · Binder 七题</a><a class="nav-link" href="#agent-team">11 · Agent Team</a><a class="nav-link" href="android-handler-looper-guide.html">Handler 原理详解</a></nav>
 <main class="article-shell" id="main-content"><div class="breadcrumbs"><a href="index.html">首页</a><span>/</span><span>面试口述速记</span></div><div class="article-grid"><article class="markdown-body">
 <h1>面试口述速记</h1>
 <p>每题保留一段适合当面说的简短回答。先试着自己回答，再对照补漏；遇到不理解的细节，进入对应的原理文档。当前收录 Handler、Android 生命周期、Activity 跳转时序、协程与 Flow 的 8 组问答，以及 MVI 的 6 组问答，并单列线程与协程对比、Binder 的 7 道核心问答。先练口述回答，被追问时再展开。</p>
@@ -484,5 +484,30 @@ val records = remoteService.getAllRecords(userId)</code></pre>
 </details>
 </section>
 
-<footer class="article-footer">口述内容整理：2026-10-24。协程与 Flow 8 组、MVI 6 组、线程与协程对比，以及 Binder 7 题，附可选追问。项目例子来自本地源码阅读；Binder 音频服务为教学示例，未进行编译或设备运行验证。</footer>
-</article><aside class="page-toc" aria-label="本页目录"><div class="toc-heading">本页目录</div><a class="toc-link level-2" href="#handler">01 · Handler 是什么？</a><a class="toc-link level-2" href="#lifecycle">02 · Android 生命周期</a><a class="toc-link level-2" href="#activity-switch">03 · Activity 跳转时序</a><a class="toc-link level-2" href="#coroutines-basics">04 · 基础与任务管理</a><a class="toc-link level-2" href="#coroutines-cancel-errors">05 · 取消与失败处理</a><a class="toc-link level-2" href="#coroutines-flow">06 · Flow 与界面</a><a class="toc-link level-2" href="#coroutines-projects">07 · 项目怎么讲</a><a class="toc-link level-2" href="#mvi">08 · MVI 面试问答</a><a class="toc-link level-2" href="#threads-vs-coroutines">09 · 线程与协程对比</a><a class="toc-link level-2" href="#binder">10 · Binder 七题</a><a class="back-to-top" href="#">↑ 返回顶部</a></aside></div></main></div><script src="assets/search-data.js"></script><script src="assets/docs.js"></script></body></html>
+<section aria-labelledby="agent-team">
+<h2 id="agent-team">11 · Agent Team：优势与实现原理</h2>
+<h3>约 1 分钟回答</h3>
+<blockquote>
+<p>Agent Team 本质上是运行时协调多个有独立上下文的 Agent Loop。主 Agent 负责拆任务和定义协作边界，子 Agent 并行执行，通过消息或产物交换结果，最后统一集成验证。</p>
+<p>它有两方面优势：一是把依赖较少的任务分给不同 Agent 并行处理，加快执行；二是让不同职责的 Agent 保留与自己任务相关的上下文，减少无关信息干扰，更专注于各自的任务。质量仍取决于任务边界、提供的信息和验证方式。</p>
+<p>代价是额外的 Token、通信和集成成本，所以适合边界清晰、依赖较少的任务；强依赖的工作仍然需要按顺序推进。</p>
+</blockquote>
+<details><summary>展开原理：多个 Agent 是怎么一起工作的？</summary>
+<ol>
+<li>主 Agent 拆任务、分配职责：明确目标、接口、交付要求和允许修改的文件范围。例如将 Android 原生组件、RN 调用层和测试拆成不同任务。</li>
+<li>运行时创建独立会话：每个子 Agent 有自己的消息历史和工具执行过程，可以使用相同模型。上下文可以完整继承，也可以只传任务需要的代码、背景和约束。</li>
+<li>并发推进各个 Agent Loop：每个 Agent 都执行“模型判断下一步、调用工具、获取反馈、继续判断”的循环。并行能力由调度程序提供，不是模型自己同时完成几件事。</li>
+<li>交换消息和产物：子 Agent 返回结果、报告阻塞、确认接口；主 Agent 根据反馈调整分工。部分实现也支持成员之间直接通信。</li>
+<li>集成并统一验证：检查接口和改动是否冲突，再执行整体构建或测试。各自完成任务，不代表集成后一定正确。</li>
+</ol>
+</details>
+<h3>追问：上下文隔离，为什么有帮助？</h3>
+<p>例如主 Agent 保留目标、分工和进度；原生 Agent 聚焦 Android 组件；RN Agent 聚焦 JS/TS 调用、属性和事件；测试 Agent 聚焦验收场景和失败证据。子 Agent 返回必要结论，通常不必把整个探索过程都带回主会话。</p>
+<p>如果子 Agent 一开始完整继承主会话，无关信息也会一起带过去。因此隔离效果还取决于上下文如何传递，不能认为创建子 Agent 就自动获得干净的上下文。</p>
+<h3>追问：上下文隔离等于代码隔离吗？</h3>
+<p>不等于。不同 Agent 即使消息历史独立，也可能共享工作目录、修改同一个文件。需要通过文件职责划分、独立 worktree 或串行集成减少冲突；共享的接口和关键决策也要及时同步。</p>
+<p>记忆提示：拆任务 → 独立会话 → 并行循环 → 消息协作 → 集成验证。收益是并行和专注，代价是通信、Token 和集成成本。</p>
+</section>
+
+<footer class="article-footer">口述内容整理：2026-10-24；2026-11-10 补充 Agent Team。协程与 Flow 8 组、MVI 6 组、线程与协程对比，以及 Binder 7 题，附可选追问。项目例子来自本地源码阅读；Binder 音频服务为教学示例，未进行编译或设备运行验证。Agent Team 的 Android / RN 分工为原理示例，不代表项目实施记录。</footer>
+</article><aside class="page-toc" aria-label="本页目录"><div class="toc-heading">本页目录</div><a class="toc-link level-2" href="#handler">01 · Handler 是什么？</a><a class="toc-link level-2" href="#lifecycle">02 · Android 生命周期</a><a class="toc-link level-2" href="#activity-switch">03 · Activity 跳转时序</a><a class="toc-link level-2" href="#coroutines-basics">04 · 基础与任务管理</a><a class="toc-link level-2" href="#coroutines-cancel-errors">05 · 取消与失败处理</a><a class="toc-link level-2" href="#coroutines-flow">06 · Flow 与界面</a><a class="toc-link level-2" href="#coroutines-projects">07 · 项目怎么讲</a><a class="toc-link level-2" href="#mvi">08 · MVI 面试问答</a><a class="toc-link level-2" href="#threads-vs-coroutines">09 · 线程与协程对比</a><a class="toc-link level-2" href="#binder">10 · Binder 七题</a><a class="toc-link level-2" href="#agent-team">11 · Agent Team</a><a class="back-to-top" href="#">↑ 返回顶部</a></aside></div></main></div><script src="assets/search-data.js"></script><script src="assets/docs.js"></script></body></html>
